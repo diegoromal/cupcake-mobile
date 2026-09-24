@@ -66,3 +66,15 @@ Evite explicações longas, repetição do prompt e conteúdo não acionável.
 4. O identificador informado em `Task:` no commit deve corresponder ao identificador existente no backlog.
 5. Código gerado não constitui, por si só, evidência de conclusão.
 6. Não marcar como concluído requisito, teste ou artefato que não tenha sido efetivamente implementado ou validado.
+
+## Branches e isolamento de tarefas
+
+1. A branch `main` deve representar somente incrementos concluídos e validados.
+2. A partir do D03, cada tarefa deve ser desenvolvida em branch própria no padrão `task/D<numero>-<descricao-curta>`.
+3. Antes de alterar arquivos, o agente deve identificar a tarefa em execução e verificar a branch Git atual.
+4. Para uma tarefa `Dxx`, alterações somente podem ser realizadas em branch compatível com `task/Dxx-*`.
+5. Se a branch estiver incorreta, interromper antes de alterar arquivos, informar a divergência e indicar a branch esperada.
+6. Não trocar ou criar branches automaticamente sem autorização explícita do usuário.
+7. PLAN e operações estritamente de leitura podem ocorrer sem modificar a branch.
+8. Após Quality Gate aprovado, atualizar o backlog e preparar o incremento para commit, publicação da branch e integração por Pull Request, respeitando as autorizações explícitas exigidas para operações Git.
+9. Não realizar merge diretamente na `main` sem o fluxo de integração definido em `docs/adr/ADR-002-estrategia-branches.md`.

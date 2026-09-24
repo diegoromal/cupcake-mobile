@@ -108,3 +108,7 @@ Contém contexto persistente, regras, padrões, quality gates, métricas e promp
 As decisões arquiteturais e suas justificativas devem ser registradas em `docs/adr/`.
 
 A adoção do monorepo está documentada em `docs/adr/ADR-001-monorepo.md`.
+
+## Estratégia de branches
+
+O desenvolvimento incremental utiliza branches `task/Dxx-*`, conforme `docs/adr/ADR-002-estrategia-branches.md`.
