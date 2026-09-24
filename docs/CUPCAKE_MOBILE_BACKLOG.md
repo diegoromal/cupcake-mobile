@@ -35,8 +35,7 @@
   - [x] Criar `.gitignore`, `.editorconfig` e `README.md`
   - [x] Documentar stack e restrições arquiteturais
   - [x] Registrar adoção do monorepo em ADR
-
-- [ ] **D02 --- Docker e ambiente local** --- PostgreSQL + Docker
+- [x] **D02 --- Docker e ambiente local** --- PostgreSQL + Docker
       Compose + variáveis de ambiente
 - [ ] **D03 --- Estruturar NestJS** --- módulos, Prisma, PostgreSQL e
       health check

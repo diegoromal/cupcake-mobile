@@ -21,6 +21,33 @@ Persistência principal: PostgreSQL com Prisma ORM.
 
 A decisão pela utilização de monorepo está documentada em `docs/adr/ADR-001-monorepo.md`.
 
+## Ambiente local
+
+O PostgreSQL de desenvolvimento é executado por Docker Compose. É necessário ter Docker com o plugin Docker Compose instalado.
+
+1. Crie o arquivo de variáveis local:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+2. Ajuste as credenciais e a porta em `.env` se necessário. Quando esses valores forem alterados, atualize também `DATABASE_URL` para que permaneça compatível.
+
+3. Inicie o banco:
+
+   ```sh
+   docker compose up -d postgres
+   ```
+
+4. Verifique se o banco está saudável:
+
+   ```sh
+   docker compose ps
+   docker compose exec postgres sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+   ```
+
+O banco fica disponível em `localhost:$POSTGRES_PORT`. Para interromper o ambiente, use `docker compose down`. O volume nomeado preserva os dados entre reinicializações; `docker compose down -v` também o remove.
+
 ## Estrutura
 
     cupcake-mobile/
