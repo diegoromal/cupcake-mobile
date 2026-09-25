@@ -74,7 +74,11 @@ Evite explicações longas, repetição do prompt e conteúdo não acionável.
 3. Antes de alterar arquivos, o agente deve identificar a tarefa em execução e verificar a branch Git atual.
 4. Para uma tarefa `Dxx`, alterações somente podem ser realizadas em branch compatível com `task/Dxx-*`.
 5. Se a branch estiver incorreta, interromper antes de alterar arquivos, informar a divergência e indicar a branch esperada.
-6. Não trocar ou criar branches automaticamente sem autorização explícita do usuário.
-7. PLAN e operações estritamente de leitura podem ocorrer sem modificar a branch.
-8. Após Quality Gate aprovado, atualizar o backlog e preparar o incremento para commit, publicação da branch e integração por Pull Request, respeitando as autorizações explícitas exigidas para operações Git.
-9. Não realizar merge diretamente na `main` sem o fluxo de integração definido em `docs/adr/ADR-002-estrategia-branches.md`.
+6. Branches `infra/*` são exclusivas para infraestrutura, CI, automação e configuração técnica que não pertençam a uma tarefa `Dxx`.
+7. Branches `docs/*` são exclusivas para documentação que não pertença a uma tarefa `Dxx`.
+8. Branches técnicas não podem implementar, alterar o status ou encerrar tarefas `Dxx`; nesses casos, deve ser usada a branch `task/Dxx-*` correspondente.
+9. Não trocar ou criar branches automaticamente sem autorização explícita do usuário.
+10. PLAN e operações estritamente de leitura podem ocorrer sem modificar a branch.
+11. Após Quality Gate aprovado, atualizar o backlog e preparar o incremento para commit, publicação da branch e integração por Pull Request, respeitando as autorizações explícitas exigidas para operações Git.
+12. Não realizar merge diretamente na `main` sem o fluxo de integração definido em `docs/adr/ADR-002-estrategia-branches.md`.
+13. Quando houver CI aplicável à Pull Request, seus checks obrigatórios devem estar aprovados antes da integração na `main`.
