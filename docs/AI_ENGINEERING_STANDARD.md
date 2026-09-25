@@ -79,6 +79,19 @@ decidir se é recorrente; 4. se recorrente, atualizar regra, teste,
 quality gate, automação ou contexto; 5. medir se a alteração reduziu
 retrabalho.
 
+## 8.1 Gestão de dívida técnica
+
+`docs/TECHNICAL_DEBT.md` é a fonte persistente de dívidas técnicas conhecidas.
+Dívida técnica é trabalho técnico conscientemente postergado; risco aceito é
+uma condição conhecida que pode ter impacto futuro, sem necessariamente
+representar esse trabalho. Nem todo risco aceito ou achado baixo gera dívida.
+
+PLAN consulta dívidas abertas pertinentes; EXEC não cria dívida silenciosa;
+TEST sinaliza limitações deliberadamente postergadas; REVIEW distingue correção
+imediata, risco aceito e dívida; QUALITY GATE exige registro persistente antes
+de aceitar postergação; e COMMIT referencia `TD` apenas quando o staged diff
+altera explicitamente a dívida.
+
 ## 9. Eficiência de tokens
 
 -   Não repetir stack e arquitetura no prompt.

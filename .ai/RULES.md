@@ -55,6 +55,15 @@ de regra de negócio não evidente pelo código.
 TODO e FIXME não são descarte genérico. Quando necessários, devem informar o
 problema, por que permanece e a ação futura necessária.
 
+## Dívida técnica
+
+Não introduza conscientemente dívida técnica sem justificativa e registro em
+`docs/TECHNICAL_DEBT.md`. Dívida técnica é trabalho técnico conhecido e
+deliberadamente postergado; risco aceito é uma condição conhecida com possível
+impacto futuro que não implica, por si só, trabalho técnico postergado. Nem todo
+risco aceito gera dívida técnica, e achado baixo não se torna dívida
+automaticamente.
+
 ## Antes de concluir
 
 1. Execute as validações disponíveis.

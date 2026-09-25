@@ -69,6 +69,18 @@ valor.
 -   [ ] Falhas de CI não foram ignoradas, contornadas ou reclassificadas
     como sucesso sem evidência técnica.
 
+## Dívida técnica
+
+-   [ ] Dívida técnica deliberadamente postergada foi registrada em
+    `docs/TECHNICAL_DEBT.md` com contexto, impacto, justificativa e critério de
+    resolução.
+
+Dívida bloqueante deve ser corrigida antes da entrega. Dívida não bloqueante
+somente pode ser postergada com registro persistente; mera menção em REVIEW ou
+no resultado deste gate não é rastreabilidade suficiente. Risco aceito não
+exige registro de dívida quando não representar trabalho técnico conhecido e
+deliberadamente postergado.
+
 ## Gate
 
 A mudança só pode ser declarada pronta quando:

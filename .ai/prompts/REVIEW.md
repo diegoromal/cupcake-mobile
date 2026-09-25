@@ -23,5 +23,8 @@ SEVERIDADE | arquivo:linha | problema | impacto | correção
 Código funcional pode gerar achado estrutural. Use severidade conforme o
 impacto concreto. Ignore preferência estilística ou ausência de pattern sem
 impacto.
+Distinga problema a corrigir agora, risco aceito e dívida técnica
+deliberadamente postergada; não classifique automaticamente achado baixo como
+dívida.
 Se não houver achados relevantes, diga isso.
 ```
