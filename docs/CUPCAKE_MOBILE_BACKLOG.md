@@ -37,7 +37,7 @@
   - [x] Registrar adoção do monorepo em ADR
 - [x] **D02 --- Docker e ambiente local** --- PostgreSQL + Docker
       Compose + variáveis de ambiente
-- [ ] **D03 --- Estruturar NestJS** --- módulos, Prisma, PostgreSQL e
+- [x] **D03 --- Estruturar NestJS** --- módulos, Prisma, PostgreSQL e
       health check
 - [ ] **D04 --- Consolidar modelo de domínio** --- entidades,
       atributos, relacionamentos e cardinalidades
