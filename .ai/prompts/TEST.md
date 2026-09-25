@@ -13,6 +13,6 @@ Cubra:
 - regressões prováveis
 
 Priorize comportamento observável.
-Não teste detalhes internos sem necessidade.
+Mantenha os testes legíveis e não os acople a detalhes internos sem necessidade.
 Execute e reporte resultados.
 ```

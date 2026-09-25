@@ -49,6 +49,8 @@ valor.
 -   [ ] Não foi criada duplicação desnecessária.
 -   [ ] Código novo é testável.
 -   [ ] Complexidade adicionada é justificada.
+-   [ ] Comentários não compensam código pouco legível e, quando necessários,
+    explicam decisões, restrições ou motivos relevantes.
 
 ## Flexibilidade
 
@@ -69,6 +71,23 @@ valor.
 
 ## Gate
 
-A mudança só pode ser declarada pronta quando: - critérios aplicáveis
-foram verificados; - testes relevantes passaram; - checks obrigatórios
-de CI aplicáveis foram aprovados; - riscos conhecidos foram explicitados.
+A mudança só pode ser declarada pronta quando:
+
+- critérios aplicáveis foram verificados;
+- testes relevantes passaram;
+- checks obrigatórios de CI aplicáveis foram aprovados;
+- riscos conhecidos foram explicitados.
+
+Uma implementação funcional deve falhar no gate quando apresentar problema
+estrutural ou de qualidade significativo, concreto e evitável, com impacto
+relevante em manutenção, evolução, entendimento, teste, risco ou regressão.
+Isso inclui responsabilidade excessivamente misturada, acoplamento evitável
+relevante, duplicação significativa, complexidade desnecessária, abstração
+prematura relevante, estrutura que dificulta testes por decisão evitável ou
+comentários usados para compensar código pouco legível.
+
+Não reprove por mera preferência arquitetural: ausência de interface,
+repository, factory ou pattern, função curta que poderia ser mais fragmentada
+ou abstração sem necessidade real não são falhas por si só. Registre trade-offs
+justificados e achados sem impacto relevante como risco aceito quando
+pertinente.

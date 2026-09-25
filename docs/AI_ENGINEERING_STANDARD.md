@@ -16,6 +16,8 @@ e tokens.
 6.  Sucesso exige evidência.
 7.  Erro recorrente deve melhorar o processo.
 8.  Qualidade não é delegada integralmente ao modelo.
+9.  Simplicidade, clareza e qualidade estrutural devem ser proporcionais ao
+    problema, sem abstração especulativa.
 
 ## 3. Fluxo padrão
 
@@ -100,6 +102,32 @@ O projeto mantém um quality gate permanente em `.ai/QUALITY.md`,
 cobrindo adequação funcional, desempenho, compatibilidade, interação,
 confiabilidade, segurança, manutenibilidade, flexibilidade e integridade
 operacional quando aplicáveis.
+
+SOLID contextual, Clean Code, simplicidade e a política de comentários fazem
+parte do processo de engenharia, não somente da etapa final de revisão. As
+fontes normativas são distribuídas para evitar duplicação:
+
+- `.ai/RULES.md` define regras transversais obrigatórias de implementação,
+  Clean Code e comentários;
+- `.ai/ARCHITECTURE.md` define princípios arquiteturais, SOLID contextual,
+  coesão, acoplamento, dependências e prevenção de overengineering;
+- `.ai/QUALITY.md` define os critérios de aceite e bloqueio de problemas de
+  qualidade estrutural;
+- os prompts definem o procedimento operacional e referenciam essas fontes,
+  sem reproduzir integralmente suas regras.
+
+SOLID é aplicado conforme a necessidade arquitetural: não se criam interfaces,
+repositories, factories, patterns ou camadas apenas para demonstrar princípios.
+Comentários devem explicar por quê, e não simplesmente o quê; código legível e
+refatorado é preferível a comentários redundantes.
+
+No fluxo, PLAN avalia coesão, acoplamento e necessidade real de abstração;
+EXEC implementa a solução mais simples compatível com os requisitos e a
+qualidade estrutural; TEST favorece comportamento observável e legibilidade;
+REVIEW pode registrar achado estrutural mesmo em código funcional; REFACTOR
+melhora estrutura sem abstração ornamental; e QUALITY GATE reprova somente
+problemas estruturais significativos, concretos, evitáveis e de impacto
+relevante. Preferências arquiteturais isoladas não bloqueiam uma entrega.
 
 ## 12. Integração com maturidade de processo
 
