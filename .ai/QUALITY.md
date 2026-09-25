@@ -60,8 +60,15 @@ valor.
 -   [ ] A mudança não cria estados inválidos ou transições perigosas
     para o domínio.
 
+## Integração contínua
+
+-   [ ] Quando houver CI aplicável à Pull Request, os checks obrigatórios
+    foram executados e aprovados antes da integração na `main`.
+-   [ ] Falhas de CI não foram ignoradas, contornadas ou reclassificadas
+    como sucesso sem evidência técnica.
+
 ## Gate
 
 A mudança só pode ser declarada pronta quando: - critérios aplicáveis
-foram verificados; - testes relevantes passaram; - riscos conhecidos
-foram explicitados.
+foram verificados; - testes relevantes passaram; - checks obrigatórios
+de CI aplicáveis foram aprovados; - riscos conhecidos foram explicitados.
