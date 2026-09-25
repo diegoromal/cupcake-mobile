@@ -48,6 +48,28 @@ O PostgreSQL de desenvolvimento é executado por Docker Compose. É necessário 
 
 O banco fica disponível em `localhost:$POSTGRES_PORT`. Para interromper o ambiente, use `docker compose down`. O volume nomeado preserva os dados entre reinicializações; `docker compose down -v` também o remove.
 
+## API
+
+A API NestJS fica em `apps/api` e, neste estágio, não depende de banco de dados.
+
+```sh
+cd apps/api
+npm install
+npm run start:dev
+```
+
+Por padrão, a API inicia na porta `3000`. Para usar outra porta, defina `PORT` ao iniciar o processo:
+
+```sh
+PORT=3100 npm run start:dev
+```
+
+Valide a disponibilidade da API em `GET /health`:
+
+```sh
+curl http://localhost:3000/health
+```
+
 ## Estrutura
 
     cupcake-mobile/
