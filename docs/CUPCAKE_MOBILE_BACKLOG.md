@@ -41,7 +41,7 @@
       health check
 - [x] **D04 --- Consolidar modelo de domínio** --- entidades,
       atributos, relacionamentos e cardinalidades
-- [ ] **D05 --- Diagrama de classes UML**
+- [x] **D05 --- Diagrama de classes UML**
 - [ ] **D06 --- Modelo conceitual e lógico normalizado**
 - [ ] **D07 --- Projeto físico do banco** --- Prisma Schema +
       migrations
