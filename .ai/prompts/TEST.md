@@ -14,5 +14,7 @@ Cubra:
 
 Priorize comportamento observável.
 Mantenha os testes legíveis e não os acople a detalhes internos sem necessidade.
+Sinalize limitação conhecida deliberadamente postergada, sem converter toda
+falha em dívida técnica.
 Execute e reporte resultados.
 ```

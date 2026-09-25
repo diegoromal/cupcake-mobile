@@ -10,8 +10,9 @@ Manter o histórico Git legível, rastreável e útil para revisão, auditoria, 
 
     Task: D<numero>
     Requirement: HU-<numero>
+    TD: TD-<numero>
 
-`Task` e `Requirement` são opcionais quando não existirem.
+`Task`, `Requirement` e `TD` são opcionais quando não existirem.
 
 Nunca invente identificadores apenas para preencher a mensagem.
 
@@ -66,6 +67,10 @@ Exemplo:
 Alterações de infraestrutura, documentação ou processo podem não possuir uma história de usuário correspondente.
 
 Nesse caso, não invente `Requirement`.
+
+Informe `TD` somente quando o diff staged criar, alterar ou resolver
+explicitamente uma dívida técnica registrada em `docs/TECHNICAL_DEBT.md`.
+Não use `TD` em commits comuns nem invente identificadores.
 
 ## Breaking change
 
