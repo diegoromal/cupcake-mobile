@@ -1,0 +1,278 @@
+@startuml
+title Cupcake Mobile — Diagrama de Classes
+
+' Derivado de docs/domain/DOMAIN_MODEL.md. Visão conceitual; detalhes de
+' persistência pertencem às tarefas posteriores (D06–D08).
+
+left to right direction
+hide empty members
+skinparam packageStyle rectangle
+
+' Packages são somente agrupamentos visuais, não módulos arquiteturais.
+package "Identidade" {
+  class Usuario {
+    identidade
+    nome: String
+    email: String
+    telefone: String
+    credencialSenha
+    perfil: PerfilUsuario
+    bloqueioTemporario: Boolean
+  }
+
+  enum PerfilUsuario {
+    CLIENTE
+    ADMIN
+    ENTREGADOR
+  }
+}
+
+package "Catalogo" {
+  class Categoria {
+    identificacao
+    nome: String
+    descricao: String
+  }
+
+  class Produto {
+    identificacao
+    nome: String
+    descricao: String
+    precoAtual: Decimal
+    imagem
+    ativo: Boolean
+    disponibilidade: Integer
+  }
+
+  class Personalizacao {
+    identificacao
+    nome: String
+    descricao: String
+    disponibilidade: Boolean
+    ajusteValor: Decimal
+  }
+}
+
+package "Carrinho" {
+  class Carrinho {
+    identificacao
+    totalCalculado: Decimal
+    contextoCliente
+  }
+
+  class ItemCarrinho {
+    produtoEscolhido
+    quantidade: Integer
+    precoCalculado: Decimal
+    subtotalCalculado: Decimal
+    personalizacoesEscolhidas
+  }
+}
+
+package "Pedidos e pagamento" {
+  class Pedido {
+    identificadorNegocio
+    data: DateTime
+    modalidade: ModalidadeRecebimento
+    statusAtual: StatusPedido
+    valorItens: Decimal
+    freteAplicado: Decimal
+    total: Decimal
+    enderecoUtilizado
+    confirmacaoPagamento: DateTime
+  }
+
+  class ItemPedido {
+    produtoComprado
+    quantidade: Integer
+    precoAplicado: Decimal
+    personalizacoesEscolhidas
+    subtotalAplicado: Decimal
+  }
+
+  class Pagamento {
+    forma: FormaPagamento
+    resultado: ResultadoPagamento
+    dataTransacao: DateTime
+    valorAplicavel: Decimal
+  }
+
+  enum ModalidadeRecebimento {
+    ENTREGA
+    RETIRADA
+  }
+
+  enum StatusPedido {
+    PENDENTE_PAGAMENTO
+    PAGO
+    EM_PREPARO
+    SAIU_PARA_ENTREGA
+    ENTREGUE
+    PRONTO_PARA_RETIRADA
+    RETIRADO
+    EXPIRADO
+    CANCELADO
+  }
+
+  enum FormaPagamento {
+    PIX
+    CARTAO
+  }
+
+  enum ResultadoPagamento {
+    APROVADO
+    RECUSADO
+  }
+}
+
+package "Estoque" {
+  class Estoque {
+    quantidadeFisica: Integer
+    quantidadeReservada: Integer
+    /disponibilidade: Integer
+  }
+
+  class ReservaEstoque {
+    produto
+    pedido
+    quantidade: Integer
+    estado: EstadoReserva
+    momentoExpiracaoValidade: DateTime
+  }
+
+  class MovimentacaoEstoque {
+    produto
+    quantidade: Integer
+    motivoOrigem
+    data: DateTime
+    contextoPedido
+  }
+
+  enum EstadoReserva {
+    ATIVA
+    CONVERTIDA_EM_VENDA
+    EXPIRADA_LIBERADA
+    DEVOLVIDA_POR_CANCELAMENTO
+  }
+}
+
+package "Entrega" {
+  class Endereco {
+    rua: String
+    numero: String
+    bairro: String
+    cidade: String
+    CEP: String
+    complemento: String
+    referencia: String
+  }
+
+  class ConfiguracaoLojaEntrega {
+    localizacaoLoja
+    raioMaximoAtendimento
+    taxaBase: Decimal
+    valorPorQuilometro: Decimal
+  }
+}
+
+package "Historico e comunicacao" {
+  class HistoricoStatusPedido {
+    statusRegistrado: StatusPedido
+    dataHora: DateTime
+    responsavel
+  }
+
+  class Notificacao {
+    eventoStatusOriginador
+    destino
+    canal
+    resultado: ResultadoNotificacao
+    dataHora: DateTime
+  }
+
+  enum ResultadoNotificacao {
+    SUCESSO
+    FALHA
+  }
+}
+
+' Multiplicidades abaixo usam apenas relações fechadas no DOMAIN_MODEL.
+Usuario "1" -- "0..N" Pedido : realiza [CLIENTE]
+Usuario -- Carrinho : possui [CLIENTE]
+Usuario -- Endereco : informa [CLIENTE]
+
+Carrinho "1" -- "0..N" ItemCarrinho : contem
+ItemCarrinho "0..N" -- "1" Produto : seleciona
+ItemCarrinho -- Personalizacao : escolhe
+
+Produto -- Categoria : classificado por
+Produto -- Personalizacao : aceita
+Produto "1" -- "1" Estoque : possui
+Produto "1" -- "0..N" MovimentacaoEstoque : movimentado por
+
+Pedido "1" -- "1..N" ItemPedido : contem
+ItemPedido --> Produto : originado de
+Pedido "1" -- "0..N" Pagamento : possui tentativas
+Pedido "1" -- "0..N" HistoricoStatusPedido : registra
+Pedido "1" -- "0..N" Notificacao : origina
+Pedido --> "1" Endereco : utiliza quando ENTREGA
+Pedido "0..N" -- "0..1" Usuario : atribui [ENTREGADOR]
+Pedido -- ReservaEstoque : cria no contexto do pedido
+ReservaEstoque --> "1" Produto : reserva
+
+Endereco ..> ConfiguracaoLojaEntrega : usa para validar cobertura
+Pedido ..> ConfiguracaoLojaEntrega : usa parametros de frete
+
+note right of Usuario
+  Cliente, Administrador e Entregador são perfis,
+  não subclasses. Múltiplos perfis: pendente.
+end note
+
+note right of Estoque
+  /disponibilidade = quantidadeFisica - quantidadeReservada
+  quantidadeFisica não negativa; não permitir overselling.
+end note
+
+note bottom of Carrinho
+  RN-HU05-1: item não excede a disponibilidade atual.
+  Carrinho não cria reserva.
+end note
+
+note bottom of ReservaEstoque
+  Nasce na criação do Pedido e vale 15 minutos.
+  Retenção histórica após conversão, expiração ou
+  cancelamento permanece pendente.
+end note
+
+note right of ConfiguracaoLojaEntrega
+  ENTREGA exige endereço dentro da cobertura:
+  frete = taxaBase + (distancia em km × valorPorQuilometro).
+  RETIRADA não exige endereço e possui frete zero.
+  Valor mínimo de frete: pendente.
+end note
+
+note bottom of Pedido
+  Inicia em PENDENTE_PAGAMENTO. Transições são sequenciais.
+  ADMIN controla status conforme regras atuais; ENTREGADOR
+  responsável confirma ENTREGUE. Retirada: PRONTO_PARA_RETIRADA → RETIRADO.
+  Cancelamento em PENDENTE_PAGAMENTO: pendente.
+end note
+
+note bottom of Pagamento
+  Aprovado habilita PAGO; recusado permite nova tentativa
+  enquanto pendente. PIX e CARTAO são as formas atuais.
+end note
+
+note bottom of Notificacao
+  Falha não bloqueia transição válida. Enviar somente a pedido
+  ativo; definição de "ativo" permanece pendente.
+end note
+
+note as Pendencias
+  Pendências D04: persistência/reutilização de Endereco; cardinalidade
+  Categoria–Produto; cardinalidades e atributos contextuais de Produto–
+  Personalizacao e Item–Personalizacao; política de Carrinho; descontos;
+  dados históricos adicionais do Produto.
+end note
+
+@enduml
