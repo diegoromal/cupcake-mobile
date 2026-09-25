@@ -9,6 +9,10 @@ O Cupcake Mobile é desenvolvido incrementalmente por desafios identificados no 
 
 O projeto necessita manter rastreabilidade entre backlog, alterações, commits e integração, sem introduzir a complexidade de um Git Flow completo.
 
+Também há alterações de infraestrutura, automação e documentação que não
+implementam uma tarefa do backlog. Elas precisam de branches identificáveis,
+sem criar exceção ao isolamento obrigatório das tarefas `Dxx`.
+
 ## Decisão
 
 A branch `main` representa somente incrementos concluídos e validados.
@@ -24,6 +28,16 @@ Exemplos:
 - `task/D03-nestjs`
 - `task/D04-modelo-dominio`
 - `task/D05-diagrama-classes`
+
+Alterações que não pertençam a uma tarefa `Dxx` podem usar branches técnicas:
+
+- `infra/<descricao-curta>` — exclusivamente para infraestrutura, CI,
+  automação e configuração técnica;
+- `docs/<descricao-curta>` — exclusivamente para documentação.
+
+Branches técnicas não podem implementar uma tarefa `Dxx`, nem alterar seu
+status no backlog. Uma alteração com esse propósito deve ser desenvolvida na
+branch `task/Dxx-*` correspondente.
 
 O fluxo padrão é:
 
@@ -54,6 +68,19 @@ PLAN, análise e revisão somente leitura podem ser realizados sem alteração d
 ## Integração
 
 A integração de uma tarefa concluída deve ocorrer por Pull Request.
+
+Toda integração na `main` deve ocorrer por Pull Request, inclusive para
+branches técnicas. Quando houver CI aplicável à Pull Request, os checks
+obrigatórios devem estar aprovados antes da integração. A proteção remota da
+branch `main` deve exigir esses checks quando ela for configurada.
+
+O workflow de CI de Pull Requests usa o evento `pull_request` para PRs
+direcionadas à `main`, com permissões mínimas. Enquanto `apps/api` contiver
+somente o placeholder `.gitkeep`, o check conclui explicitamente que não há
+API para validar. Quando `apps/api/package.json` e
+`apps/api/package-lock.json` estiverem presentes, o check executa instalação,
+lint, testes unitários, testes e2e e build. Qualquer outro estado da estrutura
+da API falha explicitamente.
 
 Não será adotada neste momento uma branch permanente `develop`.
 
