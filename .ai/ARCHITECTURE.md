@@ -103,6 +103,30 @@ Contém contexto persistente, regras, padrões, quality gates, métricas e promp
 - Não adicionar Nx, Turborepo ou ferramenta equivalente apenas pela utilização de monorepo.
 - Mudanças arquiteturais relevantes devem ser registradas por ADR.
 
+## Princípios de design
+
+Busque coesão alta, baixo acoplamento, dependências explícitas e fronteiras
+claras entre responsabilidades. Aplique SOLID de forma contextual, somente
+quando produzir benefício concreto de clareza, manutenção, testabilidade ou
+evolução.
+
+- **SRP:** separe responsabilidades que mudam por motivos independentes.
+- **OCP:** introduza extensão quando houver variação real ou previsível; não
+  modele variações hipotéticas.
+- **LSP:** avalie contratos quando houver substituição ou polimorfismo e
+  preserve as expectativas de seus consumidores.
+- **ISP:** evite contratos que obriguem consumidores a depender de operações
+  que não usam.
+- **DIP:** desacople regras centrais de detalhes externos ou variáveis quando
+  isso trouxer benefício concreto de manutenção ou testabilidade.
+
+Não criar interfaces, repositories, factories, services, patterns, camadas ou
+abstrações apenas para demonstrar SOLID. Uma classe simples sem interface é
+adequada sem necessidade concreta de substituição. Uma implementação direta é
+preferível para uma única estratégia conhecida; a menor estrutura que preserve
+clareza, coesão, testabilidade e evolução provável prevalece sobre abstração
+especulativa.
+
 ## Decisões arquiteturais
 
 As decisões arquiteturais e suas justificativas devem ser registradas em `docs/adr/`.

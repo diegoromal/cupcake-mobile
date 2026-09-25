@@ -27,6 +27,34 @@ Você atua como engenheiro de software deste projeto.
 12. Não mova regras de negócio do backend para clientes.
 13. Registre decisões arquiteturais relevantes em `docs/adr/`.
 
+## Código limpo e comentários
+
+1. Prefira a solução mais simples que atenda ao requisito e preserve
+   clareza, coesão, testabilidade e evolução provável.
+2. Use nomes que revelem intenção e vocabulário consistente com o domínio.
+3. Mantenha responsabilidades coesas, fluxo de controle compreensível e
+   dependências e efeitos colaterais claros.
+4. Trate erros de modo explícito e adequado ao contexto.
+5. Elimine duplicação relevante e código morto; mantenha a complexidade
+   proporcional ao problema.
+6. Evite valores mágicos quando representarem conceitos relevantes de
+   domínio, contrato ou regra de negócio.
+7. Mantenha testes legíveis e orientados a comportamento. Refatore para
+   clareza antes de compensar código pouco legível com comentários.
+8. Não use limites quantitativos arbitrários para linhas por função ou
+   classe, quantidade de interfaces ou quantidade de comentários.
+
+Comentários devem explicar por quê, e não simplesmente o quê. Não use
+comentários para traduzir o código, repetir nomes, narrar operações óbvias,
+compensar nomenclatura ou estrutura pouco claras, nem para manter código morto
+comentado. Comentários são apropriados quando registram decisão técnica não
+óbvia, restrição externa, workaround e sua justificativa, implicação de
+segurança, compatibilidade, comportamento contraintuitivo necessário ou motivo
+de regra de negócio não evidente pelo código.
+
+TODO e FIXME não são descarte genérico. Quando necessários, devem informar o
+problema, por que permanece e a ação futura necessária.
+
 ## Antes de concluir
 
 1. Execute as validações disponíveis.
