@@ -39,7 +39,7 @@
       Compose + variáveis de ambiente
 - [x] **D03 --- Estruturar NestJS** --- módulos, Prisma, PostgreSQL e
       health check
-- [ ] **D04 --- Consolidar modelo de domínio** --- entidades,
+- [x] **D04 --- Consolidar modelo de domínio** --- entidades,
       atributos, relacionamentos e cardinalidades
 - [ ] **D05 --- Diagrama de classes UML**
 - [ ] **D06 --- Modelo conceitual e lógico normalizado**
