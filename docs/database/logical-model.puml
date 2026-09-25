@@ -1,0 +1,302 @@
+@startuml
+title Cupcake Mobile — Modelo Lógico Normalizado
+
+' Rastreabilidade: D04 docs/domain/DOMAIN_MODEL.md; D05 docs/uml/class-diagram.puml.
+' D06: identificadores e referências abaixo são lógicos, não definições físicas.
+left to right direction
+hide empty members
+skinparam packageStyle rectangle
+
+package "Identidade e catálogo" {
+  entity Usuario {
+    id [identificador lógico]
+    nome
+    email [chave lógica única]
+    telefone
+    credencialSenha
+    perfil: PerfilUsuario
+    bloqueioTemporario
+  }
+
+  entity Categoria {
+    id [identificador lógico]
+    nome
+    descrição
+  }
+
+  entity Produto {
+    id [identificador lógico]
+    categoriaId [referência lógica]
+    nome
+    descrição
+    preçoAtual
+    imagem
+    ativo
+  }
+
+  entity Personalizacao {
+    id [identificador lógico]
+    nome
+    descrição
+    disponibilidade
+    ajusteValor
+  }
+
+  entity ProdutoPersonalizacao {
+    produtoId [identificador lógico composto; referência lógica]
+    personalizacaoId [identificador lógico composto; referência lógica]
+  }
+}
+
+package "Carrinho e endereço atual" {
+  entity Carrinho {
+    id [identificador lógico]
+    usuarioId [referência lógica; CLIENTE]
+    totalCalculado [derivado]
+  }
+
+  entity ItemCarrinho {
+    id [identificador lógico]
+    carrinhoId [referência lógica]
+    produtoId [referência lógica]
+    quantidade
+    preçoCalculado [derivado]
+    subtotalCalculado [derivado]
+  }
+
+  entity ItemCarrinhoPersonalizacao {
+    itemCarrinhoId [identificador lógico composto; referência lógica]
+    personalizacaoId [identificador lógico composto; referência lógica]
+  }
+
+  entity Endereco {
+    id [identificador lógico]
+    usuarioId [referência lógica; CLIENTE]
+    rua
+    número
+    bairro
+    cidade
+    CEP
+    complemento [quando informado]
+    referência [quando informada]
+  }
+
+  entity ConfiguracaoLojaEntrega {
+    id [identificador lógico]
+    localizaçãoLoja
+    raioMaximoAtendimento
+    taxaBase
+    valorPorQuilometro
+  }
+}
+
+package "Pedido e histórico" {
+  entity Pedido {
+    id [identificador lógico]
+    identificadorNegocio [chave lógica única]
+    clienteUsuarioId [referência lógica]
+    entregadorUsuarioId [referência lógica; opcional para ENTREGA]
+    data
+    modalidade: ModalidadeRecebimento
+    statusAtual: StatusPedido
+    valorItens [histórico aplicado]
+    freteAplicado [histórico aplicado]
+    total [histórico aplicado]
+    confirmaçãoPagamento [quando aplicável]
+  }
+
+  entity EnderecoEntregaSnapshot {
+    id [identificador lógico]
+    pedidoId [referência lógica; somente ENTREGA]
+    rua
+    número
+    bairro
+    cidade
+    CEP
+    complemento [quando existente]
+    referência [quando existente]
+  }
+
+  entity ItemPedido {
+    id [identificador lógico]
+    pedidoId [referência lógica]
+    produtoId [referência lógica de origem]
+    quantidade
+    preçoAplicado [histórico]
+    subtotalAplicado [histórico]
+  }
+
+  entity ItemPedidoPersonalizacaoSnapshot {
+    id [identificador lógico]
+    itemPedidoId [referência lógica]
+    identificaçãoPersonalizacaoAplicada [histórico]
+    nomeAplicado [histórico]
+    ajusteValorAplicado [histórico; quando existente]
+  }
+
+  entity Pagamento {
+    id [identificador lógico]
+    pedidoId [referência lógica]
+    forma: FormaPagamento
+    resultado: ResultadoPagamento
+    dataTransacao
+    valorAplicavel
+  }
+
+  entity HistoricoStatusPedido {
+    id [identificador lógico]
+    pedidoId [referência lógica]
+    statusRegistrado: StatusPedido
+    dataHora
+    responsável [quando aplicável]
+  }
+
+  entity Notificacao {
+    id [identificador lógico]
+    pedidoId [referência lógica]
+    eventoStatusOriginador
+    destino
+    canal
+    resultado: ResultadoNotificacao
+    dataHora
+  }
+}
+
+package "Estoque e rastreabilidade" {
+  entity Estoque {
+    produtoId [identificador e referência lógica]
+    quantidadeFisica
+    quantidadeReservada
+    /disponibilidade [derivada]
+  }
+
+  entity ReservaEstoque {
+    id [identificador lógico]
+    pedidoId [referência lógica]
+    produtoId [referência lógica]
+    quantidade
+    estado: EstadoReserva
+    momentoExpiracaoValidade
+  }
+
+  entity MovimentacaoEstoque {
+    id [identificador lógico]
+    produtoId [referência lógica]
+    pedidoId [referência lógica; quando houver]
+    quantidade
+    motivoOrigem
+    data
+  }
+}
+
+enum PerfilUsuario {
+  CLIENTE
+  ADMIN
+  ENTREGADOR
+}
+
+enum ModalidadeRecebimento {
+  ENTREGA
+  RETIRADA
+}
+
+enum StatusPedido {
+  PENDENTE_PAGAMENTO
+  PAGO
+  EM_PREPARO
+  SAIU_PARA_ENTREGA
+  ENTREGUE
+  PRONTO_PARA_RETIRADA
+  RETIRADO
+  EXPIRADO
+  CANCELADO
+}
+
+enum FormaPagamento {
+  PIX
+  CARTAO
+}
+
+enum ResultadoPagamento {
+  APROVADO
+  RECUSADO
+}
+
+enum EstadoReserva {
+  ATIVA
+  CONVERTIDA_EM_VENDA
+  EXPIRADA_LIBERADA
+  DEVOLVIDA_POR_CANCELAMENTO
+}
+
+enum ResultadoNotificacao {
+  SUCESSO
+  FALHA
+}
+
+Usuario "1" -- "0..N" Endereco
+Usuario "1" -- "0..1" Carrinho : ativo [CLIENTE]
+Usuario "1" -- "0..N" Pedido : cliente
+Usuario "0..1" -- "0..N" Pedido : entregador
+
+Categoria "1" -- "0..N" Produto
+Produto "1" -- "0..N" ProdutoPersonalizacao
+Personalizacao "1" -- "0..N" ProdutoPersonalizacao
+
+Carrinho "1" -- "0..N" ItemCarrinho
+Produto "1" -- "0..N" ItemCarrinho
+ItemCarrinho "1" -- "0..N" ItemCarrinhoPersonalizacao
+Personalizacao "1" -- "0..N" ItemCarrinhoPersonalizacao
+
+Produto "1" -- "1" Estoque
+Produto "1" -- "0..N" MovimentacaoEstoque
+Pedido "0..1" -- "0..N" MovimentacaoEstoque : contexto quando houver
+
+Pedido "1" -- "1..N" ItemPedido
+Produto "1" -- "0..N" ItemPedido : origem
+Pedido "1" -- "0..N" Pagamento
+Pedido "1" -- "0..N" HistoricoStatusPedido
+Pedido "1" -- "0..N" Notificacao
+Pedido "1" -- "0..N" ReservaEstoque
+Produto "1" -- "0..N" ReservaEstoque
+Pedido "1" -- "0..1" EnderecoEntregaSnapshot : somente ENTREGA
+ItemPedido "1" -- "0..N" ItemPedidoPersonalizacaoSnapshot
+
+note bottom of EnderecoEntregaSnapshot
+  Snapshot histórico do endereço usado na compra.
+  Não depende do Endereco reutilizável do Cliente.
+end note
+
+note bottom of ItemPedidoPersonalizacaoSnapshot
+  Snapshot histórico da personalização aplicada;
+  não depende do catálogo atual.
+end note
+
+note bottom of Pedido
+  Valores aplicados são snapshots transacionais intencionais.
+  Não há descontos no MVP.
+end note
+
+note bottom of Estoque
+  disponibilidade = quantidadeFisica - quantidadeReservada.
+  É derivada e não é valor persistido.
+end note
+
+note bottom of ReservaEstoque
+  Registro histórico. Somente ATIVA participa da quantidade
+  reservada atual; validade de ATIVA: 15 minutos.
+end note
+
+note as Normalizacao
+  1FN: sem listas ou grupos repetitivos; associações separam escolhas.
+  2FN: atributos de associação dependem da associação inteira.
+  3FN: dados atuais permanecem em suas relações de origem; snapshots
+  históricos preservam a compra e não são duplicação indevida.
+end note
+
+note as Pendencias
+  Pendências: valor mínimo de frete; cancelamento em PENDENTE_PAGAMENTO;
+  dados históricos adicionais de Produto; definição de pedido ativo.
+end note
+
+@enduml

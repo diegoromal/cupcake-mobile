@@ -1,0 +1,259 @@
+@startuml
+title Cupcake Mobile — Modelo Conceitual de Dados
+
+' Rastreabilidade: D04 docs/domain/DOMAIN_MODEL.md; D05 docs/uml/class-diagram.puml.
+' D06 incorpora as decisões autoritativas aprovadas para o MVP.
+left to right direction
+hide empty members
+skinparam packageStyle rectangle
+
+package "Entidades de domínio" {
+  entity "Usuario\n<<Entidade de domínio>>" as Usuario {
+    identidade
+    nome
+    email
+    telefone
+    credencialSenha
+    perfil: PerfilUsuario
+    bloqueioTemporario
+  }
+
+  entity "Categoria\n<<Entidade de domínio>>" as Categoria {
+    identificação
+    nome
+    descrição
+  }
+
+  entity "Produto\n<<Entidade de domínio>>" as Produto {
+    identificação
+    nome
+    descrição
+    preçoAtual
+    imagem
+    ativo
+  }
+
+  entity "Personalizacao\n<<Entidade de domínio>>" as Personalizacao {
+    identificação
+    nome
+    descrição
+    disponibilidade
+    ajusteValor
+  }
+
+  entity "Carrinho\n<<Entidade de domínio>>" as Carrinho {
+    identificação
+    totalCalculado
+  }
+
+  entity "ItemCarrinho\n<<Entidade de domínio>>" as ItemCarrinho {
+    quantidade
+    preçoCalculado
+    subtotalCalculado
+  }
+
+  entity "Endereco\n<<Entidade de domínio>>" as Endereco {
+    rua
+    número
+    bairro
+    cidade
+    CEP
+    complemento
+    referência
+  }
+
+  entity "ConfiguracaoLojaEntrega\n<<Entidade de domínio>>" as ConfiguracaoLojaEntrega {
+    localizaçãoLoja
+    raioMaximoAtendimento
+    taxaBase
+    valorPorQuilometro
+  }
+
+  entity "Pedido\n<<Entidade de domínio>>" as Pedido {
+    identificadorNegocio
+    data
+    modalidade: ModalidadeRecebimento
+    statusAtual: StatusPedido
+    valorItens
+    freteAplicado
+    total
+    confirmaçãoPagamento
+  }
+
+  entity "ItemPedido\n<<Entidade de domínio>>" as ItemPedido {
+    quantidade
+    preçoAplicado
+    subtotalAplicado
+  }
+
+  entity "Pagamento\n<<Entidade de domínio>>" as Pagamento {
+    forma: FormaPagamento
+    resultado: ResultadoPagamento
+    dataTransacao
+    valorAplicavel
+  }
+
+  entity "Estoque\n<<Entidade de domínio>>" as Estoque {
+    quantidadeFisica
+    quantidadeReservada
+    /disponibilidade
+  }
+
+  entity "ReservaEstoque\n<<Entidade de domínio>>" as ReservaEstoque {
+    quantidade
+    estado: EstadoReserva
+    momentoExpiracaoValidade
+  }
+
+  entity "MovimentacaoEstoque\n<<Entidade de domínio>>" as MovimentacaoEstoque {
+    quantidade
+    motivoOrigem
+    data
+  }
+
+  entity "HistoricoStatusPedido\n<<Entidade de domínio>>" as HistoricoStatusPedido {
+    statusRegistrado: StatusPedido
+    dataHora
+    responsável quando aplicável
+  }
+
+  entity "Notificacao\n<<Entidade de domínio>>" as Notificacao {
+    eventoStatusOriginador
+    destino
+    canal
+    resultado: ResultadoNotificacao
+    dataHora
+  }
+}
+
+package "Estruturas associativas e snapshots D06" {
+  entity "ProdutoPersonalizacao\n<<Estrutura associativa>>" as ProdutoPersonalizacao
+  entity "ItemCarrinhoPersonalizacao\n<<Estrutura associativa>>" as ItemCarrinhoPersonalizacao
+
+  entity "EnderecoEntregaSnapshot\n<<Snapshot histórico>>" as EnderecoEntregaSnapshot {
+    rua
+    número
+    bairro
+    cidade
+    CEP
+    complemento
+    referência
+  }
+
+  entity "ItemPedidoPersonalizacaoSnapshot\n<<Snapshot histórico>>" as ItemPedidoPersonalizacaoSnapshot {
+    identificaçãoDaPersonalizacaoAplicada
+    nomeAplicado
+    ajusteValorAplicado quando existente
+  }
+}
+
+enum PerfilUsuario {
+  CLIENTE
+  ADMIN
+  ENTREGADOR
+}
+
+enum ModalidadeRecebimento {
+  ENTREGA
+  RETIRADA
+}
+
+enum StatusPedido {
+  PENDENTE_PAGAMENTO
+  PAGO
+  EM_PREPARO
+  SAIU_PARA_ENTREGA
+  ENTREGUE
+  PRONTO_PARA_RETIRADA
+  RETIRADO
+  EXPIRADO
+  CANCELADO
+}
+
+enum FormaPagamento {
+  PIX
+  CARTAO
+}
+
+enum ResultadoPagamento {
+  APROVADO
+  RECUSADO
+}
+
+enum EstadoReserva {
+  ATIVA
+  CONVERTIDA_EM_VENDA
+  EXPIRADA_LIBERADA
+  DEVOLVIDA_POR_CANCELAMENTO
+}
+
+enum ResultadoNotificacao {
+  SUCESSO
+  FALHA
+}
+
+Usuario "1" -- "0..N" Endereco : mantém [CLIENTE]
+Usuario "1" -- "0..1" Carrinho : possui ativo [CLIENTE]
+Usuario "1" -- "0..N" Pedido : realiza [CLIENTE]
+Usuario "0..1" -- "0..N" Pedido : é atribuído [ENTREGADOR]
+
+Categoria "1" -- "0..N" Produto : classifica
+Produto "1" -- "0..N" ProdutoPersonalizacao
+Personalizacao "1" -- "0..N" ProdutoPersonalizacao
+
+Carrinho "1" -- "0..N" ItemCarrinho : contém
+Produto "1" -- "0..N" ItemCarrinho : é selecionado em
+ItemCarrinho "1" -- "0..N" ItemCarrinhoPersonalizacao
+Personalizacao "1" -- "0..N" ItemCarrinhoPersonalizacao
+
+Produto "1" -- "1" Estoque : possui
+Produto "1" -- "0..N" MovimentacaoEstoque : é movimentado por
+
+Pedido "1" -- "1..N" ItemPedido : contém
+Produto "1" -- "0..N" ItemPedido : origina
+Pedido "1" -- "0..N" Pagamento : possui tentativas
+Pedido "1" -- "0..N" HistoricoStatusPedido : registra
+Pedido "1" -- "0..N" Notificacao : origina
+Pedido "1" -- "0..N" ReservaEstoque : cria
+Produto "1" -- "0..N" ReservaEstoque : é reservado em
+ItemPedido "1" -- "0..N" ItemPedidoPersonalizacaoSnapshot : preserva escolhas
+
+Pedido "1" -- "0..1" EnderecoEntregaSnapshot : usa [somente ENTREGA]
+Endereco ..> ConfiguracaoLojaEntrega : cobertura
+Pedido ..> ConfiguracaoLojaEntrega : parâmetros de frete
+MovimentacaoEstoque ..> Pedido : contexto quando houver
+
+note right of Usuario
+  Cada Usuario possui exatamente um PerfilUsuario.
+  Perfis não são subclasses nem associação própria.
+end note
+
+note bottom of EnderecoEntregaSnapshot
+  Snapshot independente do Endereco reutilizável.
+  RETIRADA não possui endereço de entrega.
+end note
+
+note bottom of ItemPedidoPersonalizacaoSnapshot
+  Preserva a personalização efetivamente comprada;
+  não depende do catálogo atual.
+end note
+
+note bottom of Estoque
+  disponibilidade = quantidadeFisica - quantidadeReservada.
+  É derivada; quantidadeFisica não pode ser negativa;
+  operações não podem permitir overselling.
+end note
+
+note bottom of ReservaEstoque
+  Nasce com Pedido, permanece histórica e vale 15 minutos
+  quando ATIVA. Somente ATIVA participa da reserva atual.
+end note
+
+note as Pendencias
+  Pendências preservadas: valor mínimo de frete; cancelamento em
+  PENDENTE_PAGAMENTO; dados históricos adicionais de Produto;
+  definição operacional de pedido ativo.
+  Descontos estão fora do MVP.
+end note
+
+@enduml
