@@ -10,7 +10,7 @@
 - [x] Auditoria funcional do PIT I
 - [x] Consolidação das decisões das histórias de usuário
 - [x] Definição da arquitetura-base
-- [ ] Fase 0 --- Fundação e documentação
+- [x] Fase 0 --- Fundação e documentação
 - [ ] Fase 1 --- Usuários e segurança
 - [ ] Fase 2 --- Catálogo
 - [ ] Fase 3 --- Aplicativo Flutter
