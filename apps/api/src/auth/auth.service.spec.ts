@@ -11,9 +11,13 @@ describe('AuthService', () => {
   const senha = ' senha123 ';
   const findAuthenticationUserByEmail = jest.fn();
   const findById = jest.fn();
+  const registerInvalidLogin = jest.fn();
+  const clearLoginState = jest.fn();
   const users = {
     findAuthenticationUserByEmail,
     findById,
+    registerInvalidLogin,
+    clearLoginState,
   } as unknown as UsersService;
   const jwt = new JwtService();
   let config: AuthConfig;
@@ -31,10 +35,14 @@ describe('AuthService', () => {
   beforeEach(() => {
     findAuthenticationUserByEmail.mockReset();
     findById.mockReset();
+    registerInvalidLogin.mockReset();
+    clearLoginState.mockReset().mockResolvedValue(true);
     findAuthenticationUserByEmail.mockResolvedValue({
       id,
       perfil: PerfilUsuario.CLIENTE,
       credencialSenha: hash,
+      tentativasLoginInvalidas: 0,
+      bloqueadoAte: null,
     });
     findById.mockResolvedValue({ id, perfil: PerfilUsuario.CLIENTE });
   });
@@ -93,6 +101,32 @@ describe('AuthService', () => {
     await expect(
       service.login({ ...loginInput, senha: 'senha-incorreta' }),
     ).rejects.toThrow('Credenciais inválidas.');
+    expect(registerInvalidLogin).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejeita conta bloqueada antes do Argon2 e sem alterar prazo ou contador', async () => {
+    const bloqueadoAte = new Date(Date.now() + 60_000);
+    findAuthenticationUserByEmail.mockResolvedValue({
+      id, perfil: PerfilUsuario.CLIENTE, credencialSenha: 'hash-inválido',
+      tentativasLoginInvalidas: 5, bloqueadoAte,
+    });
+    await expect(service.login(loginInput)).rejects.toThrow('Credenciais inválidas.');
+    expect(registerInvalidLogin).not.toHaveBeenCalled();
+    expect(clearLoginState).not.toHaveBeenCalled();
+  });
+
+  it('limpa estado antes de emitir tokens e rejeita bloqueio concorrente', async () => {
+    clearLoginState.mockResolvedValueOnce(false);
+    await expect(service.login(loginInput)).rejects.toThrow('Credenciais inválidas.');
+    expect(clearLoginState).toHaveBeenCalledTimes(1);
+  });
+
+  it('propaga falhas de persistência no incremento e no reset', async () => {
+    const error = new Error('falha de banco');
+    registerInvalidLogin.mockRejectedValueOnce(error);
+    await expect(service.login({ ...loginInput, senha: 'errada' })).rejects.toBe(error);
+    clearLoginState.mockRejectedValueOnce(error);
+    await expect(service.login(loginInput)).rejects.toBe(error);
   });
 
   it('refresh válido emite somente novo access', async () => {

@@ -26,8 +26,17 @@ export class AuthService {
     if (
       !user ||
       user.perfil !== PerfilUsuario.CLIENTE ||
-      !(await argon2.verify(user.credencialSenha, input.senha))
+      (user.bloqueadoAte !== null && user.bloqueadoAte > new Date())
     ) {
+      throw new UnauthorizedException('Credenciais inválidas.');
+    }
+
+    if (!(await argon2.verify(user.credencialSenha, input.senha))) {
+      await this.users.registerInvalidLogin(user);
+      throw new UnauthorizedException('Credenciais inválidas.');
+    }
+
+    if (!(await this.users.clearLoginState(user))) {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 

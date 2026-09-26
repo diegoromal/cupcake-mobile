@@ -15,7 +15,8 @@ package "Entidades de domínio" {
     telefone
     credencialSenha
     perfil: PerfilUsuario
-    bloqueioTemporario
+    tentativas inválidas consecutivas
+    prazo do bloqueio temporário
   }
 
   entity "Categoria\n<<Entidade de domínio>>" as Categoria {

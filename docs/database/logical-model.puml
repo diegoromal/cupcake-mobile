@@ -15,7 +15,8 @@ package "Identidade e catálogo" {
     telefone
     credencialSenha
     perfil: PerfilUsuario
-    bloqueioTemporario
+    tentativasLoginInvalidas
+    bloqueadoAte [opcional]
   }
 
   entity Categoria {

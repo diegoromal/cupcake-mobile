@@ -8,13 +8,15 @@ import { UsersService } from './users.service';
 describe('UsersService', () => {
   const findUnique = jest.fn();
   const create = jest.fn();
-  const prisma = { usuario: { findUnique, create } } as unknown as PrismaService;
+  const updateMany = jest.fn();
+  const prisma = { usuario: { findUnique, create, updateMany } } as unknown as PrismaService;
   const service = new UsersService(prisma);
   const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
 
   beforeEach(() => {
     findUnique.mockReset();
     create.mockReset();
+    updateMany.mockReset();
   });
 
   it('consulta a credencial por email somente para autenticação', async () => {
@@ -22,6 +24,8 @@ describe('UsersService', () => {
       id,
       perfil: PerfilUsuario.CLIENTE,
       credencialSenha: 'hash',
+      tentativasLoginInvalidas: 0,
+      bloqueadoAte: null,
     };
     findUnique.mockResolvedValue(authenticationUser);
 
@@ -30,7 +34,13 @@ describe('UsersService', () => {
     ).resolves.toEqual(authenticationUser);
     expect(findUnique).toHaveBeenCalledWith({
       where: { email: 'ana@example.com' },
-      select: { id: true, perfil: true, credencialSenha: true },
+      select: {
+        id: true,
+        perfil: true,
+        credencialSenha: true,
+        tentativasLoginInvalidas: true,
+        bloqueadoAte: true,
+      },
     });
   });
 

@@ -1,6 +1,6 @@
 # Dicionário de dados — Cupcake Mobile
 
-Este dicionário descreve o projeto físico implementado na D07 em `apps/api/prisma/schema.prisma` e `apps/api/prisma/migrations/20260926124031_initial/migration.sql`. O modelo lógico D06, o diagrama D05 e o modelo de domínio D04 fornecem o significado dos dados. Em caso de diferença, os objetos físicos abaixo seguem o schema e a migration.
+Este dicionário descreve o projeto físico em `apps/api/prisma/schema.prisma` e nas migrations de `apps/api/prisma/migrations/`, incluindo a evolução D13 do bloqueio de login. O modelo lógico, o diagrama de classes e o modelo de domínio fornecem o significado dos dados. Em caso de diferença, os objetos físicos abaixo seguem o schema e as migrations.
 
 ## Convenções
 
@@ -37,7 +37,8 @@ Pessoa identificada no sistema, com um único perfil persistido.
 | `telefone` | `String` | `TEXT` | Sim | — | — | — / — | Telefone de contato. |
 | `credencialSenha` | `String` | `TEXT` | Sim | — | — | — / — | Credencial de senha persistida; seu tratamento seguro cabe à aplicação. |
 | `perfil` | `PerfilUsuario` | `"PerfilUsuario"` | Sim | — | — | — / — | Perfil único atribuído ao usuário. |
-| `bloqueioTemporario` | `Boolean` | `BOOLEAN` | Sim | — | — | `false` / `false` | Indica bloqueio temporário da conta. |
+| `tentativasLoginInvalidas` | `Int` | `INTEGER` | Sim | — | — | `0` / `0` | Falhas consecutivas de login de cliente; reinicia após sucesso ou na primeira tentativa após expiração do bloqueio. |
+| `bloqueadoAte` | `DateTime? @db.Timestamptz(3)` | `TIMESTAMPTZ(3)` | Não | — | — | — / — | Prazo do bloqueio após a quinta falha; a conta está bloqueada enquanto o prazo for posterior ao instante atual. |
 
 **Índices declarados na migration:**
 

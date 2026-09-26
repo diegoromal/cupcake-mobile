@@ -11,15 +11,17 @@ describe('Autenticação de cliente', () => {
   let app: INestApplication;
   const jwt = new JwtService();
   const findUnique = jest.fn();
+  const updateMany = jest.fn();
   const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
   const senha = ' senha123 ';
   let hash: string;
+  let loginState: { tentativasLoginInvalidas: number; bloqueadoAte: Date | null };
 
   beforeAll(async () => {
     hash = await argon2.hash(senha, { type: argon2.argon2id });
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
-      .useValue({ usuario: { findUnique } })
+      .useValue({ usuario: { findUnique, updateMany } })
       .compile();
     app = moduleRef.createNestApplication();
     await app.init();
@@ -28,9 +30,24 @@ describe('Autenticação de cliente', () => {
 
   beforeEach(() => {
     findUnique.mockReset();
+    updateMany.mockReset();
+    loginState = { tentativasLoginInvalidas: 0, bloqueadoAte: null };
     findUnique.mockImplementation(async ({ where }) => {
       if (where.email && where.email !== 'ana@example.com') return null;
-      return { id, perfil: PerfilUsuario.CLIENTE, credencialSenha: hash };
+      return { id, perfil: PerfilUsuario.CLIENTE, credencialSenha: hash, ...loginState };
+    });
+    updateMany.mockImplementation(async ({ where, data }) => {
+      if (
+        where.tentativasLoginInvalidas !== loginState.tentativasLoginInvalidas ||
+        (where.bloqueadoAte?.getTime() ?? null) !== (loginState.bloqueadoAte?.getTime() ?? null)
+      ) return { count: 0 };
+      loginState = {
+        tentativasLoginInvalidas: typeof data.tentativasLoginInvalidas === 'number'
+          ? data.tentativasLoginInvalidas
+          : loginState.tentativasLoginInvalidas + data.tentativasLoginInvalidas.increment,
+        bloqueadoAte: data.bloqueadoAte,
+      };
+      return { count: 1 };
     });
   });
 
@@ -57,7 +74,10 @@ describe('Autenticação de cliente', () => {
     expect(Object.keys(response.body).sort()).toEqual(['accessToken', 'refreshToken']);
     expect(findUnique).toHaveBeenCalledWith({
       where: { email: 'ana@example.com' },
-      select: { id: true, perfil: true, credencialSenha: true },
+      select: {
+        id: true, perfil: true, credencialSenha: true,
+        tentativasLoginInvalidas: true, bloqueadoAte: true,
+      },
     });
 
     for (const [type, token, secret, ttl] of [
@@ -100,6 +120,35 @@ describe('Autenticação de cliente', () => {
     expect(missing.body.message).toBe('Credenciais inválidas.');
     expect(wrong.body.message).toBe(missing.body.message);
     expect(JSON.stringify(wrong.body)).not.toContain(hash);
+  });
+
+  it('bloqueia na quinta falha, não estende o prazo e libera após expiração', async () => {
+    for (let count = 1; count <= 5; count++) {
+      const response = await request(app.getHttpServer())
+        .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
+      expect(response.body.message).toBe('Credenciais inválidas.');
+      expect(loginState.tentativasLoginInvalidas).toBe(count);
+    }
+    const deadline = loginState.bloqueadoAte;
+    expect(deadline!.getTime()).toBeGreaterThan(Date.now());
+    const blocked = await request(app.getHttpServer())
+      .post('/auth/login').send(loginBody).expect(401);
+    expect(blocked.body.message).toBe('Credenciais inválidas.');
+    expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
+    expect(updateMany).toHaveBeenCalledTimes(5);
+
+    loginState.bloqueadoAte = new Date(Date.now() - 1);
+    await request(app.getHttpServer())
+      .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
+    expect(loginState).toEqual({ tentativasLoginInvalidas: 1, bloqueadoAte: null });
+    await login();
+    expect(loginState).toEqual({ tentativasLoginInvalidas: 0, bloqueadoAte: null });
+  });
+
+  it('não converte falha de persistência em 401 nem emite token', async () => {
+    updateMany.mockRejectedValueOnce(new Error('falha de banco'));
+    await request(app.getHttpServer())
+      .post('/auth/login').send(loginBody).expect(500);
   });
 
   it.each([PerfilUsuario.ADMIN, PerfilUsuario.ENTREGADOR])(
