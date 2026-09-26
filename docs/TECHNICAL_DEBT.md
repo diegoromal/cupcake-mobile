@@ -37,7 +37,7 @@ reutilizado. Itens resolvidos permanecem como histórico.
 
 ## **TD-002 — Adicionar teste versionado para rejeição de algoritmo JWT não permitido**
 
-- **Status:** Aberta
+- **Status:** Resolvida
 - **Identificada em:** REVIEW da D11 em 2026-09-26
 - **Origem:** finding LOW do REVIEW da D11 — Login + JWT + refresh token
 - **Área:** Testes / Segurança / `apps/api/src/auth/auth.service.spec.ts`
@@ -45,14 +45,21 @@ reutilizado. Itens resolvidos permanecem como histórico.
 - **Impacto e contexto:** a implementação atual restringe corretamente a validação
   dos refresh tokens ao algoritmo HS256. Durante o TEST formal da D11, um token
   assinado com HS384 foi rejeitado corretamente com HTTP 401 em teste adversarial
-  controlado. Entretanto, esse cenário não está registrado na suíte automatizada
-  versionada, o que reduz a capacidade da CI de detectar uma regressão futura na
+  controlado. Entretanto, esse cenário não estava registrado na suíte automatizada
+  versionada, o que reduzia a capacidade da CI de detectar uma regressão futura na
   restrição explícita do algoritmo JWT.
-- **Motivo da postergação:** o comportamento funcional atual foi validado e está
+- **Motivo da postergação:** o comportamento funcional já havia sido validado e estava
   correto, e o REVIEW e o Quality Gate da D11 classificaram a ausência do teste
-  permanente como LOW não bloqueante. A inclusão do teste não é necessária para
-  atender aos critérios funcionais da D11.
+  permanente como LOW não bloqueante.
 - **Critério de resolução:** adicionar teste automatizado versionado que gere um
   refresh token assinado com algoritmo diferente de HS256, como HS384, e confirme
   que `AuthService` rejeita o token com `UnauthorizedException`/HTTP 401, mantendo
   a suíte unitária, e2e, lint e build aprovados.
+- **Resolução:** a D14 adicionou teste automatizado permanente em
+  `apps/api/src/auth/auth.service.spec.ts` com refresh token real, assinado em HS384,
+  utilizando o secret correto, claims válidas e token não expirado. O teste confirma
+  que `AuthService.refresh` rejeita o token com `UnauthorizedException` pela
+  restrição explícita ao algoritmo HS256. A validação da D14 foi aprovada em TEST,
+  REVIEW e Quality Gate, com 87 testes unitários, 44 testes e2e, lint, build e teste
+  PostgreSQL real aprovados.
+- **Referência de implementação:** `c7c73ad9adb11b0e27f98b06cf2fe70cd54522b9`
