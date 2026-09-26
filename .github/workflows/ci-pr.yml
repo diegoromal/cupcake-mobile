@@ -70,6 +70,11 @@ jobs:
         working-directory: apps/api
         run: npm ci
 
+      - name: Gera Prisma Client
+        if: steps.api-state.outputs.api_ready == 'true'
+        working-directory: apps/api
+        run: npm run prisma:generate
+
       - name: Executa lint
         if: steps.api-state.outputs.api_ready == 'true'
         working-directory: apps/api
