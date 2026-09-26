@@ -45,7 +45,7 @@
 - [x] **D06 --- Modelo conceitual e lógico normalizado**
 - [x] **D07 --- Projeto físico do banco** --- Prisma Schema +
       migrations
-- [ ] **D08 --- Dicionário de dados** --- tabelas, campos, tipos, PK/FK
+- [x] **D08 --- Dicionário de dados** --- tabelas, campos, tipos, PK/FK
       e descrições
 
 **Marco 1:** arquitetura e banco definidos.
