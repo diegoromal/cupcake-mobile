@@ -154,6 +154,16 @@ describe('AuthService', () => {
     );
   });
 
+  it('rejeita refresh HS384 mesmo com secret e claims válidas', async () => {
+    const token = await jwt.signAsync(
+      { sub: id, perfil: PerfilUsuario.CLIENTE, type: 'refresh' },
+      { secret: config.refreshSecret, algorithm: 'HS384', expiresIn: '7d' },
+    );
+
+    await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
+    expect(findById).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['expirado', { sub: id, perfil: 'CLIENTE', type: 'refresh' }, '-1s'],
     ['tipo incorreto', { sub: id, perfil: 'CLIENTE', type: 'access' }, '7d'],

@@ -58,7 +58,7 @@
 - [x] **D11 --- Login + JWT + refresh token**
 - [x] **D12 --- RBAC e proteção de rotas**
 - [x] **D13 --- Bloqueio após 5 erros durante 15 minutos**
-- [ ] **D14 --- Testes de autenticação e autorização**
+- [x] **D14 --- Testes de autenticação e autorização**
 - [ ] **D15 --- Cadastro administrativo de entregadores**
 - [ ] **D16 --- Login e autorização do entregador**
 
