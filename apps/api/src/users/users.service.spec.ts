@@ -128,6 +128,82 @@ describe('UsersService', () => {
     ).resolves.toBe(false);
   });
 
+  it('cria ENTREGADOR com dados normalizados e hash Argon2id, sem expor a credencial', async () => {
+    const senha = ' senha123 ';
+    const usuario = {
+      id,
+      nome: 'Bia Silva',
+      email: 'bia@example.com',
+      telefone: '11988888888',
+      perfil: PerfilUsuario.ENTREGADOR,
+    };
+    create.mockResolvedValue(usuario);
+
+    const resultado = await service.createEntregador({
+      nome: '  Bia Silva  ',
+      email: '  BIA@EXAMPLE.COM  ',
+      telefone: '  11988888888  ',
+      senha,
+    });
+
+    expect(resultado).toEqual(usuario);
+    expect(resultado).not.toHaveProperty('credencialSenha');
+    expect(create).toHaveBeenCalledTimes(1);
+    const chamada = create.mock.calls[0][0];
+    expect(chamada).toEqual({
+      data: {
+        nome: 'Bia Silva',
+        email: 'bia@example.com',
+        telefone: '11988888888',
+        credencialSenha: expect.any(String),
+        perfil: PerfilUsuario.ENTREGADOR,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        perfil: true,
+      },
+    });
+    expect(chamada.data).not.toHaveProperty('senha');
+    expect(chamada.data.credencialSenha).not.toBe(senha);
+    expect(chamada.data.credencialSenha).toMatch(/^\$argon2id\$/);
+    expect(chamada.data.credencialSenha.split('$')[3].split(',')).toEqual(
+      expect.arrayContaining(['m=19456', 't=2', 'p=1']),
+    );
+    await expect(argon2.verify(chamada.data.credencialSenha, senha)).resolves.toBe(true);
+  });
+
+  it('converte conflito de email do ENTREGADOR no mesmo 409 do CLIENTE', async () => {
+    create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('unique', {
+        code: 'P2002',
+        clientVersion: '7.10.0',
+        meta: { target: ['email'] },
+      }),
+    );
+
+    await expect(service.createEntregador({
+      nome: 'Bia',
+      email: 'bia@example.com',
+      telefone: '11988888888',
+      senha: 'senha123',
+    })).rejects.toThrow(ConflictException);
+  });
+
+  it('propaga falha inesperada ao criar ENTREGADOR', async () => {
+    const falha = new Error('falha de persistência');
+    create.mockRejectedValue(falha);
+
+    await expect(service.createEntregador({
+      nome: 'Bia',
+      email: 'bia@example.com',
+      telefone: '11988888888',
+      senha: 'senha123',
+    })).rejects.toBe(falha);
+  });
+
   it('converte conflito UNIQUE de email em ConflictException', async () => {
     create.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('unique', {
