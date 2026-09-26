@@ -137,6 +137,12 @@ describe('Autenticação de cliente', () => {
     expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
     expect(updateMany).toHaveBeenCalledTimes(5);
 
+    const blockedWithWrongPassword = await request(app.getHttpServer())
+      .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
+    expect(blockedWithWrongPassword.body.message).toBe('Credenciais inválidas.');
+    expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
+    expect(updateMany).toHaveBeenCalledTimes(5);
+
     loginState.bloqueadoAte = new Date(Date.now() - 1);
     await request(app.getHttpServer())
       .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);

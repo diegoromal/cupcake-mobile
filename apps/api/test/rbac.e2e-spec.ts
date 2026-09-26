@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import { IncomingMessage, request as httpRequest, ServerResponse } from 'node:http';
 import request from 'supertest';
 import { AuthModule } from '../src/auth/auth.module';
 import { AuthenticatedRequest } from '../src/auth/authenticated-user';
@@ -52,6 +53,7 @@ describe('RBAC em controller exclusivo de teste', () => {
   const jwt = new JwtService();
   const findUnique = jest.fn();
   const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
+  let receivedAuthorizationHeaderCount = 0;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [TestRbacModule] })
@@ -59,12 +61,20 @@ describe('RBAC em controller exclusivo de teste', () => {
       .useValue({ usuario: { findUnique } })
       .compile();
     app = moduleRef.createNestApplication();
+    app.use((req: IncomingMessage, _res: ServerResponse, next: () => void) => {
+      receivedAuthorizationHeaderCount = req.rawHeaders.filter(
+        (header, index) => index % 2 === 0 && header.toLowerCase() === 'authorization',
+      ).length;
+      next();
+    });
     await app.init();
+    await app.listen(0);
   });
 
   beforeEach(() => {
     findUnique.mockReset();
     findUnique.mockResolvedValue({ id, perfil: PerfilUsuario.CLIENTE });
+    receivedAuthorizationHeaderCount = 0;
   });
 
   afterAll(async () => {
@@ -88,6 +98,38 @@ describe('RBAC em controller exclusivo de teste', () => {
       .get('/test-rbac/authenticated')
       .set('Authorization', 'Bearer a.b.c')
       .expect(401);
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it('retorna 401 em rota com role quando a autenticação está ausente', async () => {
+    await request(app.getHttpServer()).get('/test-rbac/admin').expect(401);
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejeita dois campos Authorization recebidos na requisição HTTP', async () => {
+    const token = await sign(PerfilUsuario.CLIENTE);
+    const url = new URL(await app.getUrl());
+    const status = await new Promise<number>((resolve, reject) => {
+      const req = httpRequest({
+        hostname: '127.0.0.1',
+        port: url.port,
+        path: '/test-rbac/cliente',
+        method: 'GET',
+        headers: [
+          'Host', url.host,
+          'Authorization', `Bearer ${token}`,
+          'Authorization', `Bearer ${token}`,
+        ],
+      }, (response) => {
+        response.resume();
+        response.on('end', () => resolve(response.statusCode ?? 0));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+
+    expect(status).toBe(401);
+    expect(receivedAuthorizationHeaderCount).toBe(2);
     expect(findUnique).not.toHaveBeenCalled();
   });
 
