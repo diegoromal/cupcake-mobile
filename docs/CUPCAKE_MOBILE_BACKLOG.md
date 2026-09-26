@@ -55,7 +55,7 @@
 - [x] **D09 --- Modelar usuários e perfis `CLIENTE`, `ADMIN`,
       `ENTREGADOR`**
 - [x] **D10 --- API de cadastro do cliente + hash seguro da senha**
-- [ ] **D11 --- Login + JWT + refresh token**
+- [x] **D11 --- Login + JWT + refresh token**
 - [ ] **D12 --- RBAC e proteção de rotas**
 - [ ] **D13 --- Bloqueio após 5 erros durante 15 minutos**
 - [ ] **D14 --- Testes de autenticação e autorização**

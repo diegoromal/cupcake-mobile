@@ -17,6 +17,31 @@ describe('UsersService', () => {
     create.mockReset();
   });
 
+  it('consulta a credencial por email somente para autenticação', async () => {
+    const authenticationUser = {
+      id,
+      perfil: PerfilUsuario.CLIENTE,
+      credencialSenha: 'hash',
+    };
+    findUnique.mockResolvedValue(authenticationUser);
+
+    await expect(
+      service.findAuthenticationUserByEmail('ana@example.com'),
+    ).resolves.toEqual(authenticationUser);
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { email: 'ana@example.com' },
+      select: { id: true, perfil: true, credencialSenha: true },
+    });
+  });
+
+  it('retorna null quando o email de autenticação não existe', async () => {
+    findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.findAuthenticationUserByEmail('ausente@example.com'),
+    ).resolves.toBeNull();
+  });
+
   it.each([
     PerfilUsuario.CLIENTE,
     PerfilUsuario.ADMIN,
