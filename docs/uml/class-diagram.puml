@@ -17,7 +17,8 @@ package "Identidade" {
     telefone: String
     credencialSenha
     perfil: PerfilUsuario
-    bloqueioTemporario: Boolean
+    tentativasLoginInvalidas: Int
+    bloqueadoAte: DateTime?
   }
 
   enum PerfilUsuario {

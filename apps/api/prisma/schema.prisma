@@ -60,7 +60,8 @@ model Usuario {
   telefone           String
   credencialSenha    String
   perfil             PerfilUsuario
-  bloqueioTemporario Boolean                 @default(false)
+  tentativasLoginInvalidas Int               @default(0)
+  bloqueadoAte       DateTime?                @db.Timestamptz(3)
   enderecos          Endereco[]
   carrinho           Carrinho?
   pedidos            Pedido[]                @relation("ClientePedidos")
