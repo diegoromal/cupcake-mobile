@@ -9,6 +9,13 @@ import { CreateClientDto } from './dto/create-client.dto';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  findAuthenticationUserByEmail(email: string) {
+    return this.prisma.usuario.findUnique({
+      where: { email },
+      select: { id: true, perfil: true, credencialSenha: true },
+    });
+  }
+
   findById(id: string) {
     return this.prisma.usuario.findUnique({
       where: { id },

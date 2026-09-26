@@ -72,6 +72,11 @@ Valide a disponibilidade da API em `GET /health`:
 curl http://localhost:3000/health
 ```
 
+A API exige `JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` distintos no `.env` da
+raiz. O login de cliente em `POST /auth/login` emite access JWT (15 minutos) e
+refresh JWT (7 dias). `POST /auth/refresh` usa o refresh para emitir apenas um
+novo access. O refresh é stateless, sem rotação ou revogação imediata nesta etapa.
+
 ### Banco da API
 
 Em `apps/api`, instalação, geração do Prisma Client, lint, testes atuais e
