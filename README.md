@@ -50,7 +50,9 @@ O banco fica disponível em `localhost:$POSTGRES_PORT`. Para interromper o ambie
 
 ## API
 
-A API NestJS fica em `apps/api` e, neste estágio, não depende de banco de dados.
+A API NestJS fica em `apps/api`. O módulo de persistência Prisma está disponível
+para os módulos de negócio futuros; o endpoint `/health` continua independente do
+banco.
 
 ```sh
 cd apps/api
@@ -69,6 +71,32 @@ Valide a disponibilidade da API em `GET /health`:
 ```sh
 curl http://localhost:3000/health
 ```
+
+### Banco da API
+
+Em `apps/api`, instalação, geração do Prisma Client, lint, testes atuais e
+build não exigem PostgreSQL ativo nem `DATABASE_URL`:
+
+```sh
+npm ci
+npm run prisma:generate
+```
+
+O build gera o Prisma Client automaticamente. Para executar migrations, configure
+uma `DATABASE_URL` válida no `.env` da raiz e inicie o PostgreSQL:
+
+```sh
+npm run db:migrate:deploy
+```
+
+`prisma migrate status` e `npm run db:migrate:dev` também exigem a conexão.
+Ao usar o `PrismaService` em execução, a API precisa da mesma URL e de um banco
+acessível; o endpoint `/health` permanece independente do banco.
+
+Para desenvolver o schema, use `npm run prisma:format` e
+`npm run prisma:validate`. Migrations devem ser revisadas antes da aplicação; o
+schema físico está em `apps/api/prisma/schema.prisma` e as constraints SQL
+adicionais acompanham a migration versionada.
 
 ## Estrutura
 
