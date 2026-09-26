@@ -43,7 +43,7 @@
       atributos, relacionamentos e cardinalidades
 - [x] **D05 --- Diagrama de classes UML**
 - [x] **D06 --- Modelo conceitual e lógico normalizado**
-- [ ] **D07 --- Projeto físico do banco** --- Prisma Schema +
+- [x] **D07 --- Projeto físico do banco** --- Prisma Schema +
       migrations
 - [ ] **D08 --- Dicionário de dados** --- tabelas, campos, tipos, PK/FK
       e descrições

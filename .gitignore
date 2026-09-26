@@ -10,6 +10,7 @@ dist/
 out/
 coverage/
 *.tsbuildinfo
+apps/api/src/generated/prisma/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
