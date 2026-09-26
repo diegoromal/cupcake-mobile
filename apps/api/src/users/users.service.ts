@@ -4,6 +4,7 @@ import { PerfilUsuario } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
+import { CreateEntregadorDto } from './dto/create-entregador.dto';
 
 type LoginState = {
   id: string;
@@ -97,7 +98,15 @@ export class UsersService {
     });
   }
 
-  async createClient(input: CreateClientDto) {
+  createClient(input: CreateClientDto) {
+    return this.createUser(input, PerfilUsuario.CLIENTE);
+  }
+
+  createEntregador(input: CreateEntregadorDto) {
+    return this.createUser(input, PerfilUsuario.ENTREGADOR);
+  }
+
+  private async createUser(input: CreateClientDto, perfil: PerfilUsuario) {
     const nome = input.nome.trim();
     const email = input.email.trim().toLowerCase();
     const telefone = input.telefone.trim();
@@ -115,7 +124,7 @@ export class UsersService {
           email,
           telefone,
           credencialSenha,
-          perfil: PerfilUsuario.CLIENTE,
+          perfil,
         },
         select: {
           id: true,

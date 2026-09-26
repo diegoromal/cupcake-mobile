@@ -77,6 +77,8 @@ raiz. O login de cliente em `POST /auth/login` emite access JWT (15 minutos) e
 refresh JWT (7 dias). `POST /auth/refresh` usa o refresh para emitir apenas um
 novo access. O refresh é stateless, sem rotação ou revogação imediata nesta etapa.
 
+`POST /admin/entregadores` cadastra um entregador e requer access token de `ADMIN`.
+
 ### Banco da API
 
 Em `apps/api`, instalação, geração do Prisma Client, lint, testes atuais e
