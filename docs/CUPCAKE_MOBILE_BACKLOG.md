@@ -52,7 +52,7 @@
 
 ## 🔵 FASE 1 --- Usuários e segurança
 
-- [ ] **D09 --- Modelar usuários e perfis `CLIENTE`, `ADMIN`,
+- [x] **D09 --- Modelar usuários e perfis `CLIENTE`, `ADMIN`,
       `ENTREGADOR`**
 - [ ] **D10 --- API de cadastro do cliente + hash seguro da senha**
 - [ ] **D11 --- Login + JWT + refresh token**
