@@ -61,6 +61,13 @@
 - [x] **D14 --- Testes de autenticação e autorização**
 - [x] **D15 --- Cadastro administrativo de entregadores**
 - [x] **D16 --- Login e autorização do entregador**
+- [ ] **D117 — Provisionamento seguro e login do administrador**
+  - criar mecanismo controlado para provisionamento da primeira conta `ADMIN`;
+  - permitir login operacional do perfil `ADMIN`;
+  - permitir refresh token do perfil `ADMIN`;
+  - aplicar a política de bloqueio após 5 falhas por 15 minutos;
+  - validar separação de acesso entre `CLIENTE`, `ADMIN` e `ENTREGADOR`;
+  - não permitir autocadastro público de administrador.
 
 **Marco 2:** três perfis autenticados e separados corretamente.
 
