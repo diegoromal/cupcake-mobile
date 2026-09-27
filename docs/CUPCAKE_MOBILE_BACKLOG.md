@@ -74,7 +74,7 @@
 ## 🧁 FASE 2 --- Catálogo
 
 - [x] **D17 --- CRUD de categorias**
-- [ ] **D18 --- CRUD de personalizações**
+- [x] **D18 --- CRUD de personalizações**
 - [ ] **D19 --- Backend de produtos**
 - [ ] **D20 --- Associação produto × categoria/personalizações**
 - [ ] **D21 --- Upload e armazenamento de imagens**
