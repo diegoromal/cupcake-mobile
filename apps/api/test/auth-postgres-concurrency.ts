@@ -7,18 +7,18 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { UsersService } from '../src/users/users.service';
 
 async function main() {
-  const url = process.env.D13_TEST_DATABASE_URL;
-  if (!url) throw new Error('D13_TEST_DATABASE_URL é obrigatória.');
+  const url = process.env.D117_TEST_DATABASE_URL ?? process.env.D13_TEST_DATABASE_URL;
+  if (!url) throw new Error('D117_TEST_DATABASE_URL ou D13_TEST_DATABASE_URL é obrigatória.');
   const parsed = new URL(url);
   if (!['localhost', '127.0.0.1', '::1'].includes(parsed.hostname) ||
-      parsed.pathname !== '/cupcake_d13') {
-    throw new Error('O teste D13 só pode usar o banco local cupcake_d13.');
+      !['/cupcake_d13', '/cupcake_d117'].includes(parsed.pathname)) {
+    throw new Error('O teste só pode usar os bancos locais cupcake_d13 ou cupcake_d117.');
   }
 
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
   const users = new UsersService(prisma as unknown as PrismaService);
   try {
-    for (const perfil of [PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR]) {
+    for (const perfil of [PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN]) {
       const id = randomUUID();
       const email = `d13-${id}@example.invalid`;
       try {

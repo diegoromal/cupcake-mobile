@@ -25,8 +25,7 @@ export class AuthService {
     );
     if (
       !user ||
-      (user.perfil !== PerfilUsuario.CLIENTE &&
-        user.perfil !== PerfilUsuario.ENTREGADOR) ||
+      !Object.values(PerfilUsuario).includes(user.perfil) ||
       (user.bloqueadoAte !== null && user.bloqueadoAte > new Date())
     ) {
       throw new UnauthorizedException('Credenciais inválidas.');
@@ -61,8 +60,7 @@ export class AuthService {
 
     if (
       claims.type !== 'refresh' ||
-      (claims.perfil !== PerfilUsuario.CLIENTE &&
-        claims.perfil !== PerfilUsuario.ENTREGADOR) ||
+      !Object.values(PerfilUsuario).includes(claims.perfil as PerfilUsuario) ||
       typeof claims.iat !== 'number' ||
       typeof claims.exp !== 'number' ||
       typeof claims.sub !== 'string' ||
@@ -83,7 +81,7 @@ export class AuthService {
 
   private signToken(
     id: string,
-    perfil: typeof PerfilUsuario.CLIENTE | typeof PerfilUsuario.ENTREGADOR,
+    perfil: PerfilUsuario,
     type: 'access' | 'refresh',
   ) {
     return this.jwt.signAsync(
