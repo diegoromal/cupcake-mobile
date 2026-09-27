@@ -47,7 +47,14 @@ export class UsersService {
   ): Promise<boolean> {
     let state: LoginState | null = initialState;
     for (let attempt = 0; attempt < MAX_LOGIN_STATE_RETRIES; attempt++) {
-      if (!state || state.perfil !== PerfilUsuario.CLIENTE) return false;
+      if (
+        !state ||
+        state.perfil !== initialState.perfil ||
+        (state.perfil !== PerfilUsuario.CLIENTE &&
+          state.perfil !== PerfilUsuario.ENTREGADOR)
+      ) {
+        return false;
+      }
 
       const now = new Date();
       if (state.bloqueadoAte && state.bloqueadoAte > now) return false;
@@ -69,7 +76,7 @@ export class UsersService {
       const result = await this.prisma.usuario.updateMany({
         where: {
           id: state.id,
-          perfil: PerfilUsuario.CLIENTE,
+          perfil: initialState.perfil,
           tentativasLoginInvalidas: state.tentativasLoginInvalidas,
           bloqueadoAte: state.bloqueadoAte,
         },

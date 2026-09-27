@@ -86,10 +86,29 @@ describe('AuthService', () => {
     await expect(service.login(loginInput)).resolves.toHaveProperty('accessToken');
   });
 
+  it('autentica ENTREGADOR e assina access e refresh com o perfil do banco', async () => {
+    findAuthenticationUserByEmail.mockResolvedValue({
+      id, perfil: PerfilUsuario.ENTREGADOR, credencialSenha: hash,
+      tentativasLoginInvalidas: 0, bloqueadoAte: null,
+    });
+    const tokens = await service.login(loginInput);
+    for (const [token, secret, type, ttl] of [
+      [tokens.accessToken, config.accessSecret, 'access', 900],
+      [tokens.refreshToken, config.refreshSecret, 'refresh', 604800],
+    ] as const) {
+      const claims = await jwt.verifyAsync<Record<string, unknown>>(token, {
+        secret, algorithms: [JWT_ALGORITHM],
+      });
+      expect(claims).toMatchObject({ sub: id, perfil: 'ENTREGADOR', type });
+      expect(Object.keys(claims).sort()).toEqual(['exp', 'iat', 'perfil', 'sub', 'type']);
+      expect((claims.exp as number) - (claims.iat as number)).toBe(ttl);
+    }
+    expect(clearLoginState).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ['usuário ausente', null],
     ['ADMIN', PerfilUsuario.ADMIN],
-    ['ENTREGADOR', PerfilUsuario.ENTREGADOR],
   ])('retorna 401 genérico para %s', async (_name, perfil) => {
     findAuthenticationUserByEmail.mockResolvedValue(
       perfil === null ? null : { id, perfil, credencialSenha: hash },
@@ -142,6 +161,19 @@ describe('AuthService', () => {
     ).resolves.toMatchObject({ sub: id, perfil: 'CLIENTE', type: 'access' });
   });
 
+  it('refresh de ENTREGADOR emite access de ENTREGADOR', async () => {
+    findAuthenticationUserByEmail.mockResolvedValue({
+      id, perfil: PerfilUsuario.ENTREGADOR, credencialSenha: hash,
+      tentativasLoginInvalidas: 0, bloqueadoAte: null,
+    });
+    findById.mockResolvedValue({ id, perfil: PerfilUsuario.ENTREGADOR });
+    const { refreshToken } = await service.login(loginInput);
+    const { accessToken } = await service.refresh(refreshToken);
+    await expect(jwt.verifyAsync(accessToken, {
+      secret: config.accessSecret, algorithms: [JWT_ALGORITHM],
+    })).resolves.toMatchObject({ sub: id, perfil: 'ENTREGADOR', type: 'access' });
+  });
+
   it('rejeita access usado como refresh e assinatura inválida', async () => {
     const { accessToken } = await service.login(loginInput);
     const wrongSignature = await jwt.signAsync(
@@ -160,6 +192,15 @@ describe('AuthService', () => {
       { secret: config.refreshSecret, algorithm: 'HS384', expiresIn: '7d' },
     );
 
+    await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
+    expect(findById).not.toHaveBeenCalled();
+  });
+
+  it('rejeita refresh HS384 de ENTREGADOR', async () => {
+    const token = await jwt.signAsync(
+      { sub: id, perfil: PerfilUsuario.ENTREGADOR, type: 'refresh' },
+      { secret: config.refreshSecret, algorithm: 'HS384', expiresIn: '7d' },
+    );
     await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
     expect(findById).not.toHaveBeenCalled();
   });
@@ -205,6 +246,15 @@ describe('AuthService', () => {
     findById.mockResolvedValueOnce(null).mockResolvedValueOnce({
       id,
       perfil: PerfilUsuario.ADMIN,
+    });
+    await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
+    await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejeita refresh de ENTREGADOR removido ou com perfil alterado', async () => {
+    const token = await signRefresh({ sub: id, perfil: 'ENTREGADOR', type: 'refresh' });
+    findById.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id, perfil: PerfilUsuario.CLIENTE,
     });
     await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
     await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);

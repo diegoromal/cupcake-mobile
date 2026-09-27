@@ -25,7 +25,8 @@ export class AuthService {
     );
     if (
       !user ||
-      user.perfil !== PerfilUsuario.CLIENTE ||
+      (user.perfil !== PerfilUsuario.CLIENTE &&
+        user.perfil !== PerfilUsuario.ENTREGADOR) ||
       (user.bloqueadoAte !== null && user.bloqueadoAte > new Date())
     ) {
       throw new UnauthorizedException('Credenciais inválidas.');
@@ -41,8 +42,8 @@ export class AuthService {
     }
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.signToken(user.id, 'access'),
-      this.signToken(user.id, 'refresh'),
+      this.signToken(user.id, user.perfil, 'access'),
+      this.signToken(user.id, user.perfil, 'refresh'),
     ]);
     return { accessToken, refreshToken };
   }
@@ -60,7 +61,8 @@ export class AuthService {
 
     if (
       claims.type !== 'refresh' ||
-      claims.perfil !== PerfilUsuario.CLIENTE ||
+      (claims.perfil !== PerfilUsuario.CLIENTE &&
+        claims.perfil !== PerfilUsuario.ENTREGADOR) ||
       typeof claims.iat !== 'number' ||
       typeof claims.exp !== 'number' ||
       typeof claims.sub !== 'string' ||
@@ -72,16 +74,20 @@ export class AuthService {
     }
 
     const user = await this.users.findById(claims.sub);
-    if (!user || user.perfil !== PerfilUsuario.CLIENTE) {
+    if (!user || user.perfil !== claims.perfil) {
       throw new UnauthorizedException('Refresh token inválido.');
     }
 
-    return { accessToken: await this.signToken(user.id, 'access') };
+    return { accessToken: await this.signToken(user.id, user.perfil, 'access') };
   }
 
-  private signToken(id: string, type: 'access' | 'refresh') {
+  private signToken(
+    id: string,
+    perfil: typeof PerfilUsuario.CLIENTE | typeof PerfilUsuario.ENTREGADOR,
+    type: 'access' | 'refresh',
+  ) {
     return this.jwt.signAsync(
-      { sub: id, perfil: PerfilUsuario.CLIENTE, type },
+      { sub: id, perfil, type },
       {
         secret:
           type === 'access'
