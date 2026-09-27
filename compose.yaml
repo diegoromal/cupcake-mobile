@@ -18,5 +18,16 @@ services:
       retries: 10
       start_period: 5s
 
+  s3mock:
+    image: adobe/s3mock:4.11.0
+    environment:
+      initialBuckets: cupcake-images
+      root: /data
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - s3mock_data:/data
+
 volumes:
   postgres_data:
+  s3mock_data:

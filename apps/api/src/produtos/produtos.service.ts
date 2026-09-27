@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProdutoDto } from './dto/create-produto.dto';
 import { UpdateProdutoDto } from './dto/update-produto.dto';
+import { ProdutoImagensService } from './produto-imagens.service';
 
 const produtoSelect = {
   id: true, categoriaId: true, nome: true, descricao: true,
@@ -12,7 +13,7 @@ type ProdutoSelecionado = Prisma.ProdutoGetPayload<{ select: typeof produtoSelec
 
 @Injectable()
 export class ProdutosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly imagens?: ProdutoImagensService) {}
 
   async create(input: CreateProdutoDto) {
     await this.ensureCategoria(input.categoriaId);
@@ -24,7 +25,6 @@ export class ProdutosService {
             nome: input.nome,
             descricao: input.descricao,
             precoAtual: new Prisma.Decimal(input.precoAtual),
-            imagem: input.imagem,
             ativo: input.ativo,
           },
           select: produtoSelect,
@@ -66,7 +66,6 @@ export class ProdutosService {
           nome: input.nome,
           descricao: input.descricao,
           precoAtual: input.precoAtual === undefined ? undefined : new Prisma.Decimal(input.precoAtual),
-          imagem: input.imagem,
           ativo: input.ativo,
         },
         select: produtoSelect,
@@ -81,15 +80,17 @@ export class ProdutosService {
 
   async remove(id: string): Promise<void> {
     try {
-      await this.prisma.$transaction(async (tx) => {
-        const produto = await tx.produto.findUnique({ where: { id }, select: { id: true } });
+      const previousImage = await this.prisma.$transaction(async (tx) => {
+        const produto = await tx.produto.findUnique({ where: { id }, select: { id: true, imagem: true } });
         if (!produto) throw new NotFoundException('Produto não encontrado.');
         const deleted = await tx.estoque.deleteMany({
           where: { produtoId: id, quantidadeFisica: 0, quantidadeReservada: 0 },
         });
         if (deleted.count !== 1) throw new ConflictException('Estoque impede exclusão do produto.');
         await tx.produto.delete({ where: { id }, select: { id: true } });
+        return produto.imagem;
       });
+      await this.imagens?.cleanup(id, previousImage, 'exclusao-produto');
     } catch (error) {
       if (this.isPrismaError(error, 'P2025')) throw new NotFoundException('Produto não encontrado.');
       if (this.isPrismaError(error, 'P2003')) throw new ConflictException('Produto possui vínculos.');
