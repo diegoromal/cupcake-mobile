@@ -2,6 +2,7 @@ import { ConflictException, Injectable, ServiceUnavailableException } from '@nes
 import * as argon2 from 'argon2';
 import { PerfilUsuario } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
+import { isEmail } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { CreateEntregadorDto } from './dto/create-entregador.dto';
@@ -12,6 +13,8 @@ type LoginState = {
   tentativasLoginInvalidas: number;
   bloqueadoAte: Date | null;
 };
+
+export type FirstAdminInput = { nome: string; email: string; telefone: string; senha: string };
 
 const MAX_LOGIN_STATE_RETRIES = 20;
 const LOGIN_BLOCK_MILLISECONDS = 15 * 60 * 1000;
@@ -50,8 +53,7 @@ export class UsersService {
       if (
         !state ||
         state.perfil !== initialState.perfil ||
-        (state.perfil !== PerfilUsuario.CLIENTE &&
-          state.perfil !== PerfilUsuario.ENTREGADOR)
+        !Object.values(PerfilUsuario).includes(state.perfil)
       ) {
         return false;
       }
@@ -111,6 +113,34 @@ export class UsersService {
 
   createEntregador(input: CreateEntregadorDto) {
     return this.createUser(input, PerfilUsuario.ENTREGADOR);
+  }
+
+  async provisionFirstAdmin(input: FirstAdminInput): Promise<'created' | 'already-exists'> {
+    const nome = input.nome?.trim();
+    const email = input.email?.trim().toLowerCase();
+    const telefone = input.telefone?.trim();
+    if (!nome || !email || !isEmail(email) || !telefone ||
+        typeof input.senha !== 'string' || input.senha.length < 8) {
+      throw new Error('Dados do administrador inválidos.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // A chave fixa serializa provisionamentos mesmo quando ainda não há ADMIN.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(117, 1)::text`;
+      const existing = await tx.usuario.findFirst({
+        where: { perfil: PerfilUsuario.ADMIN }, select: { id: true },
+      });
+      if (existing) return 'already-exists';
+
+      const credencialSenha = await argon2.hash(input.senha, {
+        type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1,
+      });
+      await tx.usuario.create({
+        data: { nome, email, telefone, credencialSenha, perfil: PerfilUsuario.ADMIN },
+        select: { id: true },
+      });
+      return 'created';
+    });
   }
 
   private async createUser(input: CreateClientDto, perfil: PerfilUsuario) {

@@ -73,17 +73,17 @@ curl http://localhost:3000/health
 ```
 
 A API exige `JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` distintos no `.env` da
-raiz. O login de CLIENTE e ENTREGADOR em `POST /auth/login` emite access JWT
-(15 minutos) e refresh JWT (7 dias). `POST /auth/refresh` aceita refresh desses
-dois perfis e emite apenas um novo access com o mesmo perfil. O refresh é
-stateless, sem rotação ou revogação imediata nesta etapa. ADMIN ainda não possui
-login operacional.
+raiz. O login de CLIENTE, ADMIN e ENTREGADOR em `POST /auth/login` emite access
+JWT (15 minutos) e refresh JWT (7 dias). `POST /auth/refresh` aceita refresh
+desses perfis e emite apenas um novo access com o mesmo perfil. O refresh é
+stateless, sem rotação ou revogação imediata nesta etapa.
 
-CLIENTE e ENTREGADOR são bloqueados por 15 minutos após cinco falhas consecutivas
+CLIENTE, ADMIN e ENTREGADOR são bloqueados por 15 minutos após cinco falhas consecutivas
 de login. Tentativas durante o bloqueio não prolongam o prazo; após a expiração,
 uma nova falha reinicia o contador e um login válido o limpa.
 
 `POST /admin/entregadores` cadastra um entregador e requer access token de `ADMIN`.
+O primeiro ADMIN é criado pelo CLI descrito em [docs/authentication.md](docs/authentication.md).
 
 ### Banco da API
 

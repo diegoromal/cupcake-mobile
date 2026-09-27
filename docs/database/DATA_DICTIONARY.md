@@ -37,8 +37,8 @@ Pessoa identificada no sistema, com um único perfil persistido.
 | `telefone` | `String` | `TEXT` | Sim | — | — | — / — | Telefone de contato. |
 | `credencialSenha` | `String` | `TEXT` | Sim | — | — | — / — | Credencial de senha persistida; seu tratamento seguro cabe à aplicação. |
 | `perfil` | `PerfilUsuario` | `"PerfilUsuario"` | Sim | — | — | — / — | Perfil único atribuído ao usuário. |
-| `tentativasLoginInvalidas` | `Int` | `INTEGER` | Sim | — | — | `0` / `0` | Falhas consecutivas de login de CLIENTE ou ENTREGADOR; reinicia após sucesso ou na primeira tentativa após expiração do bloqueio. |
-| `bloqueadoAte` | `DateTime? @db.Timestamptz(3)` | `TIMESTAMPTZ(3)` | Não | — | — | — / — | Prazo do bloqueio de CLIENTE ou ENTREGADOR após a quinta falha; a conta está bloqueada enquanto o prazo for posterior ao instante atual. |
+| `tentativasLoginInvalidas` | `Int` | `INTEGER` | Sim | — | — | `0` / `0` | Falhas consecutivas de login de CLIENTE, ADMIN ou ENTREGADOR; reinicia após sucesso ou na primeira tentativa após expiração do bloqueio. |
+| `bloqueadoAte` | `DateTime? @db.Timestamptz(3)` | `TIMESTAMPTZ(3)` | Não | — | — | — / — | Prazo do bloqueio de CLIENTE, ADMIN ou ENTREGADOR após a quinta falha; a conta está bloqueada enquanto o prazo for posterior ao instante atual. |
 
 **Índices declarados na migration:**
 

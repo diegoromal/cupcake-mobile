@@ -15,7 +15,8 @@
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "admin:provision-first": "ts-node src/scripts/provision-first-admin.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

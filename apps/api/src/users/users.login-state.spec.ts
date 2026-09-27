@@ -3,7 +3,7 @@ import { PerfilUsuario } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
 
-describe.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR])(
+describe.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])(
   'UsersService: estado do login %s', (perfil) => {
     const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
     const now = new Date('2026-09-26T18:00:00.000Z');
@@ -105,17 +105,3 @@ describe.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR])(
       expect(updateMany).toHaveBeenCalledTimes(20);
     });
   });
-
-it('não altera estado de login de ADMIN', async () => {
-  const updateMany = jest.fn();
-  const service = new UsersService({ usuario: { updateMany } } as unknown as PrismaService);
-  const admin = {
-    id: '9b72c770-bc74-4c77-82c7-205c2d91628a',
-    perfil: PerfilUsuario.ADMIN,
-    tentativasLoginInvalidas: 0,
-    bloqueadoAte: null,
-  };
-  await service.registerInvalidLogin(admin);
-  await expect(service.clearLoginState(admin)).resolves.toBe(false);
-  expect(updateMany).not.toHaveBeenCalled();
-});

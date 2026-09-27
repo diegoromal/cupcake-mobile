@@ -86,9 +86,9 @@ describe('AuthService', () => {
     await expect(service.login(loginInput)).resolves.toHaveProperty('accessToken');
   });
 
-  it('autentica ENTREGADOR e assina access e refresh com o perfil do banco', async () => {
+  it.each([PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('autentica %s e assina access e refresh com o perfil do banco', async (perfil) => {
     findAuthenticationUserByEmail.mockResolvedValue({
-      id, perfil: PerfilUsuario.ENTREGADOR, credencialSenha: hash,
+      id, perfil, credencialSenha: hash,
       tentativasLoginInvalidas: 0, bloqueadoAte: null,
     });
     const tokens = await service.login(loginInput);
@@ -99,20 +99,15 @@ describe('AuthService', () => {
       const claims = await jwt.verifyAsync<Record<string, unknown>>(token, {
         secret, algorithms: [JWT_ALGORITHM],
       });
-      expect(claims).toMatchObject({ sub: id, perfil: 'ENTREGADOR', type });
+      expect(claims).toMatchObject({ sub: id, perfil, type });
       expect(Object.keys(claims).sort()).toEqual(['exp', 'iat', 'perfil', 'sub', 'type']);
       expect((claims.exp as number) - (claims.iat as number)).toBe(ttl);
     }
     expect(clearLoginState).toHaveBeenCalledTimes(1);
   });
 
-  it.each([
-    ['usuário ausente', null],
-    ['ADMIN', PerfilUsuario.ADMIN],
-  ])('retorna 401 genérico para %s', async (_name, perfil) => {
-    findAuthenticationUserByEmail.mockResolvedValue(
-      perfil === null ? null : { id, perfil, credencialSenha: hash },
-    );
+  it('retorna 401 genérico para usuário ausente', async () => {
+    findAuthenticationUserByEmail.mockResolvedValue(null);
     await expect(service.login(loginInput)).rejects.toThrow('Credenciais inválidas.');
   });
 
@@ -161,17 +156,17 @@ describe('AuthService', () => {
     ).resolves.toMatchObject({ sub: id, perfil: 'CLIENTE', type: 'access' });
   });
 
-  it('refresh de ENTREGADOR emite access de ENTREGADOR', async () => {
+  it.each([PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('refresh de %s emite access do mesmo perfil', async (perfil) => {
     findAuthenticationUserByEmail.mockResolvedValue({
-      id, perfil: PerfilUsuario.ENTREGADOR, credencialSenha: hash,
+      id, perfil, credencialSenha: hash,
       tentativasLoginInvalidas: 0, bloqueadoAte: null,
     });
-    findById.mockResolvedValue({ id, perfil: PerfilUsuario.ENTREGADOR });
+    findById.mockResolvedValue({ id, perfil });
     const { refreshToken } = await service.login(loginInput);
     const { accessToken } = await service.refresh(refreshToken);
     await expect(jwt.verifyAsync(accessToken, {
       secret: config.accessSecret, algorithms: [JWT_ALGORITHM],
-    })).resolves.toMatchObject({ sub: id, perfil: 'ENTREGADOR', type: 'access' });
+    })).resolves.toMatchObject({ sub: id, perfil, type: 'access' });
   });
 
   it('rejeita access usado como refresh e assinatura inválida', async () => {
@@ -196,9 +191,9 @@ describe('AuthService', () => {
     expect(findById).not.toHaveBeenCalled();
   });
 
-  it('rejeita refresh HS384 de ENTREGADOR', async () => {
+  it.each([PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('rejeita refresh HS384 de %s', async (perfil) => {
     const token = await jwt.signAsync(
-      { sub: id, perfil: PerfilUsuario.ENTREGADOR, type: 'refresh' },
+      { sub: id, perfil, type: 'refresh' },
       { secret: config.refreshSecret, algorithm: 'HS384', expiresIn: '7d' },
     );
     await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
@@ -210,7 +205,7 @@ describe('AuthService', () => {
     ['tipo incorreto', { sub: id, perfil: 'CLIENTE', type: 'access' }, '7d'],
     ['sub ausente', { perfil: 'CLIENTE', type: 'refresh' }, '7d'],
     ['sub inválido', { sub: 'invalido', perfil: 'CLIENTE', type: 'refresh' }, '7d'],
-    ['perfil inválido', { sub: id, perfil: 'ADMIN', type: 'refresh' }, '7d'],
+    ['perfil inválido', { sub: id, perfil: 'OUTRO', type: 'refresh' }, '7d'],
   ])('rejeita refresh %s', async (_name, claims, ttl) => {
     const token = await signRefresh(claims, ttl);
     await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
@@ -253,6 +248,15 @@ describe('AuthService', () => {
 
   it('rejeita refresh de ENTREGADOR removido ou com perfil alterado', async () => {
     const token = await signRefresh({ sub: id, perfil: 'ENTREGADOR', type: 'refresh' });
+    findById.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id, perfil: PerfilUsuario.CLIENTE,
+    });
+    await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
+    await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejeita refresh de ADMIN removido ou com perfil alterado', async () => {
+    const token = await signRefresh({ sub: id, perfil: 'ADMIN', type: 'refresh' });
     findById.mockResolvedValueOnce(null).mockResolvedValueOnce({
       id, perfil: PerfilUsuario.CLIENTE,
     });

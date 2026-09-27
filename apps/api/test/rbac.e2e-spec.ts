@@ -188,10 +188,10 @@ describe('RBAC em controller exclusivo de teste', () => {
     },
   );
 
-  it('usa access emitido no login de ENTREGADOR para separar as rotas por perfil', async () => {
+  it.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('usa access emitido no login de %s para separar as rotas por perfil', async (perfil) => {
     const hash = await argon2.hash('senha123', { type: argon2.argon2id });
     findUnique.mockImplementation(async ({ where }) => ({
-      id, perfil: PerfilUsuario.ENTREGADOR,
+      id, perfil,
       ...(where.email ? {
         credencialSenha: hash, tentativasLoginInvalidas: 0, bloqueadoAte: null,
       } : {}),
@@ -200,12 +200,14 @@ describe('RBAC em controller exclusivo de teste', () => {
     const login = await request(app.getHttpServer())
       .post('/auth/login').send({ email: 'bia@example.com', senha: 'senha123' }).expect(200);
     const authorization = `Bearer ${login.body.accessToken}`;
-    await request(app.getHttpServer()).get('/test-rbac/entregador')
-      .set('Authorization', authorization).expect(200);
-    await request(app.getHttpServer()).get('/test-rbac/cliente')
-      .set('Authorization', authorization).expect(403);
-    await request(app.getHttpServer()).get('/test-rbac/admin')
-      .set('Authorization', authorization).expect(403);
+    for (const [path, role] of [
+      ['cliente', PerfilUsuario.CLIENTE],
+      ['entregador', PerfilUsuario.ENTREGADOR],
+      ['admin', PerfilUsuario.ADMIN],
+    ] as const) {
+      await request(app.getHttpServer()).get(`/test-rbac/${path}`)
+        .set('Authorization', authorization).expect(perfil === role ? 200 : 403);
+    }
     await request(app.getHttpServer()).get('/test-rbac/entregador').expect(401);
   });
 });

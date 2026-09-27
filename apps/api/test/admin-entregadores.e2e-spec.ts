@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import * as argon2 from 'argon2';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { Prisma } from '../src/generated/prisma/client';
@@ -75,6 +76,22 @@ describe('Cadastro administrativo de entregadores', () => {
     expect(response.body).not.toHaveProperty('senha');
     expect(create.mock.calls[0][0].data.perfil).toBe(PerfilUsuario.ENTREGADOR);
     expect(create.mock.calls[0][0].data.credencialSenha).toMatch(/^\$argon2id\$/);
+  });
+
+  it('permite cadastro com access emitido por login real de ADMIN', async () => {
+    const hash = await argon2.hash('senha123', { type: argon2.argon2id });
+    findUnique.mockImplementation(async ({ where }) => ({
+      id, perfil: PerfilUsuario.ADMIN,
+      ...(where.email ? { credencialSenha: hash,
+        tentativasLoginInvalidas: 0, bloqueadoAte: null } : {}),
+    }));
+    updateMany.mockResolvedValue({ count: 1 });
+    const login = await request(app.getHttpServer()).post('/auth/login')
+      .send({ email: 'admin@example.com', senha: 'senha123' }).expect(200);
+    await request(app.getHttpServer()).post('/admin/entregadores')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send(body).expect(201);
+    expect(create.mock.calls[0][0].data.perfil).toBe(PerfilUsuario.ENTREGADOR);
   });
 
   it('autentica o ENTREGADOR criado pela rota administrativa com a credencial Argon2id', async () => {

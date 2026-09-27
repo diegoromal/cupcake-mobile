@@ -7,7 +7,7 @@ import { AppModule } from '../src/app.module';
 import { PerfilUsuario } from '../src/generated/prisma/enums';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-describe('Autenticação de cliente e entregador', () => {
+describe('Autenticação de cliente, entregador e administrador', () => {
   let app: INestApplication;
   const jwt = new JwtService();
   const findUnique = jest.fn();
@@ -100,8 +100,8 @@ describe('Autenticação de cliente e entregador', () => {
     }
   });
 
-  it('login de ENTREGADOR retorna access e refresh com claims e TTLs corretos', async () => {
-    perfil = PerfilUsuario.ENTREGADOR;
+  it.each([PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('login de %s retorna access e refresh com claims e TTLs corretos', async (role) => {
+    perfil = role;
     const response = await login();
     expect(Object.keys(response.body).sort()).toEqual(['accessToken', 'refreshToken']);
     for (const [type, token, secret, ttl] of [
@@ -113,7 +113,7 @@ describe('Autenticação de cliente e entregador', () => {
       const claims = await jwt.verifyAsync<Record<string, unknown>>(token, {
         secret, algorithms: ['HS256'],
       });
-      expect(claims).toMatchObject({ sub: id, perfil: 'ENTREGADOR', type });
+      expect(claims).toMatchObject({ sub: id, perfil: role, type });
       expect((claims.exp as number) - (claims.iat as number)).toBe(ttl);
     }
   });
@@ -143,8 +143,8 @@ describe('Autenticação de cliente e entregador', () => {
     expect(JSON.stringify(wrong.body)).not.toContain(hash);
   });
 
-  it('login de ENTREGADOR usa o mesmo 401 para email ausente e senha incorreta', async () => {
-    perfil = PerfilUsuario.ENTREGADOR;
+  it.each([PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('login de %s usa o mesmo 401 para email ausente e senha incorreta', async (role) => {
+    perfil = role;
     const missing = await request(app.getHttpServer())
       .post('/auth/login').send({ email: 'ausente@example.com', senha }).expect(401);
     const wrong = await request(app.getHttpServer())
@@ -153,7 +153,7 @@ describe('Autenticação de cliente e entregador', () => {
     expect(wrong.body.message).toBe(missing.body.message);
   });
 
-  it.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR])(
+  it.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])(
     'bloqueia %s na quinta falha, não estende o prazo e libera após expiração', async (role) => {
       perfil = role;
       for (let count = 1; count <= 5; count++) {
@@ -190,15 +190,6 @@ describe('Autenticação de cliente e entregador', () => {
       .post('/auth/login').send(loginBody).expect(500);
   });
 
-  it('login rejeita ADMIN com o mesmo 401', async () => {
-    perfil = PerfilUsuario.ADMIN;
-    const response = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send(loginBody)
-      .expect(401);
-    expect(response.body.message).toBe('Credenciais inválidas.');
-  });
-
   it('refresh válido retorna somente novo access JWT', async () => {
     const { body } = await login();
     const response = await request(app.getHttpServer())
@@ -218,15 +209,15 @@ describe('Autenticação de cliente e entregador', () => {
     ).resolves.toMatchObject({ sub: id, perfil: 'CLIENTE', type: 'access' });
   });
 
-  it('refresh de ENTREGADOR retorna somente novo access de ENTREGADOR', async () => {
-    perfil = PerfilUsuario.ENTREGADOR;
+  it.each([PerfilUsuario.ENTREGADOR, PerfilUsuario.ADMIN])('refresh de %s retorna somente novo access do perfil', async (role) => {
+    perfil = role;
     const { body } = await login();
     const response = await request(app.getHttpServer())
       .post('/auth/refresh').send({ refreshToken: body.refreshToken }).expect(200);
     expect(Object.keys(response.body)).toEqual(['accessToken']);
     await expect(jwt.verifyAsync(response.body.accessToken, {
       secret: process.env.JWT_ACCESS_SECRET, algorithms: ['HS256'],
-    })).resolves.toMatchObject({ sub: id, perfil: 'ENTREGADOR', type: 'access' });
+    })).resolves.toMatchObject({ sub: id, perfil: role, type: 'access' });
   });
 
   it.each([{}, { refreshToken: '' }, { refreshToken: 5 }, { refreshToken: 'x', extra: true }])(
@@ -252,7 +243,7 @@ describe('Autenticação de cliente e entregador', () => {
     ['expirado', { sub: id, perfil: 'CLIENTE', type: 'refresh' }, '-1s'],
     ['tipo incorreto', { sub: id, perfil: 'CLIENTE', type: 'access' }, '7d'],
     ['sub ausente', { perfil: 'CLIENTE', type: 'refresh' }, '7d'],
-    ['perfil inválido', { sub: id, perfil: 'ADMIN', type: 'refresh' }, '7d'],
+    ['perfil inválido', { sub: id, perfil: 'OUTRO', type: 'refresh' }, '7d'],
   ])('refresh rejeita claims de token %s', async (_name, claims, ttl) => {
     const token = await refreshTokenWith(claims, ttl);
     await request(app.getHttpServer())
