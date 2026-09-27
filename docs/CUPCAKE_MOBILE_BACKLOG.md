@@ -75,7 +75,7 @@
 
 - [x] **D17 --- CRUD de categorias**
 - [x] **D18 --- CRUD de personalizações**
-- [ ] **D19 --- Backend de produtos**
+- [x] **D19 --- Backend de produtos**
 - [ ] **D20 --- Associação produto × categoria/personalizações**
 - [ ] **D21 --- Upload e armazenamento de imagens**
 - [ ] **D22 --- Administração de produtos no Next.js**
