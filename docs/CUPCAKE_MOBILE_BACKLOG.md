@@ -60,7 +60,7 @@
 - [x] **D13 --- Bloqueio após 5 erros durante 15 minutos**
 - [x] **D14 --- Testes de autenticação e autorização**
 - [x] **D15 --- Cadastro administrativo de entregadores**
-- [ ] **D16 --- Login e autorização do entregador**
+- [x] **D16 --- Login e autorização do entregador**
 
 **Marco 2:** três perfis autenticados e separados corretamente.
 

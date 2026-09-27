@@ -7,7 +7,7 @@ import { AppModule } from '../src/app.module';
 import { PerfilUsuario } from '../src/generated/prisma/enums';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-describe('Autenticação de cliente', () => {
+describe('Autenticação de cliente e entregador', () => {
   let app: INestApplication;
   const jwt = new JwtService();
   const findUnique = jest.fn();
@@ -15,6 +15,7 @@ describe('Autenticação de cliente', () => {
   const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
   const senha = ' senha123 ';
   let hash: string;
+  let perfil: PerfilUsuario;
   let loginState: { tentativasLoginInvalidas: number; bloqueadoAte: Date | null };
 
   beforeAll(async () => {
@@ -32,12 +33,14 @@ describe('Autenticação de cliente', () => {
     findUnique.mockReset();
     updateMany.mockReset();
     loginState = { tentativasLoginInvalidas: 0, bloqueadoAte: null };
+    perfil = PerfilUsuario.CLIENTE;
     findUnique.mockImplementation(async ({ where }) => {
       if (where.email && where.email !== 'ana@example.com') return null;
-      return { id, perfil: PerfilUsuario.CLIENTE, credencialSenha: hash, ...loginState };
+      return { id, perfil, credencialSenha: hash, ...loginState };
     });
     updateMany.mockImplementation(async ({ where, data }) => {
       if (
+        where.perfil !== perfil ||
         where.tentativasLoginInvalidas !== loginState.tentativasLoginInvalidas ||
         (where.bloqueadoAte?.getTime() ?? null) !== (loginState.bloqueadoAte?.getTime() ?? null)
       ) return { count: 0 };
@@ -97,6 +100,24 @@ describe('Autenticação de cliente', () => {
     }
   });
 
+  it('login de ENTREGADOR retorna access e refresh com claims e TTLs corretos', async () => {
+    perfil = PerfilUsuario.ENTREGADOR;
+    const response = await login();
+    expect(Object.keys(response.body).sort()).toEqual(['accessToken', 'refreshToken']);
+    for (const [type, token, secret, ttl] of [
+      ['access', response.body.accessToken, process.env.JWT_ACCESS_SECRET, 900],
+      ['refresh', response.body.refreshToken, process.env.JWT_REFRESH_SECRET, 604800],
+    ] as const) {
+      const header = JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString());
+      expect(header.alg).toBe('HS256');
+      const claims = await jwt.verifyAsync<Record<string, unknown>>(token, {
+        secret, algorithms: ['HS256'],
+      });
+      expect(claims).toMatchObject({ sub: id, perfil: 'ENTREGADOR', type });
+      expect((claims.exp as number) - (claims.iat as number)).toBe(ttl);
+    }
+  });
+
   it.each([
     ['email inválido', { email: 'invalido', senha }],
     ['email ausente', { senha }],
@@ -122,34 +143,46 @@ describe('Autenticação de cliente', () => {
     expect(JSON.stringify(wrong.body)).not.toContain(hash);
   });
 
-  it('bloqueia na quinta falha, não estende o prazo e libera após expiração', async () => {
-    for (let count = 1; count <= 5; count++) {
-      const response = await request(app.getHttpServer())
-        .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
-      expect(response.body.message).toBe('Credenciais inválidas.');
-      expect(loginState.tentativasLoginInvalidas).toBe(count);
-    }
-    const deadline = loginState.bloqueadoAte;
-    expect(deadline!.getTime()).toBeGreaterThan(Date.now());
-    const blocked = await request(app.getHttpServer())
-      .post('/auth/login').send(loginBody).expect(401);
-    expect(blocked.body.message).toBe('Credenciais inválidas.');
-    expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
-    expect(updateMany).toHaveBeenCalledTimes(5);
-
-    const blockedWithWrongPassword = await request(app.getHttpServer())
-      .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
-    expect(blockedWithWrongPassword.body.message).toBe('Credenciais inválidas.');
-    expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
-    expect(updateMany).toHaveBeenCalledTimes(5);
-
-    loginState.bloqueadoAte = new Date(Date.now() - 1);
-    await request(app.getHttpServer())
-      .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
-    expect(loginState).toEqual({ tentativasLoginInvalidas: 1, bloqueadoAte: null });
-    await login();
-    expect(loginState).toEqual({ tentativasLoginInvalidas: 0, bloqueadoAte: null });
+  it('login de ENTREGADOR usa o mesmo 401 para email ausente e senha incorreta', async () => {
+    perfil = PerfilUsuario.ENTREGADOR;
+    const missing = await request(app.getHttpServer())
+      .post('/auth/login').send({ email: 'ausente@example.com', senha }).expect(401);
+    const wrong = await request(app.getHttpServer())
+      .post('/auth/login').send({ ...loginBody, senha: senha.trim() }).expect(401);
+    expect(missing.body.message).toBe('Credenciais inválidas.');
+    expect(wrong.body.message).toBe(missing.body.message);
   });
+
+  it.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR])(
+    'bloqueia %s na quinta falha, não estende o prazo e libera após expiração', async (role) => {
+      perfil = role;
+      for (let count = 1; count <= 5; count++) {
+        const response = await request(app.getHttpServer())
+          .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
+        expect(response.body.message).toBe('Credenciais inválidas.');
+        expect(loginState.tentativasLoginInvalidas).toBe(count);
+      }
+      const deadline = loginState.bloqueadoAte;
+      expect(deadline!.getTime()).toBeGreaterThan(Date.now());
+      const blocked = await request(app.getHttpServer())
+        .post('/auth/login').send(loginBody).expect(401);
+      expect(blocked.body.message).toBe('Credenciais inválidas.');
+      expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
+      expect(updateMany).toHaveBeenCalledTimes(5);
+
+      const blockedWithWrongPassword = await request(app.getHttpServer())
+        .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
+      expect(blockedWithWrongPassword.body.message).toBe('Credenciais inválidas.');
+      expect(loginState).toEqual({ tentativasLoginInvalidas: 5, bloqueadoAte: deadline });
+      expect(updateMany).toHaveBeenCalledTimes(5);
+
+      loginState.bloqueadoAte = new Date(Date.now() - 1);
+      await request(app.getHttpServer())
+        .post('/auth/login').send({ ...loginBody, senha: 'errada' }).expect(401);
+      expect(loginState).toEqual({ tentativasLoginInvalidas: 1, bloqueadoAte: null });
+      await login();
+      expect(loginState).toEqual({ tentativasLoginInvalidas: 0, bloqueadoAte: null });
+    });
 
   it('não converte falha de persistência em 401 nem emite token', async () => {
     updateMany.mockRejectedValueOnce(new Error('falha de banco'));
@@ -157,17 +190,14 @@ describe('Autenticação de cliente', () => {
       .post('/auth/login').send(loginBody).expect(500);
   });
 
-  it.each([PerfilUsuario.ADMIN, PerfilUsuario.ENTREGADOR])(
-    'login rejeita %s com o mesmo 401',
-    async (perfil) => {
-      findUnique.mockResolvedValue({ id, perfil, credencialSenha: hash });
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send(loginBody)
-        .expect(401);
-      expect(response.body.message).toBe('Credenciais inválidas.');
-    },
-  );
+  it('login rejeita ADMIN com o mesmo 401', async () => {
+    perfil = PerfilUsuario.ADMIN;
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send(loginBody)
+      .expect(401);
+    expect(response.body.message).toBe('Credenciais inválidas.');
+  });
 
   it('refresh válido retorna somente novo access JWT', async () => {
     const { body } = await login();
@@ -186,6 +216,17 @@ describe('Autenticação de cliente', () => {
         algorithms: ['HS256'],
       }),
     ).resolves.toMatchObject({ sub: id, perfil: 'CLIENTE', type: 'access' });
+  });
+
+  it('refresh de ENTREGADOR retorna somente novo access de ENTREGADOR', async () => {
+    perfil = PerfilUsuario.ENTREGADOR;
+    const { body } = await login();
+    const response = await request(app.getHttpServer())
+      .post('/auth/refresh').send({ refreshToken: body.refreshToken }).expect(200);
+    expect(Object.keys(response.body)).toEqual(['accessToken']);
+    await expect(jwt.verifyAsync(response.body.accessToken, {
+      secret: process.env.JWT_ACCESS_SECRET, algorithms: ['HS256'],
+    })).resolves.toMatchObject({ sub: id, perfil: 'ENTREGADOR', type: 'access' });
   });
 
   it.each([{}, { refreshToken: '' }, { refreshToken: 5 }, { refreshToken: 'x', extra: true }])(

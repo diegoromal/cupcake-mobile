@@ -12,6 +12,7 @@ describe('Cadastro administrativo de entregadores', () => {
   const jwt = new JwtService();
   const findUnique = jest.fn();
   const create = jest.fn();
+  const updateMany = jest.fn();
   const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
   const body = {
     nome: '  Bia Silva  ',
@@ -23,7 +24,7 @@ describe('Cadastro administrativo de entregadores', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
-      .useValue({ usuario: { findUnique, create } })
+      .useValue({ usuario: { findUnique, create, updateMany } })
       .compile();
     app = moduleRef.createNestApplication();
     await app.init();
@@ -33,6 +34,7 @@ describe('Cadastro administrativo de entregadores', () => {
   beforeEach(() => {
     findUnique.mockReset();
     create.mockReset();
+    updateMany.mockReset();
     findUnique.mockResolvedValue({ id, perfil: PerfilUsuario.ADMIN });
     create.mockImplementation(async ({ data }) => ({
       id,
@@ -73,6 +75,42 @@ describe('Cadastro administrativo de entregadores', () => {
     expect(response.body).not.toHaveProperty('senha');
     expect(create.mock.calls[0][0].data.perfil).toBe(PerfilUsuario.ENTREGADOR);
     expect(create.mock.calls[0][0].data.credencialSenha).toMatch(/^\$argon2id\$/);
+  });
+
+  it('autentica o ENTREGADOR criado pela rota administrativa com a credencial Argon2id', async () => {
+    const entregadorId = '7b645cc8-9090-4261-919a-8a4d6170a271';
+    let created: { id: string; perfil: PerfilUsuario; credencialSenha: string } | undefined;
+    create.mockImplementation(async ({ data }) => {
+      created = { id: entregadorId, perfil: data.perfil, credencialSenha: data.credencialSenha };
+      return { id: entregadorId, nome: data.nome, email: data.email,
+        telefone: data.telefone, perfil: data.perfil };
+    });
+    findUnique.mockImplementation(async ({ where }) => {
+      if ((where.email === 'bia@example.com' || where.id === entregadorId) && created) {
+        return { ...created, tentativasLoginInvalidas: 0, bloqueadoAte: null };
+      }
+      return { id, perfil: PerfilUsuario.ADMIN };
+    });
+    updateMany.mockResolvedValue({ count: 1 });
+
+    const adminToken = await accessToken(PerfilUsuario.ADMIN);
+    await request(app.getHttpServer()).post('/admin/entregadores')
+      .set('Authorization', `Bearer ${adminToken}`).send(body).expect(201);
+    expect(created?.perfil).toBe(PerfilUsuario.ENTREGADOR);
+    expect(created?.credencialSenha).toMatch(/^\$argon2id\$/);
+
+    const login = await request(app.getHttpServer()).post('/auth/login')
+      .send({ email: body.email, senha: body.senha }).expect(200);
+    expect(Object.keys(login.body).sort()).toEqual(['accessToken', 'refreshToken']);
+    for (const [token, secret, type] of [
+      [login.body.accessToken, process.env.JWT_ACCESS_SECRET, 'access'],
+      [login.body.refreshToken, process.env.JWT_REFRESH_SECRET, 'refresh'],
+    ] as const) {
+      await expect(jwt.verifyAsync(token, { secret, algorithms: ['HS256'] }))
+        .resolves.toMatchObject({ sub: entregadorId, perfil: 'ENTREGADOR', type });
+    }
+    await request(app.getHttpServer()).post('/admin/entregadores')
+      .set('Authorization', `Bearer ${login.body.accessToken}`).send(body).expect(403);
   });
 
   it.each([PerfilUsuario.CLIENTE, PerfilUsuario.ENTREGADOR])(

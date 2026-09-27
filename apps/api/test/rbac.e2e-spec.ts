@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import * as argon2 from 'argon2';
 import { IncomingMessage, request as httpRequest, ServerResponse } from 'node:http';
 import request from 'supertest';
 import { AuthModule } from '../src/auth/auth.module';
@@ -52,13 +53,14 @@ describe('RBAC em controller exclusivo de teste', () => {
   let app: INestApplication;
   const jwt = new JwtService();
   const findUnique = jest.fn();
+  const updateMany = jest.fn();
   const id = '9b72c770-bc74-4c77-82c7-205c2d91628a';
   let receivedAuthorizationHeaderCount = 0;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [TestRbacModule] })
       .overrideProvider(PrismaService)
-      .useValue({ usuario: { findUnique } })
+      .useValue({ usuario: { findUnique, updateMany } })
       .compile();
     app = moduleRef.createNestApplication();
     app.use((req: IncomingMessage, _res: ServerResponse, next: () => void) => {
@@ -73,6 +75,7 @@ describe('RBAC em controller exclusivo de teste', () => {
 
   beforeEach(() => {
     findUnique.mockReset();
+    updateMany.mockReset();
     findUnique.mockResolvedValue({ id, perfil: PerfilUsuario.CLIENTE });
     receivedAuthorizationHeaderCount = 0;
   });
@@ -184,4 +187,25 @@ describe('RBAC em controller exclusivo de teste', () => {
         .expect(403);
     },
   );
+
+  it('usa access emitido no login de ENTREGADOR para separar as rotas por perfil', async () => {
+    const hash = await argon2.hash('senha123', { type: argon2.argon2id });
+    findUnique.mockImplementation(async ({ where }) => ({
+      id, perfil: PerfilUsuario.ENTREGADOR,
+      ...(where.email ? {
+        credencialSenha: hash, tentativasLoginInvalidas: 0, bloqueadoAte: null,
+      } : {}),
+    }));
+    updateMany.mockResolvedValue({ count: 1 });
+    const login = await request(app.getHttpServer())
+      .post('/auth/login').send({ email: 'bia@example.com', senha: 'senha123' }).expect(200);
+    const authorization = `Bearer ${login.body.accessToken}`;
+    await request(app.getHttpServer()).get('/test-rbac/entregador')
+      .set('Authorization', authorization).expect(200);
+    await request(app.getHttpServer()).get('/test-rbac/cliente')
+      .set('Authorization', authorization).expect(403);
+    await request(app.getHttpServer()).get('/test-rbac/admin')
+      .set('Authorization', authorization).expect(403);
+    await request(app.getHttpServer()).get('/test-rbac/entregador').expect(401);
+  });
 });
