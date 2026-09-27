@@ -47,7 +47,12 @@ temp/
 # Local infrastructure data
 .pgdata/
 docker-data/
-.ai/task-runner/
+.ai/task-runner/*
+!.ai/task-runner/dashboard/
+.ai/task-runner/dashboard/*
+!.ai/task-runner/dashboard/index.html
+!.ai/task-runner/dashboard/app.js
+!.ai/task-runner/dashboard/style.css
 
 # Test artifacts
 test-results/

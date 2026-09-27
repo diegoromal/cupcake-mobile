@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cupcake Mobile · Task Runner</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><p class="eyebrow">PAINEL LOCAL · SOMENTE LEITURA</p><h1>Cupcake Mobile <span>· Task Runner</span></h1><span id="runtime-source" class="muted">Origem do runtime: carregando…</span></div>
+      <div class="sync"><span id="stale" class="warning" hidden>Dados desatualizados</span><span id="api-error" class="error" hidden>Não foi possível atualizar o dashboard.</span><span id="updated">Aguardando dados…</span></div>
+    </header>
+    <p id="source-status" class="source-status" role="status" hidden></p>
+
+    <section class="grid top-grid">
+      <article class="card task-card"><p class="eyebrow">TAREFA ATUAL</p><div class="task-heading"><h2 id="task">Nenhuma task ativa</h2><span id="overall" class="badge">Sem estado</span></div><p id="description" class="muted">Aguardando estado do runner.</p><div class="detail"><span>Branch</span><strong id="branch">—</strong></div></article>
+      <article class="card"><p class="eyebrow">TEMPOS</p><div class="time-grid"><div><span>Active time</span><strong id="active">—</strong></div><div><span>Cycle time</span><strong id="cycle">—</strong></div><div><span>Início da tarefa</span><strong id="started">—</strong></div><div><span id="phase-start-label">Início da fase</span><strong id="phase-started">—</strong></div></div></article>
+    </section>
+
+    <section class="card"><div class="section-heading"><div><p class="eyebrow">EXECUÇÃO</p><h2>Pipeline</h2></div><span id="phase-status" class="badge">—</span></div><div id="pipeline" class="pipeline" aria-label="Fases do task runner"></div></section>
+
+    <section class="grid middle-grid">
+      <article class="card"><p class="eyebrow">QUALIDADE</p><h2>Estado atual</h2><div class="quality-grid"><div><span>First pass atual</span><strong id="first-pass-current">—</strong></div><div><span>Fix loops</span><strong id="fix-loops">—</strong></div><div><span>Replans</span><strong id="replans">—</strong></div><div><span>Tokens estimados</span><strong id="tokens">—</strong></div></div><p class="subhead">Findings</p><div id="findings" class="findings"></div></article>
+      <article class="card"><p class="eyebrow">DELIVERY</p><h2>Entrega</h2><div id="delivery" class="pipeline delivery" aria-label="Etapas de delivery"></div><div class="delivery-details"><div><span>Commit</span><strong id="commit">—</strong></div><div><span>PR</span><strong id="pr">—</strong></div><div><span>CI</span><strong id="ci">—</strong></div><div><span>Merge</span><strong id="merge">—</strong></div></div></article>
+    </section>
+
+    <section class="card"><div class="section-heading"><div><p class="eyebrow">MÉTRICAS GERAIS</p><h2>Histórico medido</h2></div><span id="sample-warning" class="warning" hidden>ESTIMATIVA PRELIMINAR — AMOSTRA INSUFICIENTE</span></div><div id="metrics" class="metrics"></div></section>
+
+    <section class="card"><div class="section-heading"><div><p class="eyebrow">REGISTROS</p><h2>Histórico</h2></div><span id="history-count" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th>Task</th><th>Branch</th><th>Cycle</th><th>Active</th><th>First pass</th><th>Fix loops</th><th>Findings C/H/M/L</th><th>Delivery</th><th>Commit / merge</th></tr></thead><tbody id="history"><tr><td colspan="9" class="empty">Aguardando histórico…</td></tr></tbody></table></div></section>
+  </main>
+</body>
+</html>

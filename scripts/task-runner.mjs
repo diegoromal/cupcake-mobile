@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import readline from 'node:readline/promises';
+import { calculateMetrics } from './task-runner-metrics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PHASES = ['PLAN', 'EXEC', 'TEST', 'REVIEW', 'QUALITY_GATE'];
@@ -39,14 +40,6 @@ function readHistory(filename) {
   if (!fs.existsSync(filename)) return [];
   const content = fs.readFileSync(filename, 'utf8');
   return content.trim() ? content.trimEnd().split('\n').map((line) => JSON.parse(line)) : [];
-}
-
-function percentile(values, fraction) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const position = (sorted.length - 1) * fraction;
-  const lower = Math.floor(position);
-  return sorted[lower] + (sorted[Math.ceil(position)] - sorted[lower]) * (position - lower);
 }
 
 function minutes(milliseconds) { return milliseconds / MINUTE; }
@@ -351,22 +344,17 @@ export function createRunner({ root = ROOT, now = () => Date.now(), run = defaul
   }
 
   function metrics(remaining) {
-    const history = readHistory(historyFile);
-    const count = history.length;
-    const cycles = history.map((entry) => entry.cycle_minutes);
-    const mean = count ? cycles.reduce((sum, value) => sum + value, 0) / count : null;
-    const median = percentile(cycles, 0.5);
+    const { count, cycle_mean, cycle_median, cycle_p75, active_mean,
+      first_pass_rate, fix_loops_mean, insufficient_sample } = calculateMetrics(readHistory(historyFile));
     const lines = [`Tasks concluídas medidas: ${count}`];
     if (!count) lines.push('Sem dados para estimativa.');
     else {
-      lines.push(`Cycle médio: ${display(mean)} min`, `Mediana: ${display(median)} min`,
-        `P75: ${display(percentile(cycles, 0.75))} min`,
-        `Active médio: ${display(history.reduce((sum, row) => sum + row.active_minutes, 0) / count)} min`,
-        `First-pass rate: ${display(100 * history.filter((row) => row.first_pass).length / count)}%`,
-        `Fix loops médios: ${display(history.reduce((sum, row) => sum + row.fix_loops, 0) / count)}`);
-      if (remaining !== undefined) lines.push(`Restantes × média: ${display(remaining * mean)} min`,
-        `Restantes × mediana: ${display(remaining * median)} min`);
-      if (count < 10) lines.push('ESTIMATIVA PRELIMINAR — AMOSTRA INSUFICIENTE');
+      lines.push(`Cycle médio: ${display(cycle_mean)} min`, `Mediana: ${display(cycle_median)} min`,
+        `P75: ${display(cycle_p75)} min`, `Active médio: ${display(active_mean)} min`,
+        `First-pass rate: ${display(first_pass_rate)}%`, `Fix loops médios: ${display(fix_loops_mean)}`);
+      if (remaining !== undefined) lines.push(`Restantes × média: ${display(remaining * cycle_mean)} min`,
+        `Restantes × mediana: ${display(remaining * cycle_median)} min`);
+      if (insufficient_sample) lines.push('ESTIMATIVA PRELIMINAR — AMOSTRA INSUFICIENTE');
     }
     return lines.join('\n');
   }
