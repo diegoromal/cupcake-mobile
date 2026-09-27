@@ -11,7 +11,7 @@
 - [x] Consolidação das decisões das histórias de usuário
 - [x] Definição da arquitetura-base
 - [x] Fase 0 --- Fundação e documentação
-- [ ] Fase 1 --- Usuários e segurança
+- [x] Fase 1 --- Usuários e segurança
 - [ ] Fase 2 --- Catálogo
 - [ ] Fase 3 --- Aplicativo Flutter
 - [ ] Fase 4 --- Carrinho
