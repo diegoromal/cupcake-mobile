@@ -68,9 +68,9 @@ describe('CRUD administrativo de produtos', () => {
   it('POST cria com trim, defaults, Decimal e resposta restrita', async () => {
     const auth = await token();
     await request(app.getHttpServer()).post(base).set('Authorization', `Bearer ${auth}`)
-      .send({ ...valid, descricao: '  Doce  ', imagem: '  foto.jpg  ' }).expect(201, output);
+      .send({ ...valid, descricao: '  Doce  ' }).expect(201, output);
     expect(create.mock.calls[0][0].data).toMatchObject({
-      categoriaId, nome: 'Bolo', descricao: 'Doce', imagem: 'foto.jpg', ativo: undefined,
+      categoriaId, nome: 'Bolo', descricao: 'Doce', ativo: undefined,
       precoAtual: new Prisma.Decimal('12.30'),
     });
     expect(stockCreate).toHaveBeenCalledWith({ data: {
@@ -94,10 +94,10 @@ describe('CRUD administrativo de produtos', () => {
     const auth = await token();
     await request(app.getHttpServer()).patch(`${base}/${id}`)
       .set('Authorization', `Bearer ${auth}`)
-      .send({ categoriaId, nome: ' Novo ', descricao: null, imagem: null,
+      .send({ categoriaId, nome: ' Novo ', descricao: null,
         precoAtual: '0.05', ativo: false }).expect(200, output);
     expect(update.mock.calls[0][0].data).toMatchObject({
-      categoriaId, nome: 'Novo', descricao: null, imagem: null,
+      categoriaId, nome: 'Novo', descricao: null,
       precoAtual: new Prisma.Decimal('0.05'), ativo: false,
     });
   });
@@ -134,6 +134,7 @@ describe('CRUD administrativo de produtos', () => {
     [{ ...valid, categoriaId: 'invalid' }, 'post'],
     [{ ...valid, nome: '  ' }, 'post'],
     [{ ...valid, ativo: 'true' }, 'post'],
+    [{ ...valid, imagem: 'foto.jpg' }, 'post'],
     [{ ...valid, imagem: ' ' }, 'post'],
     [{ ...valid, imagem: 'data:image/png;base64,YQ==' }, 'post'],
     [{ nome: 'Bolo', precoAtual: '1.00' }, 'post'],
@@ -149,7 +150,7 @@ describe('CRUD administrativo de produtos', () => {
     [{}, 'patch'], [{ precoAtual: '1.001' }, 'patch'],
     [{ precoAtual: '-1' }, 'patch'], [{ precoAtual: null }, 'patch'],
     [{ ativo: null }, 'patch'], [{ ativo: 1 }, 'patch'],
-    [{ categoriaId: null }, 'patch'], [{ imagem: '' }, 'patch'],
+    [{ categoriaId: null }, 'patch'], [{ imagem: 'foto.jpg' }, 'patch'], [{ imagem: '' }, 'patch'],
     [{ estoque: 0 }, 'patch'], [{ personalizacoes: [] }, 'patch'],
   ] as const)('rejeita payload %j em %s', async (body, method) => {
     const auth = await token();

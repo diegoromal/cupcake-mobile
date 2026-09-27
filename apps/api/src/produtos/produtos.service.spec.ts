@@ -46,7 +46,7 @@ describe('ProdutosService', () => {
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(create.mock.calls[0][0].data).toEqual({
       categoriaId, nome: 'Bolo', descricao: undefined,
-      precoAtual: new Prisma.Decimal('1234567890.12'), imagem: undefined, ativo: undefined,
+      precoAtual: new Prisma.Decimal('1234567890.12'), ativo: undefined,
     });
     expect(create.mock.calls[0][0].data.precoAtual).toBeInstanceOf(Prisma.Decimal);
     expect(stockCreate).toHaveBeenCalledWith({ data: {
@@ -71,11 +71,11 @@ describe('ProdutosService', () => {
 
   it('atualiza parcialmente, troca categoria, limpa opcionais e permite desativar', async () => {
     await expect(service.update(id, { categoriaId, precoAtual: '0.05', descricao: null,
-      imagem: null, ativo: false })).resolves.toEqual(output);
+      ativo: false })).resolves.toEqual(output);
     expect(categoriaFind).toHaveBeenCalledWith({ where: { id: categoriaId }, select: { id: true } });
     expect(update.mock.calls[0][0].data).toEqual({
       categoriaId, nome: undefined, descricao: null, precoAtual: new Prisma.Decimal('0.05'),
-      imagem: null, ativo: false,
+      ativo: false,
     });
   });
 

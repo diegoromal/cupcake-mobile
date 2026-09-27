@@ -16,9 +16,11 @@
     "prisma:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "admin:provision-first": "ts-node src/scripts/provision-first-admin.ts"
+    "admin:provision-first": "ts-node src/scripts/provision-first-admin.ts",
+    "images:reconcile": "ts-node src/scripts/reconcile-product-images.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
@@ -31,7 +33,8 @@
     "dotenv": "18.0.4",
     "pg": "8.23.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
@@ -39,6 +42,7 @@
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/jest": "^29.5.14",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.10.7",
     "@types/pg": "8.23.1",
     "@types/supertest": "^6.0.2",
