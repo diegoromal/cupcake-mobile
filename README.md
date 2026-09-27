@@ -151,6 +151,54 @@ A documentação completa do padrão está disponível em `docs/AI_ENGINEERING_S
 
 O uso de IA não substitui revisão, testes ou evidências de funcionamento.
 
+## Task runner local
+
+O runner registra o fluxo das tasks Dxx sem executar prompts ou chamar LLM. Use
+Node.js 22 na raiz do repositório. A task deve começar em sua branch
+`task/Dxx-*`, com working tree limpa:
+
+```sh
+node scripts/task-runner.mjs start D16
+node scripts/task-runner.mjs status
+node scripts/task-runner.mjs complete-phase PASS
+node scripts/task-runner.mjs approve
+node scripts/task-runner.mjs begin
+```
+
+Repita `complete-phase`, `approve` e `begin` para PLAN, EXEC, TEST, REVIEW e
+QUALITY_GATE. `approve` exige terminal interativo e resposta `y`; após aprovação
+do Quality Gate, a task fica `READY_TO_CLOSE`. Para resultado `FAIL` ou `BLOCKED`,
+use `approve --to PLAN` ou `approve --to EXEC` para autorizar um retorno. O runner
+mostra o arquivo de prompt da fase, mas a execução e a avaliação continuam humanas.
+
+Comandos adicionais:
+
+```sh
+node scripts/task-runner.mjs pause
+node scripts/task-runner.mjs resume
+node scripts/task-runner.mjs checks
+node scripts/task-runner.mjs record findings 0 1 2 3
+node scripts/task-runner.mjs record tokens 1200
+node scripts/task-runner.mjs metrics --remaining 100
+node scripts/task-runner.mjs close committed abcdef1
+node scripts/task-runner.mjs close pr https://example.com/pr/16
+node scripts/task-runner.mjs close ci-pass "CI run 42 PASS"
+node scripts/task-runner.mjs close merged 1234567
+```
+
+`checks` executa os comandos de `scripts/task-checks.json` e registra PASS/FAIL
+com duração, sem aprovar fase. O tempo ativo soma apenas períodos entre início e
+pausa/conclusão de fase; um terminal fechado com fase ativa não interrompe o
+relógio automaticamente. O cycle time definitivo vai do início da task ao merge
+registrado. As estimativas usam tasks finalizadas e são preliminares com menos
+de dez registros. Tokens são uma estimativa manual opcional.
+
+O estado e o histórico locais ficam em `.ai/task-runner/`, ignorado pelo Git;
+faça backup próprio se precisar preservá-los entre máquinas. O runner somente
+lê informações do Git. Ele não cria/troca branches, nem executa commit, push,
+merge, rebase, reset ou abertura de PR. As etapas de fechamento registram
+evidências de ações feitas fora do runner.
+
 ## Status
 
 Em desenvolvimento.
