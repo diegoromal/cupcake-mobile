@@ -78,7 +78,7 @@
 - [x] **D19 --- Backend de produtos**
 - [x] **D20 --- Associação produto × categoria/personalizações**
 - [x] **D21 --- Upload e armazenamento de imagens**
-- [ ] **D22 --- Administração de produtos no Next.js**
+- [x] **D22 --- Administração de produtos no Next.js**
 - [ ] **D23 --- Administração de categorias/personalizações**
 - [ ] **D24 --- Estoque + histórico de movimentações**
 - [ ] **D25 --- Testes do módulo de catálogo**

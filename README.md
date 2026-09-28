@@ -207,6 +207,27 @@ evidências de ações feitas fora do runner.
 
 ## Status
 
-Em desenvolvimento.
+O projeto está em desenvolvimento incremental. O painel administrativo de Produtos (D22) está implementado nesta branch; as demais funcionalidades permanecem no backlog.
 
-A fundação arquitetural e o ambiente de desenvolvimento estão sendo preparados antes do início da implementação das funcionalidades.
+## Painel administrativo de Produtos (D22)
+
+A aplicação Next.js em `apps/admin` usa Node.js 22. Inicie a API NestJS com PostgreSQL e storage configurados, e provisione um ADMIN conforme [autenticação](docs/authentication.md). Configure a URL interna da API apenas no servidor do painel:
+
+```sh
+cd apps/admin
+npm ci
+cp .env.example .env.local
+# ajuste API_BASE_URL em .env.local, por exemplo http://localhost:3000
+npm run dev
+```
+
+Abra `http://localhost:3001/login`. O painel oferece lista, criação, edição, imagem, associação de personalizações e exclusão de Produtos. Para verificar localmente:
+
+```sh
+cd apps/admin
+npm test
+npm run lint
+npm run build
+```
+
+O logout remove cookies locais. A API utiliza refresh stateless sem revogação. A key da imagem é privada; o painel mostra apenas a presença da imagem e a prévia do arquivo local selecionado.
