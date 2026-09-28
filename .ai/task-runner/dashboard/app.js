@@ -5,7 +5,16 @@ const phaseLabels = ['PLAN', 'EXEC', 'TEST', 'REVIEW', 'QUALITY GATE'];
 const deliveryLabels = ['COMMIT', 'PR', 'CI', 'MERGE'];
 const dash = (value) => value === null || value === undefined || value === '' ? '—' : String(value);
 const numeric = (value) => typeof value === 'number' && Number.isFinite(value) ? value : null;
-const duration = (value) => numeric(value) === null ? '—' : `${value.toFixed(2)} min`;
+function formatDurationMinutes(value) {
+  if (numeric(value) === null || value < 0) return '—';
+  const totalSeconds = Math.round(value * 60);
+  if (!Number.isSafeInteger(totalSeconds)) return '—';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  if (hours === 0) return `${minutes}:${seconds}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${seconds}`;
+}
 const date = (value) => value && !Number.isNaN(Date.parse(value)) ? new Date(value).toLocaleString('pt-BR') : '—';
 const short = (value) => value ? String(value).slice(0, 8) : '—';
 let lastUpdate = null;
@@ -37,8 +46,8 @@ function renderState(state) {
     ? state.delivery_status : state?.phase_status;
   set('overall', overall || 'Sem estado');
   set('phase-status', state?.phase ? `${state.phase} · ${state.phase_status || '—'}` : '—');
-  set('active', duration(state?.active_minutes));
-  set('cycle', duration(state?.cycle_minutes));
+  set('active', formatDurationMinutes(state?.active_minutes));
+  set('cycle', formatDurationMinutes(state?.cycle_minutes));
   set('started', date(state?.started_at));
   $('phase-start-label').textContent = state?.phase_started_at ? 'Início da fase' : 'Início do segmento ativo';
   set('phase-started', date(state?.phase_started_at || state?.segment_started_at));
@@ -73,9 +82,9 @@ function renderState(state) {
 
 function renderMetrics(data) {
   const entries = [
-    ['Tasks concluídas', data.count], ['Cycle médio', duration(data.cycle_mean)],
-    ['Mediana', duration(data.cycle_median)], ['P75', duration(data.cycle_p75)],
-    ['Active médio', duration(data.active_mean)],
+    ['Tasks concluídas', data.count], ['Cycle médio', formatDurationMinutes(data.cycle_mean)],
+    ['Mediana', formatDurationMinutes(data.cycle_median)], ['P75', formatDurationMinutes(data.cycle_p75)],
+    ['Active médio', formatDurationMinutes(data.active_mean)],
     ['First-pass', numeric(data.first_pass_rate) === null ? '—' : `${data.first_pass_rate.toFixed(2)}%`],
     ['Fix loops médios', numeric(data.fix_loops_mean) === null ? '—' : data.fix_loops_mean.toFixed(2)],
   ];
@@ -96,7 +105,7 @@ function renderHistory(rows, emptyMessage = 'Nenhuma task concluída.') {
   const sorted = [...rows].sort((a, b) => (Date.parse(b.finished_at) || 0) - (Date.parse(a.finished_at) || 0));
   $('history').replaceChildren(...(sorted.length ? sorted.map((row) => {
     const tr = document.createElement('tr');
-    const values = [row.task, row.branch, duration(row.cycle_minutes), duration(row.active_minutes),
+    const values = [row.task, row.branch, formatDurationMinutes(row.cycle_minutes), formatDurationMinutes(row.active_minutes),
       row.first_pass === null ? '—' : row.first_pass ? 'Sim' : 'Não', row.fix_loops,
       ['critical', 'high', 'medium', 'low'].map((level) => dash(row[`${level}_findings`])).join(' / '),
       row.delivery_status, [short(row.commit_sha), short(row.merge_sha)].join(' / ')];
