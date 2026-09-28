@@ -1,0 +1,21 @@
+# D23 — Administração de categorias e personalizações
+
+## Implementação
+
+O painel Next.js adiciona `/categorias`, `/categorias/nova`, `/categorias/[id]`, `/personalizacoes`, `/personalizacoes/nova` e `/personalizacoes/[id]`. O `AdminHeader` compartilhado aparece também nas três páginas de Produtos D22, com navegação semântica, `aria-current` e o mesmo `LogoutButton`. Não há dashboard. Sessão, cookies HttpOnly, refresh/retry, `adminApi`, `AdminApiError` e Route Handler proxy continuam os da D22.
+
+O proxy acrescenta, para cada recurso novo, apenas GET/POST na coleção e GET/PATCH/DELETE no UUID. Preserva as rotas D22. Rejeita métodos ou segmentos fora da matriz, recursos desconhecidos e qualquer query com 404; POST/PATCH sem `application/json` recebe 415; mutação cross-origin recebe 403. UUID inválido é rejeitado pela allowlist com 404 no proxy, embora a API isolada responda 400. O proxy conserva os códigos 400, 401, 403, 404, 409 e 204 recebidos da API. `adminApi` redireciona 401 administrativo para o login.
+
+Listas têm loading, vazio, erro e retry. Criação envia nome com trim e descrição vazia como `null`; nomes duplicados são válidos. Edição compara os campos limpos com o recurso original, envia apenas campos alterados e não dispara PATCH vazio. Em personalizações, `disponibilidade` inicia `true` e `false` é enviado explicitamente. `ajusteValor` permanece string ou `null` no input, estado, validação, payload, leitura e exibição. A gramática aceita `^[-+]?0*\d{1,10}(?:\.\d{1,2})?$`; campo limpo envia `null`, campo inalterado é omitido. `null` é “Não definido”; zero é “R$ 0,00”; positivos não nulos recebem “+”; negativos recebem “−”. Não há conversão para ponto flutuante.
+
+A exclusão exige digitar o nome exato. Após 204, retorna à lista. Categoria em uso por Produtos mostra 409 específico. Personalização em uso mostra 409 sem atribuir a origem do vínculo e mantém a edição de disponibilidade. 404 informa ausência. Trava síncrona compartilhada entre formulário e exclusão bloqueia requests simultâneas em ambos os sentidos e é liberada em `finally`. Geração de carregamento e guarda de montagem impedem respostas tardias de trocar o recurso ou atualizar a página desmontada.
+
+Labels, `aria-describedby`, `aria-invalid`, resumo de validação focável e anunciável, foco no resumo após validação inválida e na confirmação, retorno de foco ao cancelar, `role=alert`, `role=status`, botões desabilitados durante mutações e foco visível cobrem os estados principais de teclado e leitura assistiva. Os erros continuam associados aos controles inválidos por `aria-describedby`, e esses controles mantêm `aria-invalid`.
+
+## Verificação da EXEC
+
+Em 28/09/2026, `apps/admin`: 68 testes em 14 suites, lint sem aviso e build Next.js 16.3.6 concluídos. `git diff --check` sem erro. Regressão dirigida da API: 22 testes de service em 3 suites e 82 E2E em 3 suites, usando `--no-cache`; o filtro também incluiu Produto × Personalização. Nenhum arquivo da API foi alterado.
+
+Smoke real com PostgreSQL isolado `cupcake_d23`, API NestJS em `localhost:3100`, painel `next start` em `localhost:3001` e ADMIN provisionado: 53 verificações. Cobriu login, lista/criação/consulta/edição/exclusão de categoria livre, nomes duplicados e IDs distintos, categoria vinculada a Produto com DELETE 409, ciclo decimal e disponibilidade da Personalização livre, DELETE 409 com ProdutoPersonalizacao e vínculo preservado, DELETE 409 com ItemCarrinhoPersonalizacao em fixture isolada, visitante/CLIENTE/ENTREGADOR, cross-origin 403, Produtos e logout. Cleanup direcionado por IDs ocorreu em `finally`; verificação posterior encontrou zero fixtures residuais de categorias, personalizações, produtos e usuários de teste. O ADMIN temporário permanece apenas no banco isolado. Não foi necessário S3Mock para os fluxos D23. As quatro [capturas reais](ihc/admin-categorias-personalizacoes.md) foram feitas no Chrome headless sobre o painel e a API em execução, antes da remoção das fixtures.
+
+O primeiro ensaio de smoke revelou que o Produto da API cria uma linha de Estoque; o cleanup temporário passou a removê-la pelo ID do Produto. Um segundo ensaio corrigiu a leitura da lista de vínculos, cujo item usa `id` da Personalização. Ambos foram limpos por IDs antes da repetição final, que passou.

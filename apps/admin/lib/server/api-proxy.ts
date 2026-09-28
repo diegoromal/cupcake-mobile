@@ -14,7 +14,8 @@ export function apiBase(): string {
   return url.origin;
 }
 export function allowed(method: string, parts: string[]): boolean {
-  if (parts.length === 1) return (parts[0] === 'produtos' && ['GET','POST'].includes(method)) || (['categorias','personalizacoes'].includes(parts[0]) && method === 'GET');
+  if (parts.length === 1) return ['produtos','categorias','personalizacoes'].includes(parts[0]) && ['GET','POST'].includes(method);
+  if (['categorias','personalizacoes'].includes(parts[0])) return parts.length === 2 && uuid.test(parts[1]) && ['GET','PATCH','DELETE'].includes(method);
   if (parts[0] !== 'produtos' || !uuid.test(parts[1])) return false;
   if (parts.length === 2) return ['GET','PATCH','DELETE'].includes(method);
   if (parts.length === 3) return (parts[2] === 'imagem' && ['POST','DELETE'].includes(method)) || (parts[2] === 'personalizacoes' && ['GET','POST'].includes(method));

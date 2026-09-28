@@ -11,7 +11,9 @@ test('allowlist explícita por método e rota',()=>{
  expect(allowed('PATCH',['produtos',id])).toBe(true);expect(allowed('POST',['produtos',id,'imagem'])).toBe(true);
  expect(allowed('DELETE',['produtos',id,'personalizacoes',id2])).toBe(true);
  expect(allowed('GET',['categorias'])).toBe(true);expect(allowed('GET',['personalizacoes'])).toBe(true);
- expect(allowed('POST',['categorias'])).toBe(false);expect(allowed('GET',['produtos','..'])).toBe(false);
+ expect(allowed('POST',['categorias'])).toBe(true);expect(allowed('POST',['personalizacoes'])).toBe(true);
+ for(const resource of ['categorias','personalizacoes']) { for(const method of ['GET','PATCH','DELETE']) expect(allowed(method,[resource,id])).toBe(true); for(const method of ['PUT','POST']) expect(allowed(method,[resource,id])).toBe(false); expect(allowed('GET',[resource,id,'extra'])).toBe(false); expect(allowed('GET',[resource,'invalid'])).toBe(false); }
+ expect(allowed('DELETE',['categorias'])).toBe(false);expect(allowed('PATCH',['personalizacoes'])).toBe(false);expect(allowed('GET',['produtos','..'])).toBe(false);
  expect(allowed('GET',['users'])).toBe(false);expect(allowed('GET',['produtos',id,'imagem'])).toBe(false);
 });
 test('origem cruzada rejeitada e cookies protegidos',async()=>{
@@ -95,4 +97,24 @@ test('login inválido retorna mensagem genérica sem cookies',async()=>{
  const {POST}=await import('@/app/api/session/login/route');jest.spyOn(global,'fetch').mockResolvedValue(new Response('',{status:401}));
  const response=await POST(req('/api/session/login','POST',JSON.stringify({email:'x@example.com',senha:'errada'}),{'content-type':'application/json'}));
  expect(response.status).toBe(401);expect(await response.json()).toEqual({message:'Credenciais inválidas ou acesso indisponível.'});expect(response.headers.get('set-cookie')).toBeNull();
+});
+
+test('novos CRUDs rejeitam query, tipo inválido, origem cruzada e UUID inválido',async()=>{
+ const fetchMock=jest.spyOn(global,'fetch');
+ expect((await proxyAdmin(req('/api/admin/categorias?x=1'),['categorias'])).status).toBe(404);
+ expect((await proxyAdmin(req('/api/admin/personalizacoes/invalid'),['personalizacoes','invalid'])).status).toBe(404);
+ expect((await proxyAdmin(req('/api/admin/categorias','POST','{}'),['categorias'])).status).toBe(415);
+ expect((await proxyAdmin(req('/api/admin/personalizacoes','POST','{}',{'content-type':'application/json',origin:'http://evil.test'}),['personalizacoes'])).status).toBe(403);
+ expect(fetchMock).not.toHaveBeenCalled();
+});
+test('novos CRUDs preservam JSON textual, false e status 400/409/204',async()=>{
+ const fetchMock=jest.spyOn(global,'fetch').mockResolvedValueOnce(Response.json({message:'Inválido'},{status:400})).mockResolvedValueOnce(Response.json({message:'Em uso'},{status:409})).mockResolvedValueOnce(new Response(null,{status:204}));
+ const post=req('/api/admin/personalizacoes','POST',JSON.stringify({nome:'X',disponibilidade:false,ajusteValor:'-0.05'}),{'content-type':'application/json'});post.cookies.set('admin_access','token');
+ expect((await proxyAdmin(post,['personalizacoes'])).status).toBe(400);
+ const patch=req(`/api/admin/personalizacoes/${id}`,'PATCH',JSON.stringify({ajusteValor:null}),{'content-type':'application/json'});patch.cookies.set('admin_access','token');
+ expect((await proxyAdmin(patch,['personalizacoes',id])).status).toBe(409);
+ const del=req(`/api/admin/categorias/${id}`,'DELETE');del.cookies.set('admin_access','token');expect((await proxyAdmin(del,['categorias',id])).status).toBe(204);
+ expect(fetchMock).toHaveBeenCalledTimes(3);
+ expect(new TextDecoder().decode(fetchMock.mock.calls[0][1]?.body as ArrayBuffer)).toContain('"disponibilidade":false');
+ expect(new TextDecoder().decode(fetchMock.mock.calls[1][1]?.body as ArrayBuffer)).toContain('"ajusteValor":null');
 });

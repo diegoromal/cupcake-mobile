@@ -1,0 +1,2 @@
+import Link from 'next/link';import AdminHeader from '@/components/AdminHeader';import PersonalizationDetail from '@/components/PersonalizationDetail';
+export default async function PersonalizationPage({params}:{params:Promise<{id:string}>}){const {id}=await params;return <main className="container stack"><AdminHeader/><Link href="/personalizacoes">← Personalizações</Link><PersonalizationDetail key={id} id={id}/></main>;}

@@ -207,7 +207,7 @@ evidências de ações feitas fora do runner.
 
 ## Status
 
-O projeto está em desenvolvimento incremental. O painel administrativo de Produtos (D22) está implementado nesta branch; as demais funcionalidades permanecem no backlog.
+O projeto está em desenvolvimento incremental. O painel administrativo de Produtos (D22) e de Categorias e Personalizações (D23) está implementado nesta branch; as demais funcionalidades permanecem no backlog.
 
 ## Painel administrativo de Produtos (D22)
 
@@ -231,3 +231,7 @@ npm run build
 ```
 
 O logout remove cookies locais. A API utiliza refresh stateless sem revogação. A key da imagem é privada; o painel mostra apenas a presença da imagem e a prévia do arquivo local selecionado.
+
+## Categorias e Personalizações no admin (D23)
+
+Após iniciar o painel e entrar como ADMIN, use a navegação compartilhada para acessar `/categorias` e `/personalizacoes`. Cada área oferece lista, criação, edição parcial e exclusão confirmada pelo nome exato. O ajuste de valor usa string decimal com ponto; vazio representa valor não definido e zero permanece distinto. Categorias ou personalizações em uso não são excluídas pela API. Consulte [implementação e verificação D23](docs/D23-admin-categorias-personalizacoes.md) e [fluxos e capturas reais](docs/ihc/admin-categorias-personalizacoes.md). Os comandos de teste, lint e build do painel acima cobrem também D23.
