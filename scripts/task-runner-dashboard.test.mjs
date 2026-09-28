@@ -4,8 +4,57 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import vm from 'node:vm';
 import { createDashboardServer, resolveDashboardConfig } from './task-runner-dashboard.mjs';
 import { createRunner } from './task-runner.mjs';
+
+function dashboardView() {
+  const elements = new Map();
+  const node = () => ({ textContent: '', hidden: false, children: [],
+    append(...children) { this.children.push(...children); },
+    replaceChildren(...children) { this.children = children; } });
+  const context = vm.createContext({
+    document: {
+      getElementById(id) { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
+      createElement: node,
+    },
+    fetch: () => new Promise(() => {}),
+    setInterval: () => {},
+  });
+  vm.runInContext(fs.readFileSync(path.join(import.meta.dirname, '../.ai/task-runner/dashboard/app.js'), 'utf8'), context);
+  return { context, elements };
+}
+
+test('durações do dashboard usam segundos arredondados e tratam valores inválidos', () => {
+  const { context } = dashboardView();
+  const cases = [
+    [0, '0:00'], [0.5, '0:30'], [1, '1:00'], [5.12, '5:07'],
+    [19.37, '19:22'], [20.99, '20:59'], [30.46, '30:28'], [32.60, '32:36'],
+    [59.99, '59:59'], [60, '01:00:00'], [61.5, '01:01:30'], [167.43, '02:47:26'],
+    [null, '—'], [undefined, '—'], [NaN, '—'], [Infinity, '—'],
+  ];
+  for (const [value, expected] of cases) {
+    context.value = value;
+    assert.equal(vm.runInContext('formatDurationMinutes(value)', context), expected);
+  }
+});
+
+test('cards, métricas e histórico exibem durações sem min', () => {
+  const { context, elements } = dashboardView();
+  context.state = { active_minutes: 20.99, cycle_minutes: 167.43 };
+  vm.runInContext('renderState(state)', context);
+  assert.equal(elements.get('active').textContent, '20:59');
+  assert.equal(elements.get('cycle').textContent, '02:47:26');
+  context.metrics = { count: 1, cycle_mean: 167.43, cycle_median: 30.46,
+    cycle_p75: 32.60, active_mean: 19.37, first_pass_rate: 50, fix_loops_mean: 1 };
+  vm.runInContext('renderMetrics(metrics)', context);
+  assert.deepEqual(elements.get('metrics').children.slice(1, 5).map((card) => card.children[1].textContent),
+    ['02:47:26', '30:28', '32:36', '19:22']);
+  context.rows = [{ task: 'D16', cycle_minutes: 20.99, active_minutes: 5.12 }];
+  vm.runInContext('renderHistory(rows)', context);
+  assert.deepEqual(elements.get('history').children[0].children.slice(2, 4).map((cell) => cell.textContent),
+    ['20:59', '5:07']);
+});
 
 async function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-dashboard-'));
@@ -63,6 +112,21 @@ test('state ausente, válido e JSON inválido', async (t) => {
   const failed = await f.get('/api/state');
   assert.equal(failed.status, 500);
   assert.deepEqual(await failed.json(), { status: 'error', state: null, error: 'state_read_failed' });
+});
+
+test('API preserva minutos decimais para histórico e métricas', async (t) => {
+  const f = await fixture(t);
+  fs.writeFileSync(path.join(f.data, 'history.jsonl'), JSON.stringify({
+    task: 'D16', cycle_minutes: 20.99, active_minutes: 19.37, fix_loops: 0,
+  }));
+  const history = await (await f.get('/api/history')).json();
+  assert.equal(history.entries[0].cycle_minutes, 20.99);
+  assert.equal(history.entries[0].active_minutes, 19.37);
+  const { metrics } = await (await f.get('/api/metrics')).json();
+  assert.equal(metrics.cycle_mean, 20.99);
+  assert.equal(metrics.cycle_median, 20.99);
+  assert.equal(metrics.cycle_p75, 20.99);
+  assert.equal(metrics.active_mean, 19.37);
 });
 
 test('history ignora linhas vazias e inválidas; metrics equivalem ao runner', async (t) => {
