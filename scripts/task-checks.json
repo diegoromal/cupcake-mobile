@@ -3,5 +3,8 @@
   { "name": "lint", "command": "npm", "args": ["run", "lint"], "cwd": "apps/api" },
   { "name": "unit", "command": "npm", "args": ["test"], "cwd": "apps/api" },
   { "name": "e2e", "command": "npm", "args": ["run", "test:e2e"], "cwd": "apps/api" },
-  { "name": "build", "command": "npm", "args": ["run", "build"], "cwd": "apps/api" }
+  { "name": "build", "command": "npm", "args": ["run", "build"], "cwd": "apps/api" },
+  { "name": "admin-unit", "command": "npm", "args": ["test"], "cwd": "apps/admin" },
+  { "name": "admin-lint", "command": "npm", "args": ["run", "lint"], "cwd": "apps/admin" },
+  { "name": "admin-build", "command": "npm", "args": ["run", "build"], "cwd": "apps/admin" }
 ]

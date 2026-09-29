@@ -23,7 +23,18 @@ export function allowed(method: string, parts: string[]): boolean {
 }
 export function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
-  return !!origin && origin === request.nextUrl.origin && request.headers.get('sec-fetch-site') !== 'cross-site';
+  const configured = process.env.APP_PUBLIC_URL;
+  if (process.env.NODE_ENV === 'production' && !configured) return false;
+  let expected = request.nextUrl.origin;
+  if (configured) {
+    const url = new URL(configured);
+    if (url.username || url.password || url.pathname !== '/' || url.search || url.hash ||
+        (process.env.NODE_ENV === 'production' ? url.protocol !== 'https:' : !['http:', 'https:'].includes(url.protocol))) {
+      throw new Error('APP_PUBLIC_URL inválida');
+    }
+    expected = url.origin;
+  }
+  return !!origin && origin === expected && request.headers.get('sec-fetch-site') !== 'cross-site';
 }
 export function setSession(response: NextResponse, access: string, refresh: string): void {
   response.cookies.set(ACCESS, access, { ...cookieOptions, maxAge: 15 * 60 });
