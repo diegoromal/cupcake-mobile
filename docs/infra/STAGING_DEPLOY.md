@@ -28,7 +28,16 @@ Proxy Host: domínio `app-staging.qosit.cloud`, scheme `http`, forward host `10.
 
 ## Primeiro deploy
 
-1. Confirmar DNS, TLS, rota NPM e conectividade privada, permissões VM, volume, `.env`, região/bucket MinIO, credencial GHCR e arquitetura.
+1. Confirmar DNS, TLS, rota NPM e conectividade privada, permissões da VM, arquitetura, Node.js 22 no host, volume externo cupcake_staging_postgres_data, .env, região/bucket MinIO e credencial GHCR.
+   Validar na VPS:
+   ```bash
+   node --version
+   docker volume inspect cupcake_staging_postgres_data
+   ```
+   Caso o volume ainda não exista no primeiro boot:
+   ```bash
+   docker volume create cupcake_staging_postgres_data
+   ```
 2. Revisar CI, executar workflow `Deploy staging manual` para o SHA completo pertencente à main, selecionando a plataforma correspondente. O workflow faz CI, build/push GHCR, transfere somente Compose/scripts/metadados de release e executa deploy por SSH.
 3. O script obtém `flock`, rejeita sequência obsoleta, faz pull das três imagens por digest, confirma o ID efetivo de API/Admin, inicia PostgreSQL, faz backup `pg_dump -Fc`, executa `prisma migrate deploy` via imagem ops, atualiza API/Admin e testa DB, API, Admin, storage e URL pública. Só grava `deployed-sha` ao fim. Deploy normal do mesmo SHA retorna sem recriar containers; rollback explícito reaplica API/Admin mesmo quando o marker coincide.
 4. Fazer smoke manual via HTTPS: login, cookie HttpOnly/Secure/SameSite=Lax/Path=/, refresh, retry, logout, redirects, CRUD e upload abaixo/acima do limite. Nenhuma URL interna deve aparecer no navegador. Recriar containers e confirmar persistência de dado de teste. Conferir usuário não-root, política de restart, logs e volume.
