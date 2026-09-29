@@ -80,7 +80,7 @@
 - [x] **D21 --- Upload e armazenamento de imagens**
 - [x] **D22 --- Administração de produtos no Next.js**
 - [x] **D23 --- Administração de categorias/personalizações**
-- [ ] **D24 --- Estoque + histórico de movimentações**
+- [x] **D24 --- Estoque + histórico de movimentações**
 - [ ] **D25 --- Testes do módulo de catálogo**
 
 **Marco 3:** administrador consegue preparar completamente a loja.

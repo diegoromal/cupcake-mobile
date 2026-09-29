@@ -243,12 +243,18 @@ export function createRunner({ root = ROOT, now = () => Date.now(), run = defaul
     assertBranch(state);
     const configured = JSON.parse(fs.readFileSync(checksFile, 'utf8'));
     const allowed = new Set([
-      'git|diff --check|.', 'npm|run lint|apps/api', 'npm|test|apps/api',
-      'npm|run test:e2e|apps/api', 'npm|run build|apps/api',
-    ]);
+      ['git', ['diff', '--check'], '.'],
+      ['npm', ['run', 'lint'], 'apps/api'],
+      ['npm', ['test'], 'apps/api'],
+      ['npm', ['run', 'test:e2e'], 'apps/api'],
+      ['npm', ['run', 'build'], 'apps/api'],
+      ['npm', ['test'], 'apps/admin'],
+      ['npm', ['run', 'lint'], 'apps/admin'],
+      ['npm', ['run', 'build'], 'apps/admin'],
+    ].map((entry) => JSON.stringify(entry)));
     const results = [];
     for (const check of configured) {
-      if (!allowed.has(`${check.command}|${check.args?.join(' ')}|${check.cwd}`)) {
+      if (!allowed.has(JSON.stringify([check.command, check.args, check.cwd]))) {
         throw new Error('Check não permitido; use somente os comandos determinísticos aprovados.');
       }
       const started = currentTime();
