@@ -23,12 +23,30 @@ afterEach(()=>{
 test('allowlist explícita por método e rota',()=>{
  expect(allowed('GET',['produtos'])).toBe(true);expect(allowed('POST',['produtos'])).toBe(true);
  expect(allowed('PATCH',['produtos',id])).toBe(true);expect(allowed('POST',['produtos',id,'imagem'])).toBe(true);
+ expect(allowed('GET',['produtos',id,'estoque'])).toBe(true);expect(allowed('PATCH',['produtos',id,'estoque'])).toBe(true);
+ expect(allowed('GET',['produtos',id,'estoque','movimentacoes'])).toBe(true);
+ expect(allowed('POST',['produtos',id,'estoque'])).toBe(false);expect(allowed('PATCH',['produtos',id,'estoque','movimentacoes'])).toBe(false);
+ for (const method of ['POST','PUT','DELETE']) expect(allowed(method,['produtos',id,'estoque'])).toBe(false);
+ for (const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['produtos',id,'estoque','movimentacoes'])).toBe(false);
+ expect(allowed('GET',['produtos',id,'estoque','extra'])).toBe(false);
+ expect(allowed('GET',['produtos','invalid','estoque'])).toBe(false);
  expect(allowed('DELETE',['produtos',id,'personalizacoes',id2])).toBe(true);
  expect(allowed('GET',['categorias'])).toBe(true);expect(allowed('GET',['personalizacoes'])).toBe(true);
  expect(allowed('POST',['categorias'])).toBe(true);expect(allowed('POST',['personalizacoes'])).toBe(true);
  for(const resource of ['categorias','personalizacoes']) { for(const method of ['GET','PATCH','DELETE']) expect(allowed(method,[resource,id])).toBe(true); for(const method of ['PUT','POST']) expect(allowed(method,[resource,id])).toBe(false); expect(allowed('GET',[resource,id,'extra'])).toBe(false); expect(allowed('GET',[resource,'invalid'])).toBe(false); }
  expect(allowed('DELETE',['categorias'])).toBe(false);expect(allowed('PATCH',['personalizacoes'])).toBe(false);expect(allowed('GET',['produtos','..'])).toBe(false);
  expect(allowed('GET',['users'])).toBe(false);expect(allowed('GET',['produtos',id,'imagem'])).toBe(false);
+});
+test('proxy encaminha ajuste de estoque e bloqueia origem cruzada', async () => {
+ const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({quantidadeDisponivel:4}));
+ const bad=req(`/api/admin/produtos/${id}/estoque`,'PATCH','{}',{'content-type':'application/json',origin:'http://evil.test'});
+ bad.cookies.set('admin_access','token');
+ expect((await proxyAdmin(bad,['produtos',id,'estoque'])).status).toBe(403);
+ const good=req(`/api/admin/produtos/${id}/estoque`,'PATCH',JSON.stringify({quantidadeDisponivel:4}),{'content-type':'application/json'});
+ good.cookies.set('admin_access','token');
+ expect((await proxyAdmin(good,['produtos',id,'estoque'])).status).toBe(200);
+ expect(fetchMock).toHaveBeenCalledTimes(1);
+ expect(new TextDecoder().decode(fetchMock.mock.calls[0][1]?.body as ArrayBuffer)).toBe('{"quantidadeDisponivel":4}');
 });
 test('origem cruzada rejeitada e cookies protegidos',async()=>{
  const bad=req('/api/admin/produtos','POST','{}',{'content-type':'application/json',origin:'http://evil.test'});

@@ -265,6 +265,30 @@ test('checks registram PASS/FAIL e código de saída; nenhum Git mutável', asyn
   assert.equal(f.calls.some((call) => call.command === 'git' && call.args[0] === 'commit'), false);
 });
 
+test('checks oficiais incluem Admin e rejeitam argumentos não autorizados', (t) => {
+  const f = fixture(t);
+  const runner = f.make();
+  runner.start('D16');
+  fs.copyFileSync(new URL('./task-checks.json', import.meta.url),
+    path.join(f.root, 'scripts/task-checks.json'));
+  const outcome = runner.checks();
+  assert.equal(outcome.passed, true);
+  assert.equal(outcome.results.length, 8);
+  assert.deepEqual(f.calls.filter((call) => call.cwd === path.join(f.root, 'apps/admin'))
+    .map(({ command, args }) => [command, args]), [
+    ['npm', ['test']], ['npm', ['run', 'lint']], ['npm', ['run', 'build']],
+  ]);
+
+  for (const args of [['run lint'], ['run', 'test:other']]) {
+    fs.writeFileSync(path.join(f.root, 'scripts/task-checks.json'), JSON.stringify([
+      { name: 'proibido', command: 'npm', args, cwd: 'apps/admin' },
+    ]));
+    assert.throws(() => runner.checks(), /Check não permitido/);
+  }
+  assert.equal(f.calls.some((call) => call.args.includes('test:other')
+    || call.args.includes('run lint')), false);
+});
+
 test('média, mediana, P75 e aviso de amostra pequena', (t) => {
   const f = fixture(t);
   const runner = f.make();

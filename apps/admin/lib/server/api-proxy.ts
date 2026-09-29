@@ -18,7 +18,8 @@ export function allowed(method: string, parts: string[]): boolean {
   if (['categorias','personalizacoes'].includes(parts[0])) return parts.length === 2 && uuid.test(parts[1]) && ['GET','PATCH','DELETE'].includes(method);
   if (parts[0] !== 'produtos' || !uuid.test(parts[1])) return false;
   if (parts.length === 2) return ['GET','PATCH','DELETE'].includes(method);
-  if (parts.length === 3) return (parts[2] === 'imagem' && ['POST','DELETE'].includes(method)) || (parts[2] === 'personalizacoes' && ['GET','POST'].includes(method));
+  if (parts.length === 3) return (parts[2] === 'imagem' && ['POST','DELETE'].includes(method)) || (parts[2] === 'personalizacoes' && ['GET','POST'].includes(method)) || (parts[2] === 'estoque' && ['GET','PATCH'].includes(method));
+  if (parts.length === 4 && parts[2] === 'estoque') return parts[3] === 'movimentacoes' && method === 'GET';
   return parts.length === 4 && parts[2] === 'personalizacoes' && uuid.test(parts[3]) && method === 'DELETE';
 }
 export function sameOrigin(request: NextRequest): boolean {
