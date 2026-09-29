@@ -16,6 +16,13 @@ fail() { printf 'deploy: %s\n' "$1" >&2; exit 1; }
 command -v docker >/dev/null || fail 'Docker ausente'
 command -v flock >/dev/null || fail 'flock ausente'
 docker compose version >/dev/null || fail 'Compose ausente'
+command -v node >/dev/null || fail 'Node.js ausente; instalar Node 22 antes do deploy'
+
+NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
+[[ "$NODE_MAJOR" -eq 22 ]] || fail "Node.js 22 requerido; encontrado $(node --version)"
+
+docker volume inspect cupcake_staging_postgres_data >/dev/null 2>&1 \
+  || fail 'volume cupcake_staging_postgres_data ausente; executar: docker volume create cupcake_staging_postgres_data'
 [[ $(stat -c %a "$ENV_FILE") == 600 ]] || fail '.env requer chmod 0600'
 [[ $(stat -c %U "$ENV_FILE") == deploy ]] || fail '.env requer owner deploy'
 [[ $(df -Pk "$ROOT" | awk 'NR==2 {print $4}') -gt 2097152 ]] || fail 'espaço livre abaixo de 2 GiB'
