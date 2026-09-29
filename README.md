@@ -235,3 +235,7 @@ O logout remove cookies locais. A API utiliza refresh stateless sem revogação.
 ## Categorias e Personalizações no admin (D23)
 
 Após iniciar o painel e entrar como ADMIN, use a navegação compartilhada para acessar `/categorias` e `/personalizacoes`. Cada área oferece lista, criação, edição parcial e exclusão confirmada pelo nome exato. O ajuste de valor usa string decimal com ponto; vazio representa valor não definido e zero permanece distinto. Categorias ou personalizações em uso não são excluídas pela API. Consulte [implementação e verificação D23](docs/D23-admin-categorias-personalizacoes.md) e [fluxos e capturas reais](docs/ihc/admin-categorias-personalizacoes.md). Os comandos de teste, lint e build do painel acima cobrem também D23.
+
+## Staging
+
+Staging configurado para `https://app-staging.qosit.cloud`, ainda sem primeiro deploy validado. A arquitetura, preparação da VM, operação e rollback estão no [runbook](docs/infra/STAGING_DEPLOY.md); decisões em [ADR-004](docs/adr/ADR-004-staging-deploy.md). O Compose local de desenvolvimento permanece separado de `compose.staging.yaml`.

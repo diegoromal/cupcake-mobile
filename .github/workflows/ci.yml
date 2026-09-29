@@ -1,0 +1,51 @@
+name: CI compartilhada
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  api-validation:
+    name: Validação da API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - run: git diff --check
+      - working-directory: apps/api
+        run: npm ci
+      - working-directory: apps/api
+        run: npm run prisma:generate
+      - working-directory: apps/api
+        run: npm run lint
+      - working-directory: apps/api
+        run: npm test
+      - working-directory: apps/api
+        run: npm run test:e2e
+      - working-directory: apps/api
+        run: npm run build
+  admin-validation:
+    name: Validação do Admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: apps/admin/package-lock.json
+      - working-directory: apps/admin
+        run: npm ci
+      - working-directory: apps/admin
+        run: npm test
+      - working-directory: apps/admin
+        run: npm run lint
+      - working-directory: apps/admin
+        run: npm run build

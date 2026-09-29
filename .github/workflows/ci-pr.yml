@@ -1,96 +1,14 @@
 name: CI de Pull Requests
-
 on:
   pull_request:
-    branches:
-      - main
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
-      - ready_for_review
-
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 permissions:
   contents: read
-
 concurrency:
   group: ci-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-
 jobs:
   api-validation:
     name: Validação da API
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Obtém o código da Pull Request
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Detecta o estado da API
-        id: api-state
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ ! -d apps/api ]]; then
-            echo "Estado inconsistente: o diretório apps/api não existe." >&2
-            exit 1
-          fi
-
-          if [[ -f apps/api/package.json && -f apps/api/package-lock.json ]]; then
-            echo "api_ready=true" >> "$GITHUB_OUTPUT"
-            echo "API estruturada: package.json e package-lock.json encontrados."
-            exit 0
-          fi
-
-          if [[ -f apps/api/.gitkeep ]] && [[ -z "$(find apps/api -mindepth 1 ! -name .gitkeep -print -quit)" ]]; then
-            echo "api_ready=false" >> "$GITHUB_OUTPUT"
-            echo "API ainda não criada: somente apps/api/.gitkeep está presente; não há API para validar."
-            exit 0
-          fi
-
-          echo "Estado inconsistente em apps/api: são exigidos package.json e package-lock.json para validar uma API estruturada." >&2
-          printf 'Entradas encontradas em apps/api:\n' >&2
-          find apps/api -mindepth 1 -print >&2
-          exit 1
-
-      - name: Configura Node.js 22
-        if: steps.api-state.outputs.api_ready == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22.x
-          cache: npm
-          cache-dependency-path: apps/api/package-lock.json
-
-      - name: Instala dependências
-        if: steps.api-state.outputs.api_ready == 'true'
-        working-directory: apps/api
-        run: npm ci
-
-      - name: Gera Prisma Client
-        if: steps.api-state.outputs.api_ready == 'true'
-        working-directory: apps/api
-        run: npm run prisma:generate
-
-      - name: Executa lint
-        if: steps.api-state.outputs.api_ready == 'true'
-        working-directory: apps/api
-        run: npm run lint
-
-      - name: Executa testes unitários
-        if: steps.api-state.outputs.api_ready == 'true'
-        working-directory: apps/api
-        run: npm test
-
-      - name: Executa testes e2e
-        if: steps.api-state.outputs.api_ready == 'true'
-        working-directory: apps/api
-        run: npm run test:e2e
-
-      - name: Executa build
-        if: steps.api-state.outputs.api_ready == 'true'
-        working-directory: apps/api
-        run: npm run build
+    uses: ./.github/workflows/ci.yml

@@ -1,0 +1,13 @@
+node_modules
+dist
+.next
+coverage
+.env
+.env.*
+*.log
+*.tsbuildinfo
+.git
+tmp
+temp
+test
+src/**/*.spec.ts

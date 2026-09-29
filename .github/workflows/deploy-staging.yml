@@ -1,0 +1,102 @@
+name: Deploy staging manual
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Arquitetura confirmada com uname -m na VPS'
+        required: true
+        type: choice
+        options: [linux/amd64, linux/arm64]
+permissions:
+  contents: read
+concurrency:
+  group: cupcake-staging
+  cancel-in-progress: false
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  deploy:
+    needs: ci
+    runs-on: ${{ inputs.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    environment:
+      name: staging
+      url: https://app-staging.qosit.cloud
+    permissions:
+      contents: read
+      packages: write
+    env:
+      STAGING_HOST: ${{ vars.STAGING_HOST }}
+      STAGING_SSH_PORT: ${{ vars.STAGING_SSH_PORT }}
+      STAGING_USER: ${{ vars.STAGING_USER }}
+      PLATFORM: ${{ inputs.platform }}
+      SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verifica SHA da main e parâmetros
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git merge-base --is-ancestor "$SHA" origin/main
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$STAGING_HOST" == 45.231.133.145 && "$STAGING_SSH_PORT" == 30322 && "$STAGING_USER" == deploy ]]
+          [[ "$PLATFORM" == linux/amd64 || "$PLATFORM" == linux/arm64 ]]
+      - name: Configura SSH com host key validada
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/id_staging"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          grep -q '^\[45\.231\.133\.145\]:30322 ' "$HOME/.ssh/known_hosts"
+      - name: Confirma arquitetura da VPS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          arch=$(ssh -i "$HOME/.ssh/id_staging" -o StrictHostKeyChecking=yes -p "$STAGING_SSH_PORT" "$STAGING_USER@$STAGING_HOST" uname -m)
+          case "$arch:$PLATFORM" in x86_64:linux/amd64|aarch64:linux/arm64) ;; *) echo 'Arquitetura incompatível' >&2; exit 1;; esac
+      - name: Build e push por SHA
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin >/dev/null
+          tags=("ghcr.io/diegoromal/cupcake-api:$SHA" "ghcr.io/diegoromal/cupcake-api:$SHA-ops" "ghcr.io/diegoromal/cupcake-admin:$SHA")
+          for tag in "${tags[@]}"; do bash infra/deploy/assert-image-tag-absent.sh "$tag"; done
+          docker build --platform "$PLATFORM" --target runtime -t "${tags[0]}" apps/api
+          docker build --platform "$PLATFORM" --target ops -t "${tags[1]}" apps/api
+          docker build --platform "$PLATFORM" --target runtime -t "${tags[2]}" apps/admin
+          digests=()
+          for tag in "${tags[@]}"; do
+            output=$(mktemp)
+            docker push "$tag" >"$output" || { rm -f "$output"; exit 1; }
+            digest=$(sed -nE 's/.*digest: (sha256:[0-9a-f]{64}).*/\1/p' "$output" | tail -1)
+            rm -f "$output"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo 'Digest do push inválido' >&2; exit 1; }
+            digests+=("$digest")
+          done
+          printf 'API_DIGEST=%s\nOPS_DIGEST=%s\nADMIN_DIGEST=%s\n' "${digests[@]}" >> "$GITHUB_ENV"
+      - name: Envia release e executa deploy
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p release/deploy
+          cp compose.staging.yaml release/
+          cp infra/deploy/deploy-staging.sh infra/deploy/finalize-staging.sh infra/deploy/transaction-staging.mjs infra/deploy/check-staging.mjs release/deploy/
+          node -e 'const fs=require("fs");const ds=[process.env.API_DIGEST,process.env.OPS_DIGEST,process.env.ADMIN_DIGEST];if(ds.some(d=>!/^sha256:[0-9a-f]{64}$/.test(d)))process.exit(1);fs.writeFileSync("release/image-digests.json",JSON.stringify({api:ds[0],ops:ds[1],admin:ds[2]})+"\n")'
+          printf '%s\n' "$SHA" > release/sha
+          git rev-list --count "$SHA" > release/sequence
+          ssh -i "$HOME/.ssh/id_staging" -o StrictHostKeyChecking=yes -p "$STAGING_SSH_PORT" "$STAGING_USER@$STAGING_HOST" "mkdir -p /home/deploy/cupcake-staging/releases/$SHA"
+          tar -C release -czf release.tar.gz .
+          scp -i "$HOME/.ssh/id_staging" -o StrictHostKeyChecking=yes -P "$STAGING_SSH_PORT" release.tar.gz "$STAGING_USER@$STAGING_HOST:/home/deploy/cupcake-staging/releases/$SHA/release.tar.gz"
+          ssh -i "$HOME/.ssh/id_staging" -o StrictHostKeyChecking=yes -p "$STAGING_SSH_PORT" "$STAGING_USER@$STAGING_HOST" "cd /home/deploy/cupcake-staging/releases/$SHA && tar -xzf release.tar.gz && rm release.tar.gz && bash deploy/deploy-staging.sh $SHA"
+      - name: Confirma URL pública
+        shell: bash
+        run: node infra/deploy/check-staging.mjs public

@@ -4,8 +4,22 @@ import { allowed, clearSession, proxyAdmin, sameOrigin, setSession } from '@/lib
 const id='11111111-1111-4111-8111-111111111111';
 const id2='22222222-2222-4222-8222-222222222222';
 const base='http://localhost:3001';
-const req=(path:string,method='GET',body?:BodyInit,headers:Record<string,string>={})=>new NextRequest(`${base}${path}`,{method,body,headers:{origin:base,...headers}});
-beforeEach(()=>{process.env.API_BASE_URL='http://localhost:3000';jest.restoreAllMocks();});
+const stagingOrigin='https://app-staging.qosit.cloud';
+const req=(path:string,method='GET',body?:BodyInit,headers:Record<string,string>={})=>new NextRequest(`${base}${path}`,{method,body,headers:{origin:process.env.NODE_ENV==='production'&&process.env.APP_PUBLIC_URL?stagingOrigin:base,...headers}});
+const originalNodeEnv=process.env.NODE_ENV;
+const originalAppPublicUrl=process.env.APP_PUBLIC_URL;
+const setNodeEnv=(value:string|undefined)=>value===undefined?Reflect.deleteProperty(process.env,'NODE_ENV'):Reflect.set(process.env,'NODE_ENV',value);
+beforeEach(()=>{
+ setNodeEnv(originalNodeEnv);
+ process.env.API_BASE_URL='http://localhost:3000';
+ if(originalNodeEnv==='production') process.env.APP_PUBLIC_URL=stagingOrigin;
+ else delete process.env.APP_PUBLIC_URL;
+ jest.restoreAllMocks();
+});
+afterEach(()=>{
+ setNodeEnv(originalNodeEnv);
+ if(originalAppPublicUrl===undefined) delete process.env.APP_PUBLIC_URL; else process.env.APP_PUBLIC_URL=originalAppPublicUrl;
+});
 test('allowlist explícita por método e rota',()=>{
  expect(allowed('GET',['produtos'])).toBe(true);expect(allowed('POST',['produtos'])).toBe(true);
  expect(allowed('PATCH',['produtos',id])).toBe(true);expect(allowed('POST',['produtos',id,'imagem'])).toBe(true);
@@ -117,4 +131,34 @@ test('novos CRUDs preservam JSON textual, false e status 400/409/204',async()=>{
  expect(fetchMock).toHaveBeenCalledTimes(3);
  expect(new TextDecoder().decode(fetchMock.mock.calls[0][1]?.body as ArrayBuffer)).toContain('"disponibilidade":false');
  expect(new TextDecoder().decode(fetchMock.mock.calls[1][1]?.body as ArrayBuffer)).toContain('"ajusteValor":null');
+});
+
+test('origem pública canônica atrás do NPM não confia em forwarded host', async () => {
+ setNodeEnv('production');
+ process.env.APP_PUBLIC_URL=stagingOrigin;
+ const make=(headers:Record<string,string>)=>new NextRequest('http://localhost:3001/api/session/logout',{method:'POST',headers:{host:'app-staging.qosit.cloud','x-forwarded-proto':'https',...headers}});
+ const good=make({origin:stagingOrigin});
+ expect(good.nextUrl.origin).toBe('http://localhost:3001');
+ expect(sameOrigin(good)).toBe(true);
+ const permitted=req('/api/admin/produtos','POST','{}',{'content-type':'application/json'});
+ permitted.cookies.set('admin_access','token');
+ const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({ok:true}));
+ expect((await proxyAdmin(permitted,['produtos'])).status).toBe(200);
+ expect(fetchMock).toHaveBeenCalledTimes(1);
+ for(const headers of ([
+   {origin:'https://evil.test'},
+   {},
+   {origin:stagingOrigin,'sec-fetch-site':'cross-site'},
+   {origin:'https://evil.test','x-forwarded-host':'app-staging.qosit.cloud'}
+ ] as Record<string,string>[])) expect(sameOrigin(make(headers))).toBe(false);
+});
+
+test('production sem APP_PUBLIC_URL rejeita mutação', async () => {
+ setNodeEnv('production');
+ delete process.env.APP_PUBLIC_URL;
+ const request=req('/api/admin/produtos','POST','{}',{'content-type':'application/json'});
+ request.cookies.set('admin_access','token');
+ const fetchMock=jest.spyOn(global,'fetch');
+ expect(await proxyAdmin(request,['produtos'])).toMatchObject({status:403});
+ expect(fetchMock).not.toHaveBeenCalled();
 });
