@@ -263,6 +263,11 @@ produtos.
 
 **Marco final:** 🍰 **Cupcake Mobile --- PIT II concluído.**
 
+## FASES COMPLEMENTARES
+
+- [ ] **D118 — Consolidar UX/UI e referências visuais do produto**
+      — definir e versionar design system, fluxos, referências do Admin Web e do Aplicativo Flutter a partir de protótipos aprovados.
+
 ## Regras de trabalho
 
 - [ ] Trabalhar preferencialmente em um desafio por sessão de 3--4
