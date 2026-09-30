@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProductStock from '@/components/ProductStock';
 import { adminApi, AdminApiError } from '@/lib/client/admin-api';
@@ -120,4 +120,27 @@ test('recupera histórico após falha no GET sem repetir ajuste confirmado', asy
   expect(screen.getByText(/Físico: 7/)).toHaveTextContent('Reservado: 3 · Disponível: 4');
   expect(mock.mock.calls.filter(call => call[1]?.method === 'PATCH')).toHaveLength(1);
   expect(historyReads).toBe(3);
+});
+
+test('impede outro ajuste enquanto o primeiro PATCH está pendente', async () => {
+  let concluirAjuste!: (value: typeof saldo) => void;
+  mock.mockImplementation((path: string, options?: RequestInit) => {
+    if (options?.method === 'PATCH') return new Promise(resolve => { concluirAjuste = resolve; });
+    return Promise.resolve(path.endsWith('movimentacoes') ? [] : saldo);
+  });
+  const user = userEvent.setup();
+  render(<ProductStock id="p1" />);
+  await screen.findByText(/Físico: 8/);
+  const botao = screen.getByRole('button', { name: 'Ajustar estoque' });
+  await user.click(botao);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Salvando...' })).toBeDisabled());
+  expect(screen.getByLabelText('Quantidade disponível')).toBeDisabled();
+
+  await user.click(screen.getByRole('button', { name: 'Salvando...' }));
+  fireEvent.submit(botao.closest('form')!);
+  expect(mock.mock.calls.filter(call => call[1]?.method === 'PATCH')).toHaveLength(1);
+
+  concluirAjuste({ ...saldo, quantidadeFisica: 7, quantidadeDisponivel: 4 });
+  expect(await screen.findByText(/Físico: 7/)).toBeInTheDocument();
+  expect(mock.mock.calls.filter(call => call[1]?.method === 'PATCH')).toHaveLength(1);
 });
