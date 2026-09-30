@@ -12,7 +12,7 @@
 - [x] Definição da arquitetura-base
 - [x] Fase 0 --- Fundação e documentação
 - [x] Fase 1 --- Usuários e segurança
-- [ ] Fase 2 --- Catálogo
+- [x] Fase 2 --- Catálogo
 - [ ] Fase 3 --- Aplicativo Flutter
 - [ ] Fase 4 --- Carrinho
 - [ ] Fase 5 --- Endereço, cobertura e frete
