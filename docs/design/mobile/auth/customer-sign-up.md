@@ -70,11 +70,19 @@ A interface não deve atribuir finalidade adicional ao nome sem requisito espec�
 O campo E-mail deve:
 
 - ser obrigatório;
-- aceitar formato válido de e-mail;
+- aceitar formato convencional: parte local não vazia com pontos
+  estruturalmente válidos e domínio com etiquetas válidas e TLD;
+- rejeitar espaços, múltiplos `@` e parte local entre aspas;
+- ser aparado e convertido para minúsculas antes da validação e do envio;
 - representar o identificador único utilizado pelo cadastro;
 - apresentar erro próximo ao campo quando inválido.
 
-O sistema não deve permitir cadastro com e-mail já existente.
+O sistema não deve permitir cadastro com e-mail já existente. O Mobile oferece
+feedback antecipado; o Backend aplica a mesma regra e é a autoridade final da
+validação e da unicidade. A regra aceita `+` na parte local e subdomínios, sem
+tentar implementar toda a RFC de e-mail.
+Os limites são 64 caracteres na parte local, 63 em cada etiqueta do domínio e
+254 no e-mail completo, conforme o validador do Backend.
 
 Quando ocorrer conflito de e-mail:
 
@@ -121,7 +129,9 @@ A referência não define:
 - exigência de letra maiúscula;
 - qualquer regra de composição não documentada.
 
-A interface deve refletir apenas a política efetivamente implementada.
+A implementação D27 exige somente oito caracteres, sem aparar espaços ou
+aplicar regras adicionais de composição. A API continua sendo a autoridade
+final das demais regras.
 
 ---
 
@@ -142,8 +152,9 @@ A ação principal é:
 
 `Criar conta`
 
-Ela deve permanecer indisponível quando os dados obrigatórios não permitirem
-submissão válida.
+Fora de um envio em andamento, ela permanece acionável mesmo quando os dados
+são inválidos, para permitir a apresentação do resumo acessível dos erros. A
+validação local impede qualquer request HTTP enquanto os dados forem inválidos.
 
 Durante o envio:
 
@@ -152,15 +163,38 @@ Durante o envio:
 - preservar os dados preenchidos quando possível;
 - aguardar resposta antes de assumir sucesso.
 
+Na implementação D27, a validação local verifica presença após `trim` para
+Nome e Telefone. E-mail é aparado, normalizado para minúsculas e validado pelo
+formato convencional descrito acima. Senha exige oito caracteres, preservando
+os espaços e sem regras adicionais. O backend continua sendo a autoridade final.
+
+O envio usa `POST /users` com somente `nome`, `email`, `telefone` e `senha`.
+Um `201` só confirma cadastro quando a resposta inclui o ID UUID, os campos
+públicos e o perfil `CLIENTE`. `400` permanece no cadastro com mensagens
+reconhecidas associadas aos campos; `409` informa `E-mail já cadastrado.`.
+O status HTTP recebido é preservado mesmo se a leitura do corpo for
+interrompida. `400` continua como validação rejeitada, `409` como conflito e
+outros status como erro de resposta, todos com fallback seguro quando o corpo
+está ausente, truncado ou inválido. `201` só confirma cadastro com corpo
+estruturalmente válido; sem corpo válido, não confirma sucesso, mas registra que
+o status `201` foi recebido. Falha antes dos headers/status — por exemplo,
+timeout, `SocketException` ou `HttpException` antes de qualquer status — deixa
+o resultado indeterminado e não há resposta HTTP confirmada. Se a falha ocorrer
+durante a leitura do corpo após o status ter sido recebido, a resposta HTTP é
+conhecida e o status é preservado: `400` é validação, `409` é conflito e `500`
+ou outro status é erro HTTP conhecido, com fallback seguro. Uma `HttpException`
+ou timeout nessa leitura não equivale a ausência de resposta. Para `201`, corpo
+ausente, interrompido ou inválido não confirma sucesso nem retorna ao Login;
+mantém o status conhecido e o resultado não confirmado. Em falhas sem status, a
+tela permanece no cadastro, preserva os dados e informa que não foi possível
+confirmar o resultado. Nenhum desses casos inicia repetição automática.
+
 ---
 
 ## Cadastro concluído
 
-Após sucesso:
-
-- informar que a conta foi criada;
-- seguir o fluxo definido de autenticação ou navegação;
-- não criar promessas adicionais.
+Após resposta `201` estruturalmente válida, informar que o cadastro foi
+confirmado e retornar ao Login. A D27 não autentica o cliente nem cria sessão.
 
 A referência visual principal não define a tela pós-cadastro.
 
@@ -182,10 +216,11 @@ Informar de forma objetiva.
 
 Informar conflito sem revelar dados da conta existente.
 
-### Erro técnico
+### Resultado indeterminado
 
-Informar que não foi possível concluir o cadastro e permitir nova tentativa
-quando apropriado.
+Informar que não foi possível confirmar se o cadastro foi concluído. Preservar
+os dados e não incentivar uma repetição sem que a pessoa confira se o e-mail já
+foi cadastrado.
 
 ---
 
@@ -257,7 +292,7 @@ Além do estado principal representado no PNG, a implementação deve contemplar
 
 ### Formulário inicial
 
-Campos vazios e ação principal indisponível quando aplicável.
+Campos vazios e ação principal acionável fora de um envio em andamento.
 
 ### Dados válidos
 
@@ -283,9 +318,9 @@ Ação principal bloqueada e feedback de processamento.
 
 Operação concluída com sucesso.
 
-### Erro técnico
+### Resultado indeterminado
 
-Falha de operação sem criação confirmada da conta.
+Falha de transporte sem confirmação sobre a criação da conta.
 
 ---
 

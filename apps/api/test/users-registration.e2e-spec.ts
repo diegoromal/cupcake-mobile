@@ -77,6 +77,35 @@ describe('Cadastro de cliente', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it.each([
+    'joao@gmail.com',
+    'Joao.Silva@Gmail.com',
+    'joao+teste@gmail.com',
+    'joao.silva@empresa.com.br',
+    'usuario@subdominio.empresa.com.br',
+    'a.b+c@example.com',
+    `${'a'.repeat(64)}@example.com`,
+    `usuario@${'a'.repeat(63)}.com`,
+    `${'a'.repeat(64)}@${'a'.repeat(63)}.${'a'.repeat(63)}.${'a'.repeat(57)}.com`,
+  ])('aceita e-mail convencional %s', async (email) => {
+    await request(app.getHttpServer()).post('/users').send({ ...body, email }).expect(201);
+  });
+
+  it.each([
+    'joao@gmail',
+    'joao@',
+    '@gmail.com',
+    'joao@@gmail.com',
+    'joao silva@gmail.com',
+    '"a@b"@example.com',
+    `${'a'.repeat(65)}@example.com`,
+    `usuario@${'a'.repeat(64)}.com`,
+    `${'a'.repeat(64)}@${'a'.repeat(63)}.${'a'.repeat(63)}.${'a'.repeat(58)}.com`,
+  ])('rejeita e-mail fora da regra convencional %s', async (email) => {
+    await request(app.getHttpServer()).post('/users').send({ ...body, email }).expect(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('retorna 409 para email duplicado sem expor detalhes do banco', async () => {
     create.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('unique', {

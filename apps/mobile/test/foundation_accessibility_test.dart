@@ -15,7 +15,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Voltar para Entrar'), findsOneWidget);
-    expect(find.bySemanticsLabel('Criar conta'), findsOneWidget);
+    expect(find.bySemanticsLabel('Criar conta'), findsNWidgets(2));
   });
 
   testWidgets('Login se adapta às larguras móveis previstas', (tester) async {
