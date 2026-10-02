@@ -32,7 +32,7 @@ Aplicativo
 
 ```text
 customer-sign-up
-├── sucesso → customer-login ou sessão definida pela implementação futura
+├── sucesso confirmado → customer-login com feedback (D27; sem sessão)
 └── erro → permanece no cadastro
 
 customer-login
@@ -43,6 +43,11 @@ customer-login
 ```
 
 A referência não decide comportamento de sessão que ainda não esteja definido pelo contrato da tarefa de implementação.
+
+Na D27, voltar ou `Entrar` retorna à instância de Login já aberta. O cadastro
+envia `POST /users`; somente um `201` com resposta estruturalmente válida
+retorna ao Login com a confirmação `Cadastro confirmado. Entre para continuar.`
+Falhas recuperáveis permanecem no cadastro e não criam sessão.
 
 ## Mobile — catálogo
 

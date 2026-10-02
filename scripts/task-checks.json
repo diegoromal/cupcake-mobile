@@ -1,4 +1,7 @@
 [
+  { "name": "mobile-format", "command": "dart", "args": ["format", "--output=none", "--set-exit-if-changed", "lib", "test"], "cwd": "apps/mobile" },
+  { "name": "mobile-analyze", "command": "flutter", "args": ["analyze"], "cwd": "apps/mobile" },
+  { "name": "mobile-test", "command": "flutter", "args": ["test"], "cwd": "apps/mobile" },
   { "name": "diff", "command": "git", "args": ["diff", "--check"], "cwd": "." },
   { "name": "lint", "command": "npm", "args": ["run", "lint"], "cwd": "apps/api" },
   { "name": "unit", "command": "npm", "args": ["test"], "cwd": "apps/api" },

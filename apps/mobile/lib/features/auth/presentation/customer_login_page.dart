@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../app/navigation/app_navigation.dart';
 import '../../../core/design/app_tokens.dart';
+import '../data/customer_registration_api.dart';
 
 class CustomerLoginPage extends StatelessWidget {
-  const CustomerLoginPage({super.key});
+  const CustomerLoginPage({super.key, this.registrationApi});
+
+  final CustomerRegistrationApi? registrationApi;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -49,8 +52,10 @@ class CustomerLoginPage extends StatelessWidget {
                     ),
                     const SizedBox(height: AppTokens.spacing32),
                     FilledButton(
-                      onPressed: () =>
-                          AppNavigation.openCustomerSignUp(context),
+                      onPressed: () => AppNavigation.openCustomerSignUp(
+                        context,
+                        registrationApi: registrationApi,
+                      ),
                       child: const Text('Criar conta'),
                     ),
                   ],

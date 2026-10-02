@@ -71,10 +71,22 @@ Deve ser perceptível visualmente e semanticamente.
 
 Usar quando:
 
-- formulário inválido;
+- o estado definido para a tela impedir a ação, inclusive quando um formulário
+  inválido não deve ser submetido;
 - operação já está pendente;
 - confirmação ainda não é válida;
 - regra funcional impede ação.
+
+### Exceção específica — cadastro Mobile D27
+
+No `customer-sign-up`, o CTA `Criar conta` permanece acionável fora do loading,
+mesmo com dados inválidos, para permitir a apresentação acessível dos erros.
+Ao pressioná-lo, a validação local é executada e nenhum request é enviado se
+houver erros. Os erros individuais e o resumo são apresentados; o resumo é
+anunciado como live region, recebe foco e é levado à área visível. Editar os
+campos remove o foco do resumo, e corrigir os dados permite nova submissão.
+Durante o loading, o CTA e os controles ficam desabilitados e submissões
+concorrentes são bloqueadas.
 
 ## Confirmação
 
@@ -116,7 +128,7 @@ Admin:
 
 | Tela | Loading | Vazio | Erro | Sucesso | Desabilitado | Confirmação | Auth |
 |---|---|---|---|---|---|---|---|
-| `customer-sign-up` | envio | N/A | validação/API | cadastro | submit | N/A | visitante |
+| `customer-sign-up` | envio | N/A | validação/API | cadastro | CTA durante loading | N/A | visitante |
 | `customer-login` | autenticando | N/A | credenciais/bloqueio | login | submit | N/A | visitante |
 | `storefront` | catálogo | catálogo vazio | retry | conteúdo | ações quando necessário | N/A | conforme contrato |
 | `product-detail` | produto | N/A | indisponível/estoque/API | item adicionado | incluir | N/A | conforme contrato |

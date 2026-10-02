@@ -4,6 +4,26 @@ on:
 permissions:
   contents: read
 jobs:
+  mobile-validation:
+    name: Validação do Mobile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
+        with:
+          channel: stable
+          cache: true
+          cache-key: flutter-mobile-${{ hashFiles('apps/mobile/pubspec.lock') }}
+      - working-directory: apps/mobile
+        run: dart pub get
+      - working-directory: apps/mobile
+        run: dart format --output=none --set-exit-if-changed lib test
+      - working-directory: apps/mobile
+        run: flutter analyze
+      - working-directory: apps/mobile
+        run: flutter test
   api-validation:
     name: Validação da API
     runs-on: ubuntu-latest
