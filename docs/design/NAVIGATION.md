@@ -25,7 +25,7 @@ Aplicativo
 │   ├── Login
 │   └── Criar conta
 └── Cliente autenticado
-    └── Vitrine
+    └── Área autenticada mínima (D28)
 ```
 
 ### Autenticação
@@ -36,13 +36,16 @@ customer-sign-up
 └── erro → permanece no cadastro
 
 customer-login
-├── sucesso → storefront
+├── sucesso de CLIENTE → área autenticada mínima (D28)
 ├── credenciais inválidas → permanece no login
 ├── bloqueio temporário → permanece no login
 └── sessão expirada → login
 ```
 
 A referência não decide comportamento de sessão que ainda não esteja definido pelo contrato da tarefa de implementação.
+
+A área autenticada mínima valida a sessão da D28. A vitrine/storefront permanece
+planejada para D29 e ainda não é destino do Login.
 
 Na D27, voltar ou `Entrar` retorna à instância de Login já aberta. O cadastro
 envia `POST /users`; somente um `201` com resposta estruturalmente válida

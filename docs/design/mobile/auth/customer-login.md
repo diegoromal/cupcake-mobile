@@ -126,12 +126,20 @@ Quando as credenciais não forem aceitas:
 Uma mensagem adequada deve comunicar apenas que as credenciais fornecidas não
 foram aceitas.
 
+No contrato atual da API, credenciais incorretas e conta bloqueada retornam o
+mesmo `401`. O Mobile não consegue identificar o bloqueio e deve manter a
+mensagem neutra de credenciais não aceitas.
+
 ---
 
 ## Bloqueio temporário
 
 Após o limite de tentativas inválidas definido pelo domínio, a conta pode entrar
 em bloqueio temporário.
+
+Embora o Backend aplique esse bloqueio, sua resposta atual não distingue esse
+caso de credenciais inválidas. A tela Mobile não deve afirmar que a conta está
+bloqueada até que a API exponha essa distinção em contrato próprio.
 
 Nesse estado:
 

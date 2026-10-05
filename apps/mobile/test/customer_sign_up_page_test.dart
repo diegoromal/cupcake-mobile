@@ -7,6 +7,7 @@ import 'package:cupcake_mobile/features/auth/data/customer_registration_api.dart
 import 'package:cupcake_mobile/features/auth/presentation/customer_sign_up_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'session_test_support.dart';
 
 class _FakeApi extends CustomerRegistrationApi {
   _FakeApi() : super(config: ApiConfig(baseUrl: 'https://example.test'));
@@ -126,7 +127,10 @@ void main() {
     'bloqueia clique duplo enquanto envia e descarta senha no sucesso',
     (tester) async {
       final api = _FakeApi();
-      await tester.pumpWidget(CupcakeApp(registrationApi: api));
+      await tester.pumpWidget(
+        CupcakeApp(registrationApi: api, session: createCustomerSession()),
+      );
+      await pumpUntilSessionReady(tester);
       await tester.tap(find.text('Criar conta').first);
       await tester.pumpAndSettle();
       await _fill(tester);
@@ -184,7 +188,10 @@ void main() {
 
   testWidgets('erro recuperável mantém dados e permite Entrar', (tester) async {
     final api = _FakeApi();
-    await tester.pumpWidget(CupcakeApp(registrationApi: api));
+    await tester.pumpWidget(
+      CupcakeApp(registrationApi: api, session: createCustomerSession()),
+    );
+    await pumpUntilSessionReady(tester);
     await tester.tap(find.text('Criar conta').first);
     await tester.pumpAndSettle();
     await _fill(tester);
@@ -210,7 +217,10 @@ void main() {
     tester,
   ) async {
     final api = _FakeApi();
-    await tester.pumpWidget(CupcakeApp(registrationApi: api));
+    await tester.pumpWidget(
+      CupcakeApp(registrationApi: api, session: createCustomerSession()),
+    );
+    await pumpUntilSessionReady(tester);
     await tester.tap(find.text('Criar conta').first);
     await tester.pumpAndSettle();
     await _fill(tester);
@@ -323,7 +333,10 @@ void main() {
     tester,
   ) async {
     final api = _FakeApi();
-    await tester.pumpWidget(CupcakeApp(registrationApi: api));
+    await tester.pumpWidget(
+      CupcakeApp(registrationApi: api, session: createCustomerSession()),
+    );
+    await pumpUntilSessionReady(tester);
     await tester.tap(find.text('Criar conta').first);
     await tester.pumpAndSettle();
     await _fill(tester);

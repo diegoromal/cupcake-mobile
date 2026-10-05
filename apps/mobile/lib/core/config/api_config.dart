@@ -7,6 +7,15 @@ class ApiConfig {
   final String _baseUrl;
 
   Uri? get usersUri {
+    final baseUri = _validBaseUri;
+    return baseUri?.resolve('/users');
+  }
+
+  Uri? get customerLoginUri => _validBaseUri?.resolve('/auth/login');
+
+  Uri? get refreshUri => _validBaseUri?.resolve('/auth/refresh');
+
+  Uri? get _validBaseUri {
     final value = _baseUrl.trim();
     final uri = Uri.tryParse(value);
     if (uri == null ||
@@ -22,6 +31,6 @@ class ApiConfig {
         (uri.path.isNotEmpty && uri.path != '/')) {
       return null;
     }
-    return uri.resolve('/users');
+    return uri;
   }
 }
