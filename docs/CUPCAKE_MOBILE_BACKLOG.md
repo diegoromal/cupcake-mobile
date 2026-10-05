@@ -87,9 +87,9 @@
 
 ## 📱 FASE 3 --- Aplicativo Flutter
 
-- [ ] **D26 --- Estrutura e navegação do Flutter**
-- [ ] **D27 --- Tela de cadastro**
-- [ ] **D28 --- Tela de login e sessão**
+- [x] **D26 --- Estrutura e navegação do Flutter**
+- [x] **D27 --- Tela de cadastro**
+- [x] **D28 --- Tela de login e sessão**
 - [ ] **D29 --- Vitrine**
 - [ ] **D30 --- Categorias e filtros**
 - [ ] **D31 --- Detalhes do cupcake**
