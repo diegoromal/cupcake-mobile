@@ -90,7 +90,7 @@
 - [x] **D26 --- Estrutura e navegação do Flutter**
 - [x] **D27 --- Tela de cadastro**
 - [x] **D28 --- Tela de login e sessão**
-- [ ] **D29 --- Vitrine**
+- [x] **D29 --- Vitrine**
 - [ ] **D30 --- Categorias e filtros**
 - [ ] **D31 --- Detalhes do cupcake**
 - [ ] **D32 --- Personalizações + cálculo de preço**
