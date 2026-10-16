@@ -40,7 +40,7 @@ String _token(String type) {
 }
 
 void main() {
-  testWidgets('login autenticado abre destino mínimo e sair retorna ao login', (
+  testWidgets('login autenticado abre a vitrine e sair retorna ao login', (
     tester,
   ) async {
     final storage = MemorySessionStorage();
@@ -74,8 +74,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(authApi.loginRequests, 1);
-    expect(find.text('Sessão do cliente'), findsOneWidget);
-    expect(find.text('Você entrou na sua conta.'), findsOneWidget);
+    expect(find.text('Vitrine'), findsOneWidget);
+    expect(
+      find.text('A vitrine não está configurada neste aplicativo.'),
+      findsOneWidget,
+    );
     expect(find.textContaining('signature'), findsNothing);
 
     await tester.tap(find.text('Sair'));

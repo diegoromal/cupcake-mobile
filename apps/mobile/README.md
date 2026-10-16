@@ -14,9 +14,10 @@ flutter run --dart-define=API_BASE_URL=https://api.exemplo.com
 O cadastro usa `POST /users`; login e refresh usam `/auth/login` e
 `/auth/refresh`. Informe a URL base real da API por
 `--dart-define=API_BASE_URL=...`; sem uma URL HTTPS válida, o aplicativo mostra
-um erro controlado e não inicia uma conexão. HTTP é aceito somente para
-`localhost`/loopback em desenvolvimento local. Em um dispositivo integrado,
-prefira HTTPS.
+um erro controlado e não inicia uma conexão. HTTP aceita somente
+`localhost`, `127.0.0.1` e `::1`. Os IPs LAN `172.25.0.17` e
+`192.168.18.3` são aceitos somente em build debug/profile com
+`--dart-define=ALLOW_LOCAL_HTTP_API=true`. Outros hosts exigem HTTPS.
 
 ## Estrutura
 
@@ -25,6 +26,7 @@ prefira HTTPS.
 - `lib/core/`: configuração da API e tema.
 - `lib/features/auth/`: cadastro, login, cliente de autenticação, sessão e
   armazenamento seguro.
+- `lib/features/catalog/`: consulta paginada e apresentação da vitrine D29.
 - `test/`: testes de cadastro, autenticação, sessão, navegação e acessibilidade.
 
 ## Validação
@@ -83,3 +85,18 @@ O Backend responde com o mesmo `401` para credenciais inválidas e conta
 temporariamente bloqueada, então o Mobile apresenta mensagem neutra e não
 identifica o bloqueio. Em falhas temporárias de rede durante a restauração, as
 credenciais permanecem salvas e o app oferece tentar novamente ou sair.
+
+## Vitrine — D29
+
+Após restaurar ou iniciar uma sessão CLIENTE, o app consulta
+`GET /catalogo/produtos?page=1&limit=20` com Bearer. A API retorna somente
+produtos ativos com estoque disponível, ordenados por categoria e nome. A tela
+oferece atualização e carregamento manual da página seguinte; busca, filtros,
+detalhe e compra permanecem fora desta entrega.
+
+O DTO não contém a key de storage. Quando `imagemDisponivel` é verdadeiro, o
+app busca bytes WebP em `GET /catalogo/produtos/:id/imagem` com a sessão;
+ausência ou falha da imagem mantém nome e preço e mostra um fallback. Em 401,
+um GET pode compartilhar o refresh da sessão e ser repetido uma vez. 403 é
+apresentado como acesso negado. A rota de imagem exige CLIENTE, revalida
+elegibilidade e usa `Cache-Control: private, no-store`.

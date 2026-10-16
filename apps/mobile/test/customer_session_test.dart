@@ -61,7 +61,10 @@ void main() {
 
   test('restaura por refresh mesmo com access local ainda válido', () async {
     final original = _tokens();
-    final newAccess = _token('access');
+    final newAccess = _token(
+      'access',
+      expiry: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 7200,
+    );
     String? sentRefresh;
     final server = await _server((request) async {
       expect(request.uri.path, '/auth/refresh');
@@ -286,6 +289,40 @@ void main() {
     await Future.wait([first, second]);
     expect(refreshes, 1);
   });
+
+  test(
+    '401 da API protegida pode forçar um refresh e recebe o access novo',
+    () async {
+      final tokens = _tokens();
+      final newAccess = _token(
+        'access',
+        expiry: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 7200,
+      );
+      final server = await _server((request) async {
+        if (request.uri.path == '/auth/login') {
+          request.response
+            ..statusCode = 200
+            ..write(jsonEncode(tokens.toJson()));
+        } else {
+          request.response
+            ..statusCode = 200
+            ..write(jsonEncode({'accessToken': newAccess}));
+        }
+        await request.response.close();
+      });
+      addTearDown(server.close);
+      final session = _session(server, MemorySessionStorage());
+      addTearDown(session.dispose);
+      await session.restore();
+      await session.signIn(email: 'ana@example.com', password: 'senha');
+
+      final refreshed = await session.refreshAfterUnauthorized(
+        tokens.accessToken,
+      );
+      expect(refreshed, newAccess);
+      expect(session.isAuthenticated, isTrue);
+    },
+  );
 
   test('resposta tardia de login não recria sessão após logout', () async {
     final gate = Completer<void>();

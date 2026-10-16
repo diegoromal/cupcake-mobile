@@ -193,14 +193,13 @@ void main() {
     addTearDown(session.dispose);
     await tester.pumpWidget(CupcakeApp(session: session));
     await _flush(tester);
-    expect(find.text('Sessão do cliente'), findsOneWidget);
-    expect(find.text('Você entrou na sua conta.'), findsOneWidget);
+    expect(find.text('Vitrine'), findsOneWidget);
 
     api.onRefresh = (_) async =>
         const AuthRequestResult(AuthRequestStatus.invalidToken);
     await tester.pump(const Duration(seconds: 3));
     await _flush(tester);
-    expect(find.text('Sessão do cliente'), findsNothing);
+    expect(find.text('Vitrine'), findsNothing);
     expect(find.text('Entrar'), findsWidgets);
     expect(
       find.text('Sua sessão foi encerrada. Entre novamente para continuar.'),
@@ -233,7 +232,7 @@ void main() {
     await _flush(tester);
     expect(session.state, CustomerSessionState.signedOutStorageError);
     expect(session.sessionExpired, isTrue);
-    expect(find.text('Sessão do cliente'), findsNothing);
+    expect(find.text('Vitrine'), findsNothing);
 
     storage.clearFailure = null;
     await tester.tap(find.text('Tentar sair novamente'));
@@ -268,7 +267,7 @@ void main() {
       await _flush(tester);
       expect(session.state, CustomerSessionState.authenticated);
       expect(session.accessToken, original.accessToken);
-      expect(find.text('Sessão do cliente'), findsOneWidget);
+      expect(find.text('Vitrine'), findsOneWidget);
       expect(find.text('Tentar novamente'), findsOneWidget);
       expect(
         find.text('Sua sessão foi encerrada. Entre novamente para continuar.'),
@@ -329,7 +328,7 @@ void main() {
       expect(session.state, CustomerSessionState.restorationUnavailable);
       expect(session.sessionExpired, isFalse);
       expect(session.accessToken, isNull);
-      expect(find.text('Sessão do cliente'), findsNothing);
+      expect(find.text('Vitrine'), findsNothing);
       expect(find.text('Tentar novamente'), findsOneWidget);
       expect(storage.value?.accessToken, original.accessToken);
       expect(storage.value?.refreshToken, original.refreshToken);

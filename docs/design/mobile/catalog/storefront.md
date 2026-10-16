@@ -15,9 +15,8 @@
 
 ## Objetivo
 
-Apresentar ao cliente os cupcakes disponíveis para compra de forma clara,
-atrativa e organizada, permitindo localizar um produto e seguir para sua
-visualização detalhada.
+Apresentar ao cliente autenticado os cupcakes elegíveis de forma clara e
+organizada. Na D29, os cards são somente apresentação e não navegam.
 
 ---
 
@@ -25,17 +24,15 @@ visualização detalhada.
 
 A tela representa:
 
-- identificação do cliente autenticado;
-- escolha entre Delivery e Retirada;
+- sessão CLIENTE autenticada;
 - organização de produtos por categoria;
 - listagem de produtos disponíveis;
 - imagem do produto;
 - categoria;
 - nome;
-- descrição resumida;
 - preço;
-- acesso ao detalhe do produto;
-- navegação principal do aplicativo.
+- paginação da listagem;
+- atualização explícita.
 
 A vitrine deve apresentar somente produtos elegíveis para exposição conforme
 as regras funcionais vigentes.
@@ -48,23 +45,9 @@ busca. Não ativar destinos da navegação inferior sem fluxo correspondente.
 
 ## Navegação
 
-### Produto em destaque
-
-A ação:
-
-`Ver produto`
-
-abre o detalhe do produto correspondente.
-
 ### Cards de produto
 
-A ação visual presente no card representa navegação para o detalhe do produto.
-
-Ela **não representa inclusão direta no carrinho**.
-
-Fluxo esperado:
-
-`Vitrine → Detalhe do produto → Personalização/quantidade → Carrinho`
+Cards não exibem ação visual ou semântica de navegação na D29.
 
 ---
 

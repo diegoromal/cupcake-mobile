@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_tokens.dart';
 import '../data/customer_registration_api.dart';
 import '../session/customer_session.dart';
+import '../../catalog/data/customer_catalog_api.dart';
+import '../../catalog/presentation/storefront_page.dart';
 import 'customer_login_page.dart';
 
 class CustomerSessionPage extends StatefulWidget {
@@ -12,10 +14,12 @@ class CustomerSessionPage extends StatefulWidget {
     super.key,
     required this.session,
     this.registrationApi,
+    this.catalogApi,
   });
 
   final CustomerSession session;
   final CustomerRegistrationApi? registrationApi;
+  final CustomerCatalogApi? catalogApi;
 
   @override
   State<CustomerSessionPage> createState() => _CustomerSessionPageState();
@@ -62,8 +66,9 @@ class _CustomerSessionPageState extends State<CustomerSessionPage>
         session: widget.session,
         registrationApi: widget.registrationApi,
       ),
-      CustomerSessionState.authenticated => _AuthenticatedPage(
+      CustomerSessionState.authenticated => StorefrontPage(
         session: widget.session,
+        api: widget.catalogApi ?? CustomerCatalogApi(),
       ),
       CustomerSessionState.restorationUnavailable => _SessionRecoveryPage(
         session: widget.session,
@@ -171,91 +176,6 @@ class _SessionRecoveryPageState extends State<_SessionRecoveryPage> {
                   ),
               ],
             ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _AuthenticatedPage extends StatefulWidget {
-  const _AuthenticatedPage({required this.session});
-
-  final CustomerSession session;
-
-  @override
-  State<_AuthenticatedPage> createState() => _AuthenticatedPageState();
-}
-
-class _AuthenticatedPageState extends State<_AuthenticatedPage> {
-  bool _busy = false;
-
-  Future<void> _retryRefresh() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await widget.session.retryRefresh();
-    if (mounted && widget.session.isAuthenticated) {
-      setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _signOut() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await widget.session.signOut();
-    if (mounted && widget.session.isAuthenticated) {
-      setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Cupcake Mobile'),
-      automaticallyImplyLeading: false,
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : _signOut,
-          child: const Text('Sair'),
-        ),
-      ],
-    ),
-    body: SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppTokens.spacing24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Semantics(
-                header: true,
-                child: Text(
-                  'Sessão do cliente',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-              const SizedBox(height: AppTokens.spacing12),
-              const Text(
-                'Você entrou na sua conta.',
-                textAlign: TextAlign.center,
-              ),
-              if (widget.session.refreshUnavailable) ...[
-                const SizedBox(height: AppTokens.spacing16),
-                const Text('Não foi possível atualizar sua sessão agora.'),
-                TextButton(
-                  onPressed: _busy ? null : _retryRefresh,
-                  child: const Text('Tentar novamente'),
-                ),
-              ],
-              if (_busy) ...[
-                const SizedBox(height: AppTokens.spacing16),
-                Semantics(
-                  liveRegion: true,
-                  label: 'Encerrando sessão…',
-                  child: CircularProgressIndicator(),
-                ),
-              ],
-            ],
           ),
         ),
       ),

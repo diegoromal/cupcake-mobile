@@ -15,6 +15,12 @@ class ApiConfig {
 
   Uri? get refreshUri => _validBaseUri?.resolve('/auth/refresh');
 
+  Uri? catalogPageUri(int page, int limit) =>
+      _validBaseUri?.resolve('/catalogo/produtos?page=$page&limit=$limit');
+
+  Uri? catalogImageUri(String productId) =>
+      _validBaseUri?.resolve('/catalogo/produtos/$productId/imagem');
+
   Uri? get _validBaseUri {
     final value = _baseUrl.trim();
     final uri = Uri.tryParse(value);
@@ -23,8 +29,10 @@ class ApiConfig {
         uri.host.isEmpty ||
         (uri.scheme != 'https' && uri.scheme != 'http') ||
         (uri.scheme == 'http' &&
-            (!kDebugMode ||
-                !const {'localhost', '127.0.0.1', '::1'}.contains(uri.host))) ||
+            !const {'localhost', '127.0.0.1', '::1'}.contains(uri.host) &&
+            !(!kReleaseMode &&
+                const bool.fromEnvironment('ALLOW_LOCAL_HTTP_API') &&
+                const {'172.25.0.17', '192.168.18.3'}.contains(uri.host))) ||
         uri.userInfo.isNotEmpty ||
         uri.query.isNotEmpty ||
         uri.fragment.isNotEmpty ||

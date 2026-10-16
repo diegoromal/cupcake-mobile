@@ -25,7 +25,7 @@ Aplicativo
 │   ├── Login
 │   └── Criar conta
 └── Cliente autenticado
-    └── Área autenticada mínima (D28)
+    └── Vitrine (D29)
 ```
 
 ### Autenticação
@@ -44,8 +44,8 @@ customer-login
 
 A referência não decide comportamento de sessão que ainda não esteja definido pelo contrato da tarefa de implementação.
 
-A área autenticada mínima valida a sessão da D28. A vitrine/storefront permanece
-planejada para D29 e ainda não é destino do Login.
+A raiz protegida da D28 mantém a sessão e apresenta a vitrine D29 após
+autenticação/restauração. Logout e expiração retornam ao fluxo público.
 
 Na D27, voltar ou `Entrar` retorna à instância de Login já aberta. O cadastro
 envia `POST /users`; somente um `201` com resposta estruturalmente válida
@@ -56,9 +56,9 @@ Falhas recuperáveis permanecem no cadastro e não criam sessão.
 
 ```text
 storefront
-└── selecionar produto → product-detail
+└── atualizar / carregar próxima página → storefront
 
-product-detail
+product-detail (D31+)
 ├── alterar quantidade/personalizações → permanece no detalhe
 ├── adicionar → cart ou feedback de item adicionado
 └── voltar → storefront
