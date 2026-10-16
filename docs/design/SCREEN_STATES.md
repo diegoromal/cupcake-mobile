@@ -157,6 +157,19 @@ Admin:
 
 ## Produtos — estados específicos
 
+### Vitrine CLIENTE — D29
+
+- Loading da primeira página não é apresentado como catálogo vazio.
+- `items=[]` após 200 apresenta vazio e permite atualizar.
+- Erro inicial permite retry sem mostrar lista vazia; erro de página permite
+  repetir a mesma página sem duplicar produtos já carregados.
+- Falha ou ausência da imagem mantém nome e preço e usa fallback. A imagem é
+  lida pela rota CLIENTE autenticada, nunca pela key S3.
+- `401` pode renovar a sessão e repetir o GET uma vez; `403` apresenta acesso
+  negado e não encerra sessão. A sessão D28 decide expiração e logout.
+- Atualizar reinicia a paginação. Só aparecem categorias com produtos
+  elegíveis recebidos.
+
 ### Falha parcial de categorias
 
 Na lista de produtos:

@@ -336,6 +336,18 @@ void main() {
     ).register(nome: 'Ana', email: 'a@b.com', telefone: '1', senha: '12345678');
     expect(result.status, RegistrationStatus.notSent);
     expect(ApiConfig(baseUrl: 'http://example.com').usersUri, isNull);
+    expect(ApiConfig(baseUrl: 'http://192.168.1.10:3000').usersUri, isNull);
+    expect(ApiConfig(baseUrl: 'http://api.local:3000').usersUri, isNull);
+    expect(ApiConfig(baseUrl: 'http://172.25.0.17:3000').usersUri, isNull);
+    expect(
+      ApiConfig(baseUrl: 'http://localhost:3000').usersUri?.path,
+      '/users',
+    );
+    expect(
+      ApiConfig(baseUrl: 'http://127.0.0.1:3000').usersUri?.path,
+      '/users',
+    );
+    expect(ApiConfig(baseUrl: 'http://[::1]:3000').usersUri?.path, '/users');
     expect(
       ApiConfig(baseUrl: 'https://api.example.com/').usersUri?.path,
       '/users',

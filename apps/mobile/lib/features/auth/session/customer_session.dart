@@ -189,6 +189,16 @@ class CustomerSession extends ChangeNotifier {
     return _refresh(_generation, restoring: false);
   }
 
+  Future<String?> refreshAfterUnauthorized(String rejectedAccessToken) async {
+    if (!isAuthenticated) return null;
+    final current = accessToken;
+    if (current == null) return null;
+    if (current != rejectedAccessToken) return current;
+    await _refresh(_generation, restoring: false);
+    final updated = accessToken;
+    return updated != null && updated != rejectedAccessToken ? updated : null;
+  }
+
   Future<void> _refresh(int generation, {required bool restoring}) {
     final inFlight = _refreshInFlight;
     if (inFlight != null && _refreshGeneration == generation) return inFlight;
