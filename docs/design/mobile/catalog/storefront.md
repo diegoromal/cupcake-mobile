@@ -16,7 +16,8 @@
 ## Objetivo
 
 Apresentar ao cliente autenticado os cupcakes elegíveis de forma clara e
-organizada. Na D29, os cards são somente apresentação e não navegam.
+organizada. Na D29, os cards eram somente apresentação. Na D31, abrem o
+detalhe por ID.
 
 ---
 
@@ -47,7 +48,9 @@ busca. Não ativar destinos da navegação inferior sem fluxo correspondente.
 
 ### Cards de produto
 
-Cards não exibem ação visual ou semântica de navegação na D29.
+Na D31, o card inteiro é acionável e abre `product-detail` pelo UUID real.
+O retorno por `Navigator.pop` conserva a mesma instância da vitrine, incluindo
+filtro, paginação e posição, sem atualização automática.
 
 ---
 

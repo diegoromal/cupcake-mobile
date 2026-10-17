@@ -26,7 +26,7 @@ um erro controlado e não inicia uma conexão. HTTP aceita somente
 - `lib/core/`: configuração da API e tema.
 - `lib/features/auth/`: cadastro, login, cliente de autenticação, sessão e
   armazenamento seguro.
-- `lib/features/catalog/`: consulta paginada e apresentação da vitrine D29.
+- `lib/features/catalog/`: consulta paginada, vitrine e detalhe autenticado D31.
 - `test/`: testes de cadastro, autenticação, sessão, navegação e acessibilidade.
 
 ## Validação
@@ -92,7 +92,8 @@ Após restaurar ou iniciar uma sessão CLIENTE, o app consulta
 `GET /catalogo/produtos?page=1&limit=20` com Bearer. A API retorna somente
 produtos ativos com estoque disponível, ordenados por categoria e nome. A tela
 oferece atualização e carregamento manual da página seguinte; busca, filtros,
-detalhe e compra permanecem fora desta entrega.
+detalhe e compra permanecem fora da D29; categorias e filtros foram entregues
+na D30, e o detalhe de leitura na D31.
 
 O DTO não contém a key de storage. Quando `imagemDisponivel` é verdadeiro, o
 app busca bytes WebP em `GET /catalogo/produtos/:id/imagem` com a sessão;
@@ -138,3 +139,27 @@ vazia, validação de UUID e acesso por perfil. O `finally` remove apenas os
 registros cujos IDs foram criados pelo harness e confere a limpeza; o banco e
 o schema não são removidos. A validação passa somente se o comando terminar
 com código zero e imprimir `PASS D30 PostgreSQL`.
+
+## Detalhe do cupcake — D31
+
+Toque em um card da vitrine para consultar `GET /catalogo/produtos/:id` com
+Bearer. O detalhe usa o ID do card apenas para a consulta: nome, categoria,
+descrição, preço base e disponibilidade vêm da resposta atual da API. A imagem
+continua em `GET /catalogo/produtos/:id/imagem`, com fallback acessível.
+
+A API devolve 404 neutro para produto inexistente ou inelegível; o app mostra
+`Produto indisponível` e permite voltar. Erros transitórios têm retry; 401 tenta
+refresh e repete a consulta uma vez, enquanto 403 mantém a sessão. Voltar usa
+`Navigator.pop` e conserva a instância da vitrine, inclusive filtro, paginação
+e posição. Respostas tardias são descartadas ao trocar produto, sair da tela
+ou perder a sessão. Personalizações, quantidade e carrinho ficam para D32/D33.
+
+A prova PostgreSQL D31 usa exclusivamente o banco local dedicado
+`cupcake_d31` (schema `public`). Após aplicar migrations, execute a partir de
+`apps/api` com `D31_TEST_DATABASE_URL` apontando para esse banco:
+
+```sh
+npx --no-install ts-node test/d31-catalogo-postgres.ts
+```
+
+O harness usa IDs próprios e remove seus registros no `finally`.

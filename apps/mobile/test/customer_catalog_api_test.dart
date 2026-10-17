@@ -22,6 +22,63 @@ String _token() => 'secret-session-value';
 
 void main() {
   test(
+    'detail uses Bearer, parses public fields, and distinguishes HTTP errors',
+    () async {
+      var status = HttpStatus.ok;
+      var body = jsonEncode({
+        'id': _id,
+        'nome': 'Cupcake',
+        'descricao': null,
+        'precoAtual': '12.30',
+        'categoria': {
+          'id': '11111111-1111-4111-8111-111111111111',
+          'nome': 'Doces',
+        },
+        'imagemDisponivel': false,
+        'disponivel': true,
+      });
+      final server = await _server((request) async {
+        expect(request.uri.path, '/catalogo/produtos/$_id');
+        expect(
+          request.headers.value(HttpHeaders.authorizationHeader),
+          'Bearer ${_token()}',
+        );
+        request.response.statusCode = status;
+        if (status == HttpStatus.ok) request.response.write(body);
+        await request.response.close();
+      });
+      addTearDown(server.close);
+      final api = _api(server);
+      final success = await api.fetchDetail(
+        productId: _id,
+        accessToken: _token(),
+      );
+      expect(success.status, CatalogRequestStatus.success);
+      expect(success.product?.description, isNull);
+      expect(success.product?.imageAvailable, isFalse);
+      body = body.replaceFirst('"disponivel":true', '"disponivel":false');
+      expect(
+        (await api.fetchDetail(productId: _id, accessToken: _token())).status,
+        CatalogRequestStatus.unavailable,
+      );
+      status = HttpStatus.notFound;
+      expect(
+        (await api.fetchDetail(productId: _id, accessToken: _token())).status,
+        CatalogRequestStatus.notFound,
+      );
+      status = HttpStatus.unauthorized;
+      expect(
+        (await api.fetchDetail(productId: _id, accessToken: _token())).status,
+        CatalogRequestStatus.unauthorized,
+      );
+      status = HttpStatus.forbidden;
+      expect(
+        (await api.fetchDetail(productId: _id, accessToken: _token())).status,
+        CatalogRequestStatus.forbidden,
+      );
+    },
+  );
+  test(
     'categories and optional filter use Bearer and preserve the safe DTO',
     () async {
       final server = await _server((request) async {

@@ -12,6 +12,7 @@ type CatalogProductRow = {
   categoriaNome: string;
   imagem: string | null;
 };
+type CatalogDetailRow = CatalogProductRow & { descricao: string | null };
 
 export const MAX_PRODUCT_IMAGE_BYTES = 2 * 1024 * 1024;
 const eligibleProduct = Prisma.sql`p."ativo" = true AND e."quantidadeFisica" > e."quantidadeReservada"`;
@@ -59,6 +60,27 @@ export class CatalogoService {
       )
       ORDER BY c."nome" ASC, c."id" ASC
     `);
+  }
+
+  async detail(produtoId: string) {
+    const [product] = await this.prisma.$queryRaw<CatalogDetailRow[]>(Prisma.sql`
+      SELECT p."id", p."nome", p."descricao", p."precoAtual", p."categoriaId",
+             c."nome" AS "categoriaNome", p."imagem"
+      FROM "Produto" p
+      INNER JOIN "Categoria" c ON c."id" = p."categoriaId"
+      INNER JOIN "Estoque" e ON e."produtoId" = p."id"
+      WHERE p."id" = ${produtoId}::uuid AND ${eligibleProduct}
+    `);
+    if (!product) throw new NotFoundException('Produto indisponível.');
+    return {
+      id: product.id,
+      nome: product.nome,
+      descricao: product.descricao,
+      precoAtual: product.precoAtual.toFixed(2),
+      categoria: { id: product.categoriaId, nome: product.categoriaNome },
+      imagemDisponivel: isManagedProductImage(product.imagem, product.id),
+      disponivel: true,
+    };
   }
 
   async getImage(produtoId: string): Promise<Buffer> {

@@ -16,6 +16,36 @@ describe('CatalogoService', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  it('returns only public detail fields and a neutral 404 for missing products', async () => {
+    query.mockResolvedValueOnce([{
+      id: productId, nome: 'Cupcake', descricao: 'Chocolate',
+      precoAtual: new Prisma.Decimal('12.30'), categoriaId: categoryId,
+      categoriaNome: 'Doces', imagem: null, ativo: false,
+      quantidadeFisica: 99,
+    }]).mockResolvedValueOnce([]);
+    await expect(service.detail(productId)).resolves.toEqual({
+      id: productId, nome: 'Cupcake', descricao: 'Chocolate', precoAtual: '12.30',
+      categoria: { id: categoryId, nome: 'Doces' }, imagemDisponivel: false,
+      disponivel: true,
+    });
+    expect(query.mock.calls[0][0].strings.join('')).toMatch(/INNER JOIN "Estoque".*quantidadeFisica.*quantidadeReservada/s);
+    await expect(service.detail(productId)).rejects.toMatchObject({
+      response: { message: 'Produto indisponível.' },
+    });
+  });
+
+  it('supports null description and a managed image', async () => {
+    query.mockResolvedValue([{
+      id: productId, nome: 'Cupcake', descricao: null,
+      precoAtual: new Prisma.Decimal('0.90'), categoriaId: categoryId,
+      categoriaNome: 'Doces',
+      imagem: `produtos/${productId}/22222222-2222-4222-8222-222222222222.webp`,
+    }]);
+    await expect(service.detail(productId)).resolves.toMatchObject({
+      descricao: null, precoAtual: '0.90', imagemDisponivel: true,
+    });
+  });
+
   it('returns the safe paged DTO, formats decimal price, and uses limit+1', async () => {
     query.mockResolvedValue([{
       id: productId, nome: 'Cupcake', precoAtual: new Prisma.Decimal('12.50'),

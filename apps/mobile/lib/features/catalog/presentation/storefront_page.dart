@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
 import '../data/customer_catalog_api.dart';
+import 'product_detail_page.dart';
 
 class StorefrontPage extends StatefulWidget {
   const StorefrontPage({super.key, required this.session, required this.api});
@@ -405,7 +406,20 @@ class _StorefrontPageState extends State<StorefrontPage> {
           }
           return Padding(
             padding: const EdgeInsets.only(bottom: AppTokens.spacing12),
-            child: _ProductCard(product: entry.product!, loadImage: _loadImage),
+            child: _ProductCard(
+              product: entry.product!,
+              loadImage: _loadImage,
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProductDetailPage(
+                    productId: entry.product!.id,
+                    session: widget.session,
+                    api: widget.api,
+                  ),
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -421,9 +435,14 @@ class _CatalogEntry {
 }
 
 class _ProductCard extends StatefulWidget {
-  const _ProductCard({required this.product, required this.loadImage});
+  const _ProductCard({
+    required this.product,
+    required this.loadImage,
+    required this.onTap,
+  });
   final CatalogProduct product;
   final Future<Uint8List?> Function(String) loadImage;
+  final VoidCallback onTap;
 
   @override
   State<_ProductCard> createState() => _ProductCardState();
@@ -466,60 +485,63 @@ class _ProductCardState extends State<_ProductCard> {
   Widget build(BuildContext context) => Card(
     margin: EdgeInsets.zero,
     clipBehavior: Clip.antiAlias,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final horizontal = constraints.maxWidth >= 400;
-        final image = SizedBox(
-          width: horizontal ? 112 : double.infinity,
-          height: horizontal ? 112 : 168,
-          child: widget.product.imageAvailable
-              ? FutureBuilder<Uint8List?>(
-                  future: _image,
-                  builder: (context, snapshot) {
-                    final bytes = snapshot.data;
-                    if (bytes == null) return const _ImageFallback();
-                    final provider = _imageProvider ??= MemoryImage(bytes);
-                    return Image(
-                      image: provider,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const _ImageFallback(),
-                    );
-                  },
-                )
-              : const _ImageFallback(),
-        );
-        final details = Padding(
-          padding: const EdgeInsets.all(AppTokens.spacing16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.product.name,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppTokens.spacing12),
-              Text(
-                _formatPrice(widget.product.price),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTokens.primaryStrong,
+    child: InkWell(
+      onTap: widget.onTap,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final horizontal = constraints.maxWidth >= 400;
+          final image = SizedBox(
+            width: horizontal ? 112 : double.infinity,
+            height: horizontal ? 112 : 168,
+            child: widget.product.imageAvailable
+                ? FutureBuilder<Uint8List?>(
+                    future: _image,
+                    builder: (context, snapshot) {
+                      final bytes = snapshot.data;
+                      if (bytes == null) return const _ImageFallback();
+                      final provider = _imageProvider ??= MemoryImage(bytes);
+                      return Image(
+                        image: provider,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const _ImageFallback(),
+                      );
+                    },
+                  )
+                : const _ImageFallback(),
+          );
+          final details = Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.product.name,
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-              ),
-            ],
-          ),
-        );
-        return horizontal
-            ? Row(
-                children: [
-                  image,
-                  Expanded(child: details),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [image, details],
-              );
-      },
+                const SizedBox(height: AppTokens.spacing12),
+                Text(
+                  _formatPrice(widget.product.price),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTokens.primaryStrong,
+                  ),
+                ),
+              ],
+            ),
+          );
+          return horizontal
+              ? Row(
+                  children: [
+                    image,
+                    Expanded(child: details),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [image, details],
+                );
+        },
+      ),
     ),
   );
 }
