@@ -22,6 +22,22 @@ class CatalogCategory {
   const CatalogCategory({required this.id, required this.name});
   final String id;
   final String name;
+
+  static CatalogCategory? parse(Object? value) {
+    if (value is! Map<String, dynamic> || value.length != 2) return null;
+    final id = value['id'];
+    final name = value['nome'];
+    if (id is! String || !_uuidPattern.hasMatch(id) || name is! String) {
+      return null;
+    }
+    return CatalogCategory(id: id, name: name);
+  }
+}
+
+class CatalogCategoriesResult {
+  const CatalogCategoriesResult(this.status, {this.categories});
+  final CatalogRequestStatus status;
+  final List<CatalogCategory>? categories;
 }
 
 class CatalogProduct {
@@ -136,8 +152,9 @@ class CustomerCatalogApi {
     required String accessToken,
     required int page,
     int limit = 20,
+    String? categoryId,
   }) async {
-    final uri = _config.catalogPageUri(page, limit);
+    final uri = _config.catalogPageUri(page, limit, categoryId: categoryId);
     if (uri == null) {
       return const CatalogPageResult(CatalogRequestStatus.notConfigured);
     }
@@ -152,6 +169,35 @@ class CustomerCatalogApi {
           : CatalogPageResult(CatalogRequestStatus.success, page: parsed);
     } on Object {
       return const CatalogPageResult(CatalogRequestStatus.unavailable);
+    }
+  }
+
+  Future<CatalogCategoriesResult> fetchCategories({
+    required String accessToken,
+  }) async {
+    final uri = _config.catalogCategoriesUri;
+    if (uri == null) {
+      return const CatalogCategoriesResult(CatalogRequestStatus.notConfigured);
+    }
+    final response = await _get(uri, accessToken);
+    if (response.status != CatalogRequestStatus.success) {
+      return CatalogCategoriesResult(response.status);
+    }
+    try {
+      final raw = jsonDecode(utf8.decode(response.body));
+      if (raw is! List) throw const FormatException('Invalid categories');
+      final categories = <CatalogCategory>[];
+      for (final entry in raw) {
+        final category = CatalogCategory.parse(entry);
+        if (category == null) throw const FormatException('Invalid category');
+        categories.add(category);
+      }
+      return CatalogCategoriesResult(
+        CatalogRequestStatus.success,
+        categories: List.unmodifiable(categories),
+      );
+    } on Object {
+      return const CatalogCategoriesResult(CatalogRequestStatus.unavailable);
     }
   }
 

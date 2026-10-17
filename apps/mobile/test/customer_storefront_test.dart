@@ -54,15 +54,36 @@ class _AuthApi extends CustomerAuthApi {
 }
 
 class _CatalogApi extends CustomerCatalogApi {
-  _CatalogApi(this.responses);
+  _CatalogApi(this.responses, {this.categoryResponses});
   final List<Future<CatalogPageResult> Function(int)> responses;
+  final List<Future<CatalogCategoriesResult> Function()>? categoryResponses;
   int calls = 0;
+  int categoryCalls = 0;
+  final filters = <String?>[];
+  final pages = <int>[];
+  @override
+  Future<CatalogCategoriesResult> fetchCategories({
+    required String accessToken,
+  }) {
+    final index = categoryCalls++;
+    if (categoryResponses != null) return categoryResponses![index]();
+    return Future.value(
+      const CatalogCategoriesResult(
+        CatalogRequestStatus.success,
+        categories: [_category1, _category2],
+      ),
+    );
+  }
+
   @override
   Future<CatalogPageResult> fetchPage({
     required String accessToken,
     required int page,
     int limit = 20,
+    String? categoryId,
   }) {
+    filters.add(categoryId);
+    pages.add(page);
     final response = responses[calls++];
     return response(page);
   }
@@ -238,8 +259,8 @@ void main() {
       ]);
       await tester.pumpWidget(_app(session, api));
       await tester.pumpAndSettle();
-      expect(find.text('Doces especiais e presentes'), findsOneWidget);
-      expect(find.text('Bolos'), findsOneWidget);
+      expect(find.text('Doces especiais e presentes'), findsNWidgets(2));
+      expect(find.text('Bolos'), findsNWidgets(2));
       expect(find.text('Cupcake número 1'), findsOneWidget);
       expect(find.text('R\$ 1.234,50'), findsOneWidget);
       expect(find.byIcon(Icons.cake_outlined), findsWidgets);
@@ -252,7 +273,7 @@ void main() {
         findsWidgets,
       );
       expect(
-        tester.getSemantics(find.text('Doces especiais e presentes')),
+        tester.getSemantics(find.text('Doces especiais e presentes').last),
         matchesSemantics(label: 'Doces especiais e presentes', isHeader: true),
       );
       await tester.pumpWidget(const SizedBox.shrink());
@@ -463,6 +484,228 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets(
+    'category A to B to A resets pages and keeps filtered pagination',
+    (tester) async {
+      final session = await _session();
+      addTearDown(() => _disposeSession(session));
+      final api = _CatalogApi([
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(1)]),
+        ),
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(2)], hasMore: true),
+        ),
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(2), _product(3)]),
+        ),
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(4, category: _category2)]),
+        ),
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(5)]),
+        ),
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(6)]),
+        ),
+      ]);
+      await tester.pumpWidget(_app(session, api));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Todas'))
+            .selected,
+        isTrue,
+      );
+      await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Carregar mais produtos'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cupcake número 2'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ChoiceChip, _category2.name));
+      await tester.pumpAndSettle();
+      expect(find.text('Cupcake número 2'), findsNothing);
+      await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Todas'));
+      await tester.pumpAndSettle();
+      expect(api.filters, [
+        null,
+        _category1.id,
+        _category1.id,
+        _category2.id,
+        _category1.id,
+        null,
+      ]);
+      expect(api.pages, [1, 1, 2, 1, 1, 1]);
+      expect(find.text('Cupcake número 6'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'late A response is discarded after B and filtered refresh stays on B',
+    (tester) async {
+      final session = await _session();
+      addTearDown(() => _disposeSession(session));
+      final lateA = Completer<CatalogPageResult>();
+      final api = _CatalogApi([
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, []),
+        ),
+        (page) => lateA.future,
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(3, category: _category2)]),
+        ),
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, []),
+        ),
+      ]);
+      await tester.pumpWidget(_app(session, api));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(ChoiceChip, _category2.name));
+      await tester.pumpAndSettle();
+      lateA.complete(
+        CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(1, [_product(1)]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Cupcake número 1'), findsNothing);
+      expect(find.text('Cupcake número 3'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, 'Atualizar'));
+      await tester.pumpAndSettle();
+      expect(api.filters.last, _category2.id);
+      expect(
+        find.text('Não há produtos disponíveis em ${_category2.name}.'),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'category failure has specific retry while products remain usable',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 800);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final session = await _session();
+      addTearDown(() => _disposeSession(session));
+      final api = _CatalogApi(
+        [
+          (page) async => CatalogPageResult(
+            CatalogRequestStatus.success,
+            page: _page(page, [_product(1)]),
+          ),
+        ],
+        categoryResponses: [
+          () async =>
+              const CatalogCategoriesResult(CatalogRequestStatus.unavailable),
+          () async => const CatalogCategoriesResult(
+            CatalogRequestStatus.success,
+            categories: [_category1],
+          ),
+        ],
+      );
+      await tester.pumpWidget(_app(session, api, scale: 1.5));
+      await tester.pumpAndSettle();
+      expect(find.text('Cupcake número 1'), findsOneWidget);
+      expect(
+        find.text('Não foi possível carregar as categorias.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Tentar categorias novamente'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ChoiceChip, _category1.name), findsOneWidget);
+      expect(api.calls, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('category 401 refreshes and retries categories', (tester) async {
+    final tokens = CustomerTokens(
+      accessToken: _testToken('access', 'before-categories'),
+      refreshToken: _testToken('refresh'),
+    );
+    final auth = _AuthApi(
+      tokens,
+      refreshedAccessToken: _testToken('access', 'after-categories'),
+    );
+    final session = await _session(authApi: auth);
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi(
+      [
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, []),
+        ),
+      ],
+      categoryResponses: [
+        () async =>
+            const CatalogCategoriesResult(CatalogRequestStatus.unauthorized),
+        () async => const CatalogCategoriesResult(
+          CatalogRequestStatus.success,
+          categories: [_category1],
+        ),
+      ],
+    );
+    await tester.pumpWidget(_app(session, api));
+    await tester.pumpAndSettle();
+    expect(auth.refreshCalls, 1);
+    expect(api.categoryCalls, 2);
+    expect(find.widgetWithText(ChoiceChip, _category1.name), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('filtered error retries the same category and page', (
+    tester,
+  ) async {
+    final session = await _session();
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi([
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, []),
+      ),
+      (page) async => const CatalogPageResult(CatalogRequestStatus.unavailable),
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, [_product(1)]),
+      ),
+    ]);
+    await tester.pumpWidget(_app(session, api));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Não foi possível carregar os produtos de ${_category1.name}. Tente novamente.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Tentar carregar novamente'));
+    await tester.pumpAndSettle();
+    expect(api.filters, [null, _category1.id, _category1.id]);
+    expect(api.pages, [1, 1, 1]);
+    expect(find.text('Cupcake número 1'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   for (final width in [320.0, 390.0, 430.0]) {
     testWidgets(

@@ -32,5 +32,8 @@ describe('CatalogoController contract', () => {
     await expect(
       pipe.transform({ page: '1', extra: 'true' }, metadata),
     ).rejects.toThrow();
+    await expect(pipe.transform({ categoriaId: 'invalid' }, metadata)).rejects.toThrow();
+    await expect(pipe.transform({ categoriaId: '11111111-1111-4111-8111-111111111111' }, metadata))
+      .resolves.toMatchObject({ categoriaId: '11111111-1111-4111-8111-111111111111' });
   });
 });

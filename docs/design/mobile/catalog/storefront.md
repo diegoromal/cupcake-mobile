@@ -183,3 +183,14 @@ A implementação deve preservar a linguagem visual aprovada em
 
 Em caso de conflito, requisitos funcionais e regras de negócio prevalecem
 sobre a referência visual.
+
+## D30 — seleção de categoria
+
+Antes da lista, há uma faixa horizontal com `Todas` e as categorias elegíveis
+retornadas pela API, em ordem. A opção selecionada tem marca de seleção e
+semântica de seleção. Cada alvo mede ao menos 44 dp; nomes longos podem ocupar
+mais espaço horizontal sem comprimir os cards. Escolher uma opção reinicia a
+paginação e a lista. O vazio e o retry de produtos se referem à seleção atual.
+Falha ao buscar categorias tem retry próprio e não oculta produtos. Atualizar
+recarrega categorias e produtos, mantendo a seleção; se a categoria deixar de
+ser elegível, ela continua temporariamente selecionada até o resultado filtrado.

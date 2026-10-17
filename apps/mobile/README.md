@@ -100,3 +100,41 @@ ausência ou falha da imagem mantém nome e preço e mostra um fallback. Em 401,
 um GET pode compartilhar o refresh da sessão e ser repetido uma vez. 403 é
 apresentado como acesso negado. A rota de imagem exige CLIENTE, revalida
 elegibilidade e usa `Cache-Control: private, no-store`.
+
+## Categorias e filtros — D30
+
+A vitrine consulta `GET /catalogo/categorias` com Bearer e mostra `Todas`
+seguida das categorias com produtos elegíveis. A seleção envia `categoriaId`
+opcional a `GET /catalogo/produtos`, sempre a partir da página 1. Paginação,
+`hasMore` e retry pertencem ao filtro ativo. Trocas rápidas descartam respostas
+antigas. Atualizar recarrega categorias e a primeira página sem perder a
+seleção. Falha de categorias oferece retry próprio e mantém o catálogo geral
+utilizável. Uma categoria que perdeu elegibilidade pode continuar selecionada
+até a resposta filtrada mostrar vazio ou o cliente voltar a `Todas`.
+
+### Validação PostgreSQL D30
+
+O harness `apps/api/test/d30-catalogo-postgres.ts` exige PostgreSQL local em
+`localhost` ou `127.0.0.1`, porta `5432`, banco **dedicado** `cupcake_d30` e
+schema `public`. Crie esse banco e aplique nele as migrations do projeto antes
+da execução. Use credenciais locais com permissão para criar e remover registros
+de usuários, categorias, produtos e estoques de teste. Instale as dependências
+da API e gere o Prisma Client conforme as instruções de instalação do repositório.
+
+A partir de `apps/api`, substitua `USUARIO:SENHA` pelas credenciais locais (ou
+ajuste a URL para a autenticação PostgreSQL configurada):
+
+```sh
+cd apps/api
+DATABASE_URL='postgresql://USUARIO:SENHA@localhost:5432/cupcake_d30?schema=public' npm run db:migrate:deploy
+D30_TEST_DATABASE_URL='postgresql://USUARIO:SENHA@localhost:5432/cupcake_d30?schema=public' npx --no-install ts-node test/d30-catalogo-postgres.ts
+```
+
+O harness inicia a API Nest no próprio processo, usa `D30_TEST_DATABASE_URL`
+para a conexão e configura internamente `DATABASE_URL` e os segredos JWT; não
+é preciso iniciar a API separadamente. Ele verifica categorias elegíveis,
+filtro por categoria, ordem, paginação, `hasMore`, casos inelegíveis, resposta
+vazia, validação de UUID e acesso por perfil. O `finally` remove apenas os
+registros cujos IDs foram criados pelo harness e confere a limpeza; o banco e
+o schema não são removidos. A validação passa somente se o comando terminar
+com código zero e imprimir `PASS D30 PostgreSQL`.

@@ -15,8 +15,19 @@ class ApiConfig {
 
   Uri? get refreshUri => _validBaseUri?.resolve('/auth/refresh');
 
-  Uri? catalogPageUri(int page, int limit) =>
-      _validBaseUri?.resolve('/catalogo/produtos?page=$page&limit=$limit');
+  Uri? catalogPageUri(int page, int limit, {String? categoryId}) =>
+      _validBaseUri
+          ?.resolve('/catalogo/produtos')
+          .replace(
+            queryParameters: {
+              'page': '$page',
+              'limit': '$limit',
+              'categoriaId': ?categoryId,
+            },
+          );
+
+  Uri? get catalogCategoriesUri =>
+      _validBaseUri?.resolve('/catalogo/categorias');
 
   Uri? catalogImageUri(String productId) =>
       _validBaseUri?.resolve('/catalogo/produtos/$productId/imagem');

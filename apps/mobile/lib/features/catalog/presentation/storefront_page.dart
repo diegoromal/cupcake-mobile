@@ -21,6 +21,11 @@ class _StorefrontPageState extends State<StorefrontPage> {
   static const _measurePerformance = bool.fromEnvironment('D29_PERF');
   final _products = <CatalogProduct>[];
   final _seenIds = <String>{};
+  List<CatalogCategory> _categories = const [];
+  CatalogCategory? _selectedCategory;
+  bool _categoriesLoading = true;
+  String? _categoriesError;
+  int _categoriesGeneration = 0;
   bool _loading = true;
   bool _loadingMore = false;
   bool _signOutBusy = false;
@@ -33,7 +38,48 @@ class _StorefrontPageState extends State<StorefrontPage> {
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     _load(reset: true);
+  }
+
+  Future<void> _loadCategories() async {
+    final generation = ++_categoriesGeneration;
+    setState(() {
+      _categoriesLoading = true;
+      _categoriesError = null;
+    });
+    CatalogCategoriesResult? result;
+    final status = await _withAuthRetry((token) async {
+      result = await widget.api.fetchCategories(accessToken: token);
+      return result!.status;
+    });
+    if (!mounted ||
+        generation != _categoriesGeneration ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    setState(() {
+      _categoriesLoading = false;
+      if (status == CatalogRequestStatus.success &&
+          result?.categories != null) {
+        _categories = result!.categories!;
+        // A seleção pode continuar após a categoria perder elegibilidade.
+      } else {
+        _categoriesError = status == CatalogRequestStatus.forbidden
+            ? 'Sua conta não tem acesso às categorias.'
+            : 'Não foi possível carregar as categorias.';
+      }
+    });
+  }
+
+  void _selectCategory(CatalogCategory? category) {
+    if (_selectedCategory?.id == category?.id) return;
+    setState(() => _selectedCategory = category);
+    _load(reset: true);
+  }
+
+  Future<void> _refresh() async {
+    await Future.wait([_loadCategories(), _load(reset: true)]);
   }
 
   Future<CatalogRequestStatus> _withAuthRetry(
@@ -54,6 +100,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
   Future<void> _load({required bool reset}) async {
     if (!widget.session.isAuthenticated || (!reset && _loadingMore)) return;
     final generation = ++_requestGeneration;
+    final categoryId = _selectedCategory?.id;
     if (reset && _measurePerformance) {
       _firstPageWatch = Stopwatch()..start();
       developer.log('D29_PERF start generation=$generation', name: 'D29');
@@ -73,7 +120,11 @@ class _StorefrontPageState extends State<StorefrontPage> {
     final pageNumber = reset ? 1 : _nextPage;
     CatalogPageResult? result;
     final status = await _withAuthRetry((token) async {
-      result = await widget.api.fetchPage(accessToken: token, page: pageNumber);
+      result = await widget.api.fetchPage(
+        accessToken: token,
+        page: pageNumber,
+        categoryId: categoryId,
+      );
       return result!.status;
     });
     if (reset && _measurePerformance && generation == _requestGeneration) {
@@ -103,7 +154,10 @@ class _StorefrontPageState extends State<StorefrontPage> {
             'Sua conta não tem acesso à vitrine.',
           CatalogRequestStatus.notConfigured =>
             'A vitrine não está configurada neste aplicativo.',
-          _ => 'Não foi possível carregar os produtos. Tente novamente.',
+          _ =>
+            _selectedCategory == null
+                ? 'Não foi possível carregar os produtos. Tente novamente.'
+                : 'Não foi possível carregar os produtos de ${_selectedCategory!.name}. Tente novamente.',
         };
       }
     });
@@ -166,7 +220,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
       automaticallyImplyLeading: false,
       actions: [
         TextButton(
-          onPressed: _loading ? null : () => _load(reset: true),
+          onPressed: _loading ? null : _refresh,
           child: const Text('Atualizar'),
         ),
         TextButton(
@@ -190,10 +244,13 @@ class _StorefrontPageState extends State<StorefrontPage> {
                 ),
               ],
             ),
+          _categorySelector(),
           Expanded(
             child: _loading
-                ? const _StatusState(
-                    label: 'Carregando produtos…',
+                ? _StatusState(
+                    label: _selectedCategory == null
+                        ? 'Carregando produtos…'
+                        : 'Carregando produtos de ${_selectedCategory!.name}…',
                     loading: true,
                   )
                 : _error != null && _products.isEmpty
@@ -205,13 +262,69 @@ class _StorefrontPageState extends State<StorefrontPage> {
                   )
                 : _products.isEmpty
                 ? _StatusState(
-                    label: 'Não há produtos disponíveis no momento.',
+                    label: _selectedCategory == null
+                        ? 'Não há produtos disponíveis no momento.'
+                        : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
                     actionLabel: 'Atualizar',
-                    onAction: () => _load(reset: true),
+                    onAction: _refresh,
                   )
                 : _productList(),
           ),
         ],
+      ),
+    ),
+  );
+
+  Widget _categorySelector() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (_categoriesLoading)
+        const Padding(
+          padding: EdgeInsets.all(AppTokens.spacing12),
+          child: Text('Carregando categorias…'),
+        ),
+      if (_categoriesError != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_categoriesError!),
+              TextButton(
+                onPressed: _loadCategories,
+                child: const Text('Tentar categorias novamente'),
+              ),
+            ],
+          ),
+        ),
+      SizedBox(
+        height: 56,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+          children: [
+            _categoryChip(null, 'Todas'),
+            for (final category in _categories)
+              _categoryChip(category, category.name),
+            if (_selectedCategory != null &&
+                !_categories.any((c) => c.id == _selectedCategory!.id))
+              _categoryChip(_selectedCategory, _selectedCategory!.name),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _categoryChip(CatalogCategory? category, String label) => Padding(
+    padding: const EdgeInsets.only(right: AppTokens.spacing12),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _selectedCategory?.id == category?.id,
+        onSelected: (_) => _selectCategory(category),
+        showCheckmark: true,
+        materialTapTargetSize: MaterialTapTargetSize.padded,
       ),
     ),
   );
@@ -227,7 +340,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
       entries.add(_CatalogEntry.product(product));
     }
     return RefreshIndicator(
-      onRefresh: () => _load(reset: true),
+      onRefresh: _refresh,
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(
           AppTokens.spacing16,

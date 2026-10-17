@@ -14,6 +14,7 @@ type CatalogProductRow = {
 };
 
 export const MAX_PRODUCT_IMAGE_BYTES = 2 * 1024 * 1024;
+const eligibleProduct = Prisma.sql`p."ativo" = true AND e."quantidadeFisica" > e."quantidadeReservada"`;
 
 @Injectable()
 export class CatalogoService {
@@ -22,7 +23,7 @@ export class CatalogoService {
     private readonly storage: S3StorageService,
   ) {}
 
-  async list(page: number, limit: number) {
+  async list(page: number, limit: number, categoriaId?: string) {
     const offset = (page - 1) * limit;
     const rows = await this.prisma.$queryRaw<CatalogProductRow[]>(Prisma.sql`
       SELECT p."id", p."nome", p."precoAtual", p."categoriaId",
@@ -30,7 +31,8 @@ export class CatalogoService {
       FROM "Produto" p
       INNER JOIN "Categoria" c ON c."id" = p."categoriaId"
       INNER JOIN "Estoque" e ON e."produtoId" = p."id"
-      WHERE p."ativo" = true AND e."quantidadeFisica" > e."quantidadeReservada"
+      WHERE ${eligibleProduct}
+        ${categoriaId ? Prisma.sql`AND p."categoriaId" = ${categoriaId}::uuid` : Prisma.empty}
       ORDER BY c."nome" ASC, c."id" ASC, p."nome" ASC, p."id" ASC
       LIMIT ${limit + 1} OFFSET ${offset}
     `);
@@ -46,14 +48,26 @@ export class CatalogoService {
     return { items, page, limit, hasMore };
   }
 
+  async categories(): Promise<Array<{ id: string; nome: string }>> {
+    return this.prisma.$queryRaw<Array<{ id: string; nome: string }>>(Prisma.sql`
+      SELECT c."id", c."nome"
+      FROM "Categoria" c
+      WHERE EXISTS (
+        SELECT 1 FROM "Produto" p
+        INNER JOIN "Estoque" e ON e."produtoId" = p."id"
+        WHERE p."categoriaId" = c."id" AND ${eligibleProduct}
+      )
+      ORDER BY c."nome" ASC, c."id" ASC
+    `);
+  }
+
   async getImage(produtoId: string): Promise<Buffer> {
     const [product] = await this.prisma.$queryRaw<Array<{ imagem: string | null }>>(Prisma.sql`
       SELECT p."imagem"
       FROM "Produto" p
       INNER JOIN "Estoque" e ON e."produtoId" = p."id"
       WHERE p."id" = ${produtoId}::uuid
-        AND p."ativo" = true
-        AND e."quantidadeFisica" > e."quantidadeReservada"
+        AND ${eligibleProduct}
     `);
     if (!product || !isManagedProductImage(product.imagem, produtoId)) {
       throw new NotFoundException('Imagem indisponível.');

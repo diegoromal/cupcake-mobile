@@ -56,7 +56,8 @@ Falhas recuperáveis permanecem no cadastro e não criam sessão.
 
 ```text
 storefront
-└── atualizar / carregar próxima página → storefront
+├── Todas / categoria → storefront (página 1 do filtro)
+└── atualizar / carregar próxima página → storefront (filtro atual)
 
 product-detail (D31+)
 ├── alterar quantidade/personalizações → permanece no detalhe
