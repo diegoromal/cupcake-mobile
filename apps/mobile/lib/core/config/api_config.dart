@@ -32,6 +32,9 @@ class ApiConfig {
   Uri? catalogImageUri(String productId) =>
       _validBaseUri?.resolve('/catalogo/produtos/$productId/imagem');
 
+  Uri? catalogDetailUri(String productId) =>
+      _validBaseUri?.resolve('/catalogo/produtos/$productId');
+
   Uri? get _validBaseUri {
     final value = _baseUrl.trim();
     final uri = Uri.tryParse(value);

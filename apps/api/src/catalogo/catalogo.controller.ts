@@ -32,6 +32,11 @@ export class CatalogoController {
     return this.catalogo.categories();
   }
 
+  @Get('produtos/:id')
+  detail(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.catalogo.detail(id);
+  }
+
   @Get('produtos/:id/imagem')
   @Header('Cache-Control', 'private, no-store')
   async image(

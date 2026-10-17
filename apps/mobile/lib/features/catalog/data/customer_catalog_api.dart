@@ -14,6 +14,7 @@ enum CatalogRequestStatus {
   success,
   unauthorized,
   forbidden,
+  notFound,
   unavailable,
   notConfigured,
 }
@@ -136,6 +137,54 @@ class CatalogImageResult {
   final Uint8List? bytes;
 }
 
+class CatalogProductDetail {
+  const CatalogProductDetail({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.category,
+    required this.imageAvailable,
+  });
+  final String id;
+  final String name;
+  final String? description;
+  final String price;
+  final CatalogCategory category;
+  final bool imageAvailable;
+
+  static CatalogProductDetail? parse(Object? value, String requestedId) {
+    if (value is! Map<String, dynamic> ||
+        value.length != 7 ||
+        value['disponivel'] != true ||
+        value['id'] != requestedId ||
+        value['nome'] is! String ||
+        value['nome'].isEmpty ||
+        (value['descricao'] != null && value['descricao'] is! String) ||
+        value['precoAtual'] is! String ||
+        !RegExp(r'^\d+\.\d{2}$').hasMatch(value['precoAtual'] as String) ||
+        value['imagemDisponivel'] is! bool) {
+      return null;
+    }
+    final category = CatalogCategory.parse(value['categoria']);
+    if (category == null) return null;
+    return CatalogProductDetail(
+      id: requestedId,
+      name: value['nome'] as String,
+      description: value['descricao'] as String?,
+      price: value['precoAtual'] as String,
+      category: category,
+      imageAvailable: value['imagemDisponivel'] as bool,
+    );
+  }
+}
+
+class CatalogDetailResult {
+  const CatalogDetailResult(this.status, {this.product});
+  final CatalogRequestStatus status;
+  final CatalogProductDetail? product;
+}
+
 class CustomerCatalogApi {
   CustomerCatalogApi({
     ApiConfig? config,
@@ -147,6 +196,34 @@ class CustomerCatalogApi {
   final ApiConfig _config;
   final HttpClient Function() _clientFactory;
   final Duration timeout;
+
+  Future<CatalogDetailResult> fetchDetail({
+    required String productId,
+    required String accessToken,
+  }) async {
+    if (!_uuidPattern.hasMatch(productId)) {
+      return const CatalogDetailResult(CatalogRequestStatus.unavailable);
+    }
+    final uri = _config.catalogDetailUri(productId);
+    if (uri == null) {
+      return const CatalogDetailResult(CatalogRequestStatus.notConfigured);
+    }
+    final response = await _get(uri, accessToken);
+    if (response.status != CatalogRequestStatus.success) {
+      return CatalogDetailResult(response.status);
+    }
+    try {
+      final product = CatalogProductDetail.parse(
+        jsonDecode(utf8.decode(response.body)),
+        productId,
+      );
+      return product == null
+          ? const CatalogDetailResult(CatalogRequestStatus.unavailable)
+          : CatalogDetailResult(CatalogRequestStatus.success, product: product);
+    } on Object {
+      return const CatalogDetailResult(CatalogRequestStatus.unavailable);
+    }
+  }
 
   Future<CatalogPageResult> fetchPage({
     required String accessToken,
@@ -230,6 +307,9 @@ class CustomerCatalogApi {
       }
       if (response.statusCode == HttpStatus.forbidden) {
         return const _HttpResult(CatalogRequestStatus.forbidden);
+      }
+      if (response.statusCode == HttpStatus.notFound) {
+        return const _HttpResult(CatalogRequestStatus.notFound);
       }
       if (response.statusCode != HttpStatus.ok) {
         return const _HttpResult(CatalogRequestStatus.unavailable);

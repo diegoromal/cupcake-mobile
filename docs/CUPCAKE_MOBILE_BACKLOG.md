@@ -92,7 +92,7 @@
 - [x] **D28 --- Tela de login e sessão**
 - [x] **D29 --- Vitrine**
 - [x] **D30 --- Categorias e filtros**
-- [ ] **D31 --- Detalhes do cupcake**
+- [x] **D31 --- Detalhes do cupcake**
 - [ ] **D32 --- Personalizações + cálculo de preço**
 
 **Marco 4:** cliente consegue entrar, navegar, visualizar e personalizar

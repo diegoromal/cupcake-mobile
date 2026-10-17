@@ -225,3 +225,17 @@ A implementação deve observar também:
 
 Em caso de conflito, requisitos funcionais e regras de negócio prevalecem sobre
 a referência visual.
+
+## Implementação D31
+
+A primeira entrega implementa somente leitura autenticada do produto.
+`GET /catalogo/produtos/:id` revalida atividade e saldo disponível; a resposta
+pública contém ID, nome, descrição opcional, preço base decimal, categoria,
+`imagemDisponivel` e `disponivel: true`. Produto inexistente ou inelegível
+recebe 404 neutro, sem dados privados, e a tela mostra `Produto indisponível`
+com retorno à vitrine. A imagem usa a rota protegida existente e fallback
+acessível. Loading, retry de erro transitório, 401 com refresh e uma repetição,
+403 sem logout e descarte de resposta obsoleta são estados implementados.
+
+O PNG continua como referência de composição. Seletores de personalização,
+quantidade, preço recalculado e inclusão no carrinho pertencem a D32/D33.

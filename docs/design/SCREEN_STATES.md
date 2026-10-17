@@ -131,7 +131,7 @@ Admin:
 | `customer-sign-up` | envio | N/A | validação/API | cadastro | CTA durante loading | N/A | visitante |
 | `customer-login` | autenticando | N/A | credenciais/bloqueio | login | submit | N/A | visitante |
 | `storefront` | catálogo | catálogo vazio | retry | conteúdo | ações quando necessário | N/A | conforme contrato |
-| `product-detail` | produto | N/A | indisponível/estoque/API | item adicionado | incluir | N/A | conforme contrato |
+| `product-detail` | consulta atual | N/A | 404 indisponível, 403 acesso negado, API com retry | dados públicos e imagem/fallback | N/A em D31 | N/A | CLIENTE; 401 com refresh e uma repetição |
 | `cart` | recálculo | carrinho vazio | estoque/API | total atualizado | avançar | remoção quando aplicável | cliente |
 | `fulfillment` | frete | N/A | endereço/cobertura/API | modalidade válida | continuar | N/A | cliente |
 | `order-review` | criando | N/A | disponibilidade/API | pedido criado | confirmar | N/A | cliente |

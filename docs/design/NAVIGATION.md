@@ -57,13 +57,15 @@ Falhas recuperáveis permanecem no cadastro e não criam sessão.
 ```text
 storefront
 ├── Todas / categoria → storefront (página 1 do filtro)
-└── atualizar / carregar próxima página → storefront (filtro atual)
+├── atualizar / carregar próxima página → storefront (filtro atual)
+└── card por UUID → product-detail (D31)
 
-product-detail (D31+)
-├── alterar quantidade/personalizações → permanece no detalhe
-├── adicionar → cart ou feedback de item adicionado
-└── voltar → storefront
+product-detail (D31)
+├── indisponível / erro → permanece no detalhe ou volta à vitrine
+└── voltar → mesma instância de storefront, sem recarga automática
 ```
+
+Quantidade, personalizações e carrinho entram em tarefas posteriores.
 
 Produtos/opções indisponíveis devem respeitar o domínio; a interface não pode forçar inclusão.
 
