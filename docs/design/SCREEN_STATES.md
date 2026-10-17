@@ -179,6 +179,16 @@ Na lista de produtos:
 - oferecer `Tentar novamente`;
 - não transformar em erro global.
 
+### Categorias e filtro — D30
+
+- `Todas` inicia selecionada; cada troca de categoria limpa a lista, os IDs
+  vistos e a paginação. Respostas de seleções anteriores são descartadas.
+- Vazio, erro, retry e `hasMore` de produtos se referem ao filtro selecionado.
+- Falha de `GET /catalogo/categorias` oferece retry específico e não impede a
+  vitrine geral. Atualização recarrega categorias e página 1, preservando filtro.
+- Uma categoria que perde elegibilidade pode continuar selecionada até a
+  resposta filtrada determinar vazio; `Todas` permanece acessível.
+
 ### Imagem
 
 Estados:

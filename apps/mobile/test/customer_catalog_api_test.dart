@@ -21,6 +21,49 @@ CustomerCatalogApi _api(HttpServer server) => CustomerCatalogApi(
 String _token() => 'secret-session-value';
 
 void main() {
+  test(
+    'categories and optional filter use Bearer and preserve the safe DTO',
+    () async {
+      final server = await _server((request) async {
+        expect(
+          request.headers.value(HttpHeaders.authorizationHeader),
+          'Bearer ${_token()}',
+        );
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        if (request.uri.path == '/catalogo/categorias') {
+          request.response.write(
+            jsonEncode([
+              {'id': '11111111-1111-4111-8111-111111111111', 'nome': 'Doces'},
+            ]),
+          );
+        } else {
+          expect(request.uri.queryParameters, {
+            'page': '1',
+            'limit': '20',
+            'categoriaId': '11111111-1111-4111-8111-111111111111',
+          });
+          request.response.write(
+            '{"items":[],"page":1,"limit":20,"hasMore":false}',
+          );
+        }
+        await request.response.close();
+      });
+      addTearDown(server.close);
+      final api = _api(server);
+      final categories = await api.fetchCategories(accessToken: _token());
+      expect(categories.status, CatalogRequestStatus.success);
+      expect(categories.categories?.single.name, 'Doces');
+      final page = await api.fetchPage(
+        accessToken: _token(),
+        page: 1,
+        categoryId: categories.categories!.single.id,
+      );
+      expect(page.status, CatalogRequestStatus.success);
+      expect(page.page?.items, isEmpty);
+    },
+  );
+
   test('envia Bearer e consulta página com o contrato validado', () async {
     final server = await _server((request) async {
       expect(request.method, 'GET');

@@ -34,6 +34,22 @@ describe('CatalogoService', () => {
     expect(query.mock.calls[0][0].values).toEqual([2, 1]);
   });
 
+  it('filters before ordering and pagination and returns only eligible category fields', async () => {
+    query.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      { id: categoryId, nome: 'Doces' },
+    ]);
+    await expect(service.list(2, 3, categoryId)).resolves.toEqual({
+      items: [], page: 2, limit: 3, hasMore: false,
+    });
+    const sql = query.mock.calls[0][0];
+    expect(sql.values).toEqual([categoryId, 4, 3]);
+    expect(sql.strings.join('')).toMatch(/categoriaId.*ORDER BY.*LIMIT.*OFFSET/s);
+    await expect(service.categories()).resolves.toEqual([{ id: categoryId, nome: 'Doces' }]);
+    const categoriesSql = query.mock.calls[1][0].strings.join('');
+    expect(categoriesSql).toMatch(/WHERE EXISTS.*quantidadeFisica.*quantidadeReservada.*ORDER BY/s);
+    expect(categoriesSql).toContain('c."nome" ASC, c."id" ASC');
+  });
+
   it('resolves only managed product images and enforces the output size', async () => {
     query.mockResolvedValueOnce([{ imagem: `produtos/${productId}/22222222-2222-4222-8222-222222222222.webp` }]);
     const bytes = Buffer.from('webp');

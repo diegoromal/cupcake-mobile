@@ -10,7 +10,7 @@ import { PerfilUsuario } from '../generated/prisma/enums';
 import { CatalogoQueryDto } from './dto/catalogo-query.dto';
 import { CatalogoService } from './catalogo.service';
 
-@Controller('catalogo/produtos')
+@Controller('catalogo')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(PerfilUsuario.CLIENTE)
 @UsePipes(new ValidationPipe({
@@ -22,12 +22,17 @@ import { CatalogoService } from './catalogo.service';
 export class CatalogoController {
   constructor(private readonly catalogo: CatalogoService) {}
 
-  @Get()
+  @Get('produtos')
   list(@Query() query: CatalogoQueryDto) {
-    return this.catalogo.list(query.page, query.limit);
+    return this.catalogo.list(query.page, query.limit, query.categoriaId);
   }
 
-  @Get(':id/imagem')
+  @Get('categorias')
+  categories() {
+    return this.catalogo.categories();
+  }
+
+  @Get('produtos/:id/imagem')
   @Header('Cache-Control', 'private, no-store')
   async image(
     @Param('id', new ParseUUIDPipe()) id: string,

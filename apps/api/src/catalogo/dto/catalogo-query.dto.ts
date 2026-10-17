@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
 export class CatalogoQueryDto {
   @Type(() => Number)
@@ -12,4 +12,8 @@ export class CatalogoQueryDto {
   @Min(1)
   @Max(50)
   limit = 20;
+
+  @IsOptional()
+  @IsUUID()
+  categoriaId?: string;
 }
