@@ -35,6 +35,9 @@ class ApiConfig {
   Uri? catalogDetailUri(String productId) =>
       _validBaseUri?.resolve('/catalogo/produtos/$productId');
 
+  Uri? catalogPriceUri(String productId) =>
+      _validBaseUri?.resolve('/catalogo/produtos/$productId/preco');
+
   Uri? get _validBaseUri {
     final value = _baseUrl.trim();
     final uri = Uri.tryParse(value);

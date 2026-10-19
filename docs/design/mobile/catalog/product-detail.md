@@ -237,5 +237,26 @@ com retorno à vitrine. A imagem usa a rota protegida existente e fallback
 acessível. Loading, retry de erro transitório, 401 com refresh e uma repetição,
 403 sem logout e descarte de resposta obsoleta são estados implementados.
 
-O PNG continua como referência de composição. Seletores de personalização,
-quantidade, preço recalculado e inclusão no carrinho pertencem a D32/D33.
+O PNG continua como referência de composição. A exibição, seleção e
+desseleção das personalizações, a indicação de indisponibilidade e a prévia de
+preço com recálculo autoritativo pela API pertencem a D32. Quantidade,
+inclusão e edição de item no carrinho, reserva e checkout pertencem a D33+.
+
+### Entrega D32
+
+O detalhe do CLIENTE usa a projeção pública de personalizações vinculadas,
+ordenadas por nome e ID. Cada opção mostra descrição, disponibilidade e ajuste
+decimal (inclusive zero, negativo ou ausência de ajuste). A seleção é livre,
+sem grupos, obrigatoriedade ou limite. Opções indisponíveis ficam identificadas
+por texto e sem ação de seleção. O alvo da linha usa o mínimo de 44 dp.
+
+Após cada mudança, o app pede `POST /catalogo/produtos/:id/preco` com
+`personalizacaoIds`. A API revalida produto, vínculo e disponibilidade e
+calcula `precoAtual + soma(ajusteValor)` com Decimal; `null` soma zero.
+Retorna `{"precoUnitario":"12.30"}` em HTTP 200. UUID inválido recebe 400;
+seleção duplicada, desvinculada ou indisponível recebe 409. Resultado negativo
+recebe 409 com código `PRECO_NEGATIVO`; zero exato é válido. A prévia é somente
+leitura. A tela oculta o preço antigo durante loading ou erro, oferece retry,
+descarta respostas tardias e recarrega o detalhe após seleção obsoleta. 401
+tenta refresh uma vez; 403 preserva a sessão. Quantidade, carrinho, reserva e
+checkout ficam para D33+.
