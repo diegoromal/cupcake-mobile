@@ -158,7 +158,7 @@ Fluxo:
 
 ## Admin — navegação lateral
 
-Ordem consolidada:
+Referência completa da navegação lateral, nesta ordem:
 
 1. Pedidos
 2. Produtos / Cardápio
@@ -166,7 +166,12 @@ Ordem consolidada:
 4. Personalizações
 5. Relatório de Vendas
 
-A presença de Pedidos e Relatório de Vendas na referência não implica que suas rotas já tenham sido implementadas.
+Os PNGs de cada tela podem mostrar apenas um recorte desses destinos. Os itens
+visíveis no recorte não redefinem o conjunto completo nem sua ordem. Pedidos e
+Relatório de Vendas fazem parte da referência, embora suas rotas ainda estejam
+previstas para implementação futura; as rotas existentes estão indicadas nas
+seções abaixo. Estoque permanece conteúdo relacionado ao produto, não um sexto
+destino da navegação.
 
 ## Admin — Produtos / Cardápio
 
