@@ -103,12 +103,24 @@ async function main() {
     } });
     const detail = await request(http).get(detailPath(first.id))
       .set('Authorization', auth).expect(200);
-    assert.deepEqual(detail.body, {
+    const publicDetailKeys = [
+      'id', 'nome', 'descricao', 'precoAtual', 'categoria',
+      'imagemDisponivel', 'disponivel', 'personalizacoes',
+    ];
+    assert.deepEqual(Object.keys(detail.body).sort(), publicDetailKeys.sort(),
+      'Detalhe deve conter exatamente as 8 chaves públicas');
+    const { id, nome, descricao, precoAtual, categoria, imagemDisponivel, disponivel, personalizacoes } = detail.body;
+    assert.deepEqual({ id, nome, descricao, precoAtual, categoria, imagemDisponivel, disponivel }, {
       id: first.id, nome: first.name, descricao: 'Descrição D31',
       precoAtual: '12.30', categoria: { id: categoryIds[first.category],
         nome: `${marker} ${'ABC'[first.category]}` },
       imagemDisponivel: true, disponivel: true,
     });
+    assert.deepEqual(personalizacoes, []);
+    for (const privateField of ['categoriaId', 'imagem', 'ativo', 'estoque',
+      'reservasEstoque', 'movimentacoesEstoque', 'itensCarrinho', 'itensPedido']) {
+      assert(!(privateField in detail.body), `Campo privado exposto no detalhe: ${privateField}`);
+    }
     const noDescription = eligible[1];
     const nullDetail = await request(http).get(detailPath(noDescription.id))
       .set('Authorization', auth).expect(200);

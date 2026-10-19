@@ -152,7 +152,7 @@ A API devolve 404 neutro para produto inexistente ou inelegível; o app mostra
 refresh e repete a consulta uma vez, enquanto 403 mantém a sessão. Voltar usa
 `Navigator.pop` e conserva a instância da vitrine, inclusive filtro, paginação
 e posição. Respostas tardias são descartadas ao trocar produto, sair da tela
-ou perder a sessão. Personalizações, quantidade e carrinho ficam para D32/D33.
+ou perder a sessão.
 
 A prova PostgreSQL D31 usa exclusivamente o banco local dedicado
 `cupcake_d31` (schema `public`). Após aplicar migrations, execute a partir de
@@ -163,3 +163,26 @@ npx --no-install ts-node test/d31-catalogo-postgres.ts
 ```
 
 O harness usa IDs próprios e remove seus registros no `finally`.
+
+## Personalizações e preço unitário — D32
+
+O detalhe recebe `personalizacoes` no GET: `id`, `nome`, `descricao`,
+`disponivel` e `ajusteValor` (decimal com duas casas ou `null`). Opções
+indisponíveis aparecem identificadas e desabilitadas. Após cada seleção ou
+desseleção, o app envia `POST /catalogo/produtos/:id/preco` com
+`{"personalizacaoIds":["uuid"]}` e mostra o `precoUnitario` retornado pela API.
+Durante a prévia, em erro ou em seleção inválida, o preço anterior é ocultado.
+Seleção obsoleta recarrega o detalhe; 401 tenta refresh e repete uma vez; 403
+mantém a sessão. Preço final negativo retorna 409 (`PRECO_NEGATIVO`) e pede
+alteração da seleção. A prévia não cria carrinho nem reserva. Quantidade,
+total do carrinho e checkout pertencem a D33+.
+
+A integração PostgreSQL usa apenas o banco local `cupcake_d32` (`public`), com
+migrations já aplicadas. Execute de `apps/api` com `D32_TEST_DATABASE_URL`
+apontando para esse banco:
+
+```sh
+npx --no-install ts-node test/d32-catalogo-postgres.ts
+```
+
+O harness cria IDs próprios e os remove no `finally`.

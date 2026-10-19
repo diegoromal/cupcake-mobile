@@ -28,6 +28,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   CatalogRequestStatus? _status;
   Future<Uint8List?>? _image;
   MemoryImage? _imageProvider;
+  final Set<String> _selected = {};
+  int _priceGeneration = 0;
+  String? _unitPrice;
+  CatalogRequestStatus? _priceStatus;
+  bool _priceLoading = false;
 
   @override
   void initState() {
@@ -53,10 +58,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   void _sessionChanged() {
     if (!widget.session.isAuthenticated) {
       _generation++;
+      _priceGeneration++;
       if (mounted) {
         setState(() {
           _product = null;
           _image = null;
+          _unitPrice = null;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || widget.session.isAuthenticated) return;
@@ -72,6 +79,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void dispose() {
     _generation++;
+    _priceGeneration++;
     widget.session.removeListener(_sessionChanged);
     final provider = _imageProvider;
     if (provider != null) unawaited(provider.evict());
@@ -80,6 +88,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   Future<void> _load() async {
     final generation = ++_generation;
+    _priceGeneration++;
     final id = widget.productId;
     final previous = _imageProvider;
     _imageProvider = null;
@@ -88,6 +97,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       _product = null;
       _status = null;
       _image = null;
+      _selected.clear();
+      _unitPrice = null;
+      _priceStatus = null;
+      _priceLoading = false;
     });
     await widget.session.refreshIfNeeded();
     var token = widget.session.accessToken;
@@ -114,11 +127,71 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     setState(() {
       _status = result.status;
       _product = product;
+      _unitPrice = product?.price;
       if (result.status == CatalogRequestStatus.success &&
           product != null &&
           product.imageAvailable) {
         _image = _loadImage(id, generation);
       }
+    });
+  }
+
+  void _toggle(CatalogPersonalization option) {
+    if (!option.available) return;
+    setState(() {
+      if (!_selected.add(option.id)) _selected.remove(option.id);
+      _unitPrice = null;
+      _priceStatus = null;
+      _priceLoading = true;
+    });
+    unawaited(_preview());
+  }
+
+  Future<void> _preview() async {
+    final generation = ++_priceGeneration;
+    final id = widget.productId;
+    final selectedIds = _selected.toList()..sort();
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    CatalogPriceResult result = token == null
+        ? const CatalogPriceResult(CatalogRequestStatus.unauthorized)
+        : await widget.api.previewPrice(
+            productId: id,
+            accessToken: token,
+            personalizationIds: selectedIds,
+          );
+    if (result.status == CatalogRequestStatus.unauthorized &&
+        token != null &&
+        mounted &&
+        generation == _priceGeneration &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      result = token == null
+          ? const CatalogPriceResult(CatalogRequestStatus.unauthorized)
+          : await widget.api.previewPrice(
+              productId: id,
+              accessToken: token,
+              personalizationIds: selectedIds,
+            );
+    }
+    if (!mounted ||
+        generation != _priceGeneration ||
+        id != widget.productId ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    if (result.status == CatalogRequestStatus.invalidSelection ||
+        result.status == CatalogRequestStatus.notFound) {
+      // The catalog may have changed since detail loaded. Drop the old selection.
+      unawaited(_load());
+      return;
+    }
+    setState(() {
+      _priceLoading = false;
+      _priceStatus = result.status;
+      _unitPrice = result.status == CatalogRequestStatus.success
+          ? result.unitPrice
+          : null;
     });
   }
 
@@ -232,12 +305,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         const SizedBox(height: AppTokens.spacing12),
-        Text(
-          _formatPrice(product.price),
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: AppTokens.spacing16),
-        const Text('Disponível'),
+        const Text('Preço base'),
+        Text(_formatPrice(product.price)),
         if (product.description != null && product.description!.isNotEmpty) ...[
           const SizedBox(height: AppTokens.spacing24),
           Text(
@@ -245,6 +314,78 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ],
+        const SizedBox(height: AppTokens.spacing16),
+        Semantics(
+          header: true,
+          child: Text(
+            'Personalizações',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        if (product.personalizations.isEmpty)
+          const Text('Nenhuma personalização disponível para este produto.'),
+        for (final option in product.personalizations)
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _selected.contains(option.id),
+            onChanged: option.available ? (_) => _toggle(option) : null,
+            title: Text(option.name),
+            subtitle: Text(
+              [
+                if (option.description != null &&
+                    option.description!.isNotEmpty)
+                  option.description!,
+                option.available
+                    ? (_selected.contains(option.id)
+                          ? 'Selecionada'
+                          : 'Disponível')
+                    : 'Indisponível',
+                'Ajuste: ${option.adjustment == null ? 'sem ajuste' : _formatSignedPrice(option.adjustment!)}',
+              ].join(' · '),
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+        const SizedBox(height: AppTokens.spacing12),
+        if (_priceLoading)
+          Semantics(
+            label: 'Calculando preço unitário…',
+            liveRegion: true,
+            child: LinearProgressIndicator(),
+          ),
+        if (!_priceLoading && _unitPrice != null)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              'Preço unitário: ${_formatPrice(_unitPrice!)}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+        if (!_priceLoading &&
+            _priceStatus != null &&
+            _priceStatus != CatalogRequestStatus.success)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _priceStatus == CatalogRequestStatus.forbidden
+                    ? 'Sua conta não tem acesso à prévia de preço.'
+                    : _priceStatus == CatalogRequestStatus.negativePrice
+                    ? 'Esta combinação resulta em preço negativo. Altere as personalizações.'
+                    : 'Não foi possível calcular o preço. Tente novamente.',
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _priceLoading = true;
+                  });
+                  unawaited(_preview());
+                },
+                child: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        const SizedBox(height: AppTokens.spacing16),
+        const Text('Disponível'),
       ],
     );
   }
@@ -270,3 +411,7 @@ String _formatPrice(String decimal) {
   );
   return 'R\$ $whole,${parts[1]}';
 }
+
+String _formatSignedPrice(String decimal) => decimal.startsWith('-')
+    ? '-${_formatPrice(decimal.substring(1))}'
+    : '+${_formatPrice(decimal)}';

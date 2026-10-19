@@ -61,6 +61,18 @@ class Api extends CustomerCatalogApi {
   final ids = <String>[];
   int pageCalls = 0;
   int imageCalls = 0;
+  final previewResponses = <Future<CatalogPriceResult>>[];
+  final previewSelections = <List<String>>[];
+  @override
+  Future<CatalogPriceResult> previewPrice({
+    required String productId,
+    required String accessToken,
+    required List<String> personalizationIds,
+  }) {
+    previewSelections.add(personalizationIds);
+    return previewResponses.removeAt(0);
+  }
+
   @override
   Future<CatalogImageResult> fetchImage({
     required String productId,
@@ -140,6 +152,138 @@ Widget app(
 );
 
 void main() {
+  testWidgets('negative preview hides old price and 401 refreshes once', (
+    tester,
+  ) async {
+    final auth = AuthApi();
+    final active = await session(auth);
+    addTearDown(active.dispose);
+    const option = CatalogPersonalization(
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      name: 'Desconto',
+      description: null,
+      available: true,
+      adjustment: '-20.00',
+    );
+    final api = Api([
+      Future.value(
+        const CatalogDetailResult(
+          CatalogRequestStatus.success,
+          product: CatalogProductDetail(
+            id: id,
+            name: 'Cupcake',
+            description: null,
+            price: '12.30',
+            category: category,
+            imageAvailable: false,
+            personalizations: [option],
+          ),
+        ),
+      ),
+    ]);
+    api.previewResponses.addAll([
+      Future.value(const CatalogPriceResult(CatalogRequestStatus.unauthorized)),
+      Future.value(
+        const CatalogPriceResult(CatalogRequestStatus.negativePrice),
+      ),
+    ]);
+    await tester.pumpWidget(app(active, api));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Desconto'));
+    await tester.tap(find.text('Desconto'));
+    await tester.pumpAndSettle();
+    expect(auth.refreshCalls, 1);
+    expect(api.previewSelections, [
+      [option.id],
+      [option.id],
+    ]);
+    expect(find.textContaining('preço negativo'), findsOneWidget);
+    expect(find.textContaining('Preço unitário:'), findsNothing);
+    expect(active.isAuthenticated, isTrue);
+  });
+  testWidgets(
+    'selection, stale preview and retry keep API price authoritative',
+    (tester) async {
+      final active = await session(AuthApi());
+      addTearDown(active.dispose);
+      const option = CatalogPersonalization(
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        name: 'Cobertura',
+        description: null,
+        available: true,
+        adjustment: '1.00',
+      );
+      const unavailable = CatalogPersonalization(
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        name: 'Indisponível',
+        description: 'Extra',
+        available: false,
+        adjustment: null,
+      );
+      final api = Api([
+        Future.value(
+          const CatalogDetailResult(
+            CatalogRequestStatus.success,
+            product: CatalogProductDetail(
+              id: id,
+              name: 'Cupcake',
+              description: null,
+              price: '12.30',
+              category: category,
+              imageAvailable: false,
+              personalizations: [option, unavailable],
+            ),
+          ),
+        ),
+      ]);
+      final stale = Completer<CatalogPriceResult>();
+      api.previewResponses.addAll([
+        stale.future,
+        Future.value(
+          const CatalogPriceResult(CatalogRequestStatus.unavailable),
+        ),
+        Future.value(
+          const CatalogPriceResult(
+            CatalogRequestStatus.success,
+            unitPrice: '11.25',
+          ),
+        ),
+      ]);
+      await tester.pumpWidget(app(active, api));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Nenhuma personalização disponível para este produto.'),
+        findsNothing,
+      );
+      await tester.ensureVisible(find.text('Cobertura'));
+      await tester.tap(find.text('Cobertura'));
+      await tester.pump();
+      expect(
+        find.bySemanticsLabel('Calculando preço unitário…'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cobertura'));
+      await tester.pumpAndSettle();
+      stale.complete(
+        const CatalogPriceResult(
+          CatalogRequestStatus.success,
+          unitPrice: '99.00',
+        ),
+      );
+      await tester.pump();
+      expect(find.textContaining('99,00'), findsNothing);
+      expect(find.textContaining('Não foi possível calcular'), findsOneWidget);
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+      expect(find.text('Preço unitário: R\$ 11,25'), findsOneWidget);
+      expect(api.previewSelections, [
+        [option.id],
+        <String>[],
+        <String>[],
+      ]);
+      expect(find.text('Indisponível'), findsWidgets);
+    },
+  );
   testWidgets('image request failure keeps accessible fallback', (
     tester,
   ) async {

@@ -17,6 +17,54 @@ enum CatalogRequestStatus {
   notFound,
   unavailable,
   notConfigured,
+  invalidSelection,
+  negativePrice,
+}
+
+class CatalogPersonalization {
+  const CatalogPersonalization({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.available,
+    required this.adjustment,
+  });
+  final String id;
+  final String name;
+  final String? description;
+  final bool available;
+  final String? adjustment;
+
+  static CatalogPersonalization? parse(Object? value) {
+    if (value is! Map<String, dynamic> ||
+        value.length != 5 ||
+        value['id'] is! String ||
+        !_uuidPattern.hasMatch(value['id'] as String) ||
+        value['nome'] is! String ||
+        (value['nome'] as String).isEmpty ||
+        (value['descricao'] != null && value['descricao'] is! String) ||
+        value['disponivel'] is! bool ||
+        (value['ajusteValor'] != null &&
+            (value['ajusteValor'] is! String ||
+                !RegExp(
+                  r'^-?\d+\.\d{2}$',
+                ).hasMatch(value['ajusteValor'] as String)))) {
+      return null;
+    }
+    return CatalogPersonalization(
+      id: value['id'] as String,
+      name: value['nome'] as String,
+      description: value['descricao'] as String?,
+      available: value['disponivel'] as bool,
+      adjustment: value['ajusteValor'] as String?,
+    );
+  }
+}
+
+class CatalogPriceResult {
+  const CatalogPriceResult(this.status, {this.unitPrice});
+  final CatalogRequestStatus status;
+  final String? unitPrice;
 }
 
 class CatalogCategory {
@@ -145,6 +193,7 @@ class CatalogProductDetail {
     required this.price,
     required this.category,
     required this.imageAvailable,
+    this.personalizations = const [],
   });
   final String id;
   final String name;
@@ -152,10 +201,11 @@ class CatalogProductDetail {
   final String price;
   final CatalogCategory category;
   final bool imageAvailable;
+  final List<CatalogPersonalization> personalizations;
 
   static CatalogProductDetail? parse(Object? value, String requestedId) {
     if (value is! Map<String, dynamic> ||
-        value.length != 7 ||
+        value.length != 8 ||
         value['disponivel'] != true ||
         value['id'] != requestedId ||
         value['nome'] is! String ||
@@ -167,7 +217,15 @@ class CatalogProductDetail {
       return null;
     }
     final category = CatalogCategory.parse(value['categoria']);
-    if (category == null) return null;
+    final rawOptions = value['personalizacoes'];
+    if (category == null || rawOptions is! List) return null;
+    final options = <CatalogPersonalization>[];
+    final ids = <String>{};
+    for (final raw in rawOptions) {
+      final option = CatalogPersonalization.parse(raw);
+      if (option == null || !ids.add(option.id)) return null;
+      options.add(option);
+    }
     return CatalogProductDetail(
       id: requestedId,
       name: value['nome'] as String,
@@ -175,6 +233,7 @@ class CatalogProductDetail {
       price: value['precoAtual'] as String,
       category: category,
       imageAvailable: value['imagemDisponivel'] as bool,
+      personalizations: List.unmodifiable(options),
     );
   }
 }
@@ -196,6 +255,71 @@ class CustomerCatalogApi {
   final ApiConfig _config;
   final HttpClient Function() _clientFactory;
   final Duration timeout;
+
+  Future<CatalogPriceResult> previewPrice({
+    required String productId,
+    required String accessToken,
+    required List<String> personalizationIds,
+  }) async {
+    if (!_uuidPattern.hasMatch(productId)) {
+      return const CatalogPriceResult(CatalogRequestStatus.unavailable);
+    }
+    final uri = _config.catalogPriceUri(productId);
+    if (uri == null) {
+      return const CatalogPriceResult(CatalogRequestStatus.notConfigured);
+    }
+    final client = _clientFactory();
+    try {
+      final request = await client.postUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode({'personalizacaoIds': personalizationIds}));
+      final response = await request.close().timeout(timeout);
+      if (response.statusCode == HttpStatus.unauthorized) {
+        return const CatalogPriceResult(CatalogRequestStatus.unauthorized);
+      }
+      if (response.statusCode == HttpStatus.forbidden) {
+        return const CatalogPriceResult(CatalogRequestStatus.forbidden);
+      }
+      if (response.statusCode == HttpStatus.notFound) {
+        return const CatalogPriceResult(CatalogRequestStatus.notFound);
+      }
+      if (response.statusCode == HttpStatus.conflict) {
+        final raw = jsonDecode(
+          await utf8.decoder.bind(response.timeout(timeout)).join(),
+        );
+        return CatalogPriceResult(
+          raw is Map<String, dynamic> && raw['code'] == 'PRECO_NEGATIVO'
+              ? CatalogRequestStatus.negativePrice
+              : CatalogRequestStatus.invalidSelection,
+        );
+      }
+      if (response.statusCode != HttpStatus.ok) {
+        return const CatalogPriceResult(CatalogRequestStatus.unavailable);
+      }
+      final raw = jsonDecode(
+        await utf8.decoder.bind(response.timeout(timeout)).join(),
+      );
+      if (raw is! Map<String, dynamic> ||
+          raw.length != 1 ||
+          raw['precoUnitario'] is! String ||
+          !RegExp(r'^\d+\.\d{2}$').hasMatch(raw['precoUnitario'] as String)) {
+        return const CatalogPriceResult(CatalogRequestStatus.unavailable);
+      }
+      return CatalogPriceResult(
+        CatalogRequestStatus.success,
+        unitPrice: raw['precoUnitario'] as String,
+      );
+    } on Object {
+      return const CatalogPriceResult(CatalogRequestStatus.unavailable);
+    } finally {
+      client.close(force: true);
+    }
+  }
 
   Future<CatalogDetailResult> fetchDetail({
     required String productId,

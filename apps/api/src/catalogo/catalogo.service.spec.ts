@@ -22,11 +22,12 @@ describe('CatalogoService', () => {
       precoAtual: new Prisma.Decimal('12.30'), categoriaId: categoryId,
       categoriaNome: 'Doces', imagem: null, ativo: false,
       quantidadeFisica: 99,
-    }]).mockResolvedValueOnce([]);
+    }]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     await expect(service.detail(productId)).resolves.toEqual({
       id: productId, nome: 'Cupcake', descricao: 'Chocolate', precoAtual: '12.30',
       categoria: { id: categoryId, nome: 'Doces' }, imagemDisponivel: false,
       disponivel: true,
+      personalizacoes: [],
     });
     expect(query.mock.calls[0][0].strings.join('')).toMatch(/INNER JOIN "Estoque".*quantidadeFisica.*quantidadeReservada/s);
     await expect(service.detail(productId)).rejects.toMatchObject({

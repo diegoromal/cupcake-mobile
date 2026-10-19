@@ -31,9 +31,10 @@ describe('Catálogo detalhe HTTP', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     user.mockResolvedValue({ id, perfil: PerfilUsuario.CLIENTE });
-    query.mockResolvedValue([{ id, nome: 'Cupcake', descricao: 'Chocolate',
+    query.mockImplementation((sql: Prisma.Sql) => sql.strings.join('').includes('ProdutoPersonalizacao')
+      ? Promise.resolve([]) : Promise.resolve([{ id, nome: 'Cupcake', descricao: 'Chocolate',
       precoAtual: new Prisma.Decimal('12.30'), categoriaId: categoryId, categoriaNome: 'Doces',
-      imagem: null, quantidadeFisica: 20, ativo: true }]);
+      imagem: null, quantidadeFisica: 20, ativo: true }]));
   });
 
   it('entrega somente projeção pública ao CLIENTE', async () => {
@@ -41,7 +42,7 @@ describe('Catálogo detalhe HTTP', () => {
       .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`).expect(200);
     expect(response.body).toEqual({ id, nome: 'Cupcake', descricao: 'Chocolate',
       precoAtual: '12.30', categoria: { id: categoryId, nome: 'Doces' },
-      imagemDisponivel: false, disponivel: true });
+      imagemDisponivel: false, disponivel: true, personalizacoes: [] });
   });
 
   it('valida UUID e protege por autenticação e perfil', async () => {
@@ -59,5 +60,26 @@ describe('Catálogo detalhe HTTP', () => {
       .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`).expect(404);
     expect(response.body.message).toBe('Produto indisponível.');
     expect(response.text).not.toContain('Cupcake');
+  });
+
+  it('valida prévia, autenticação, perfil e seleção sem aceitar preço do cliente', async () => {
+    const url = `/catalogo/produtos/${id}/preco`;
+    await request(app.getHttpServer()).post(url).send({ personalizacaoIds: [] }).expect(401);
+    user.mockResolvedValue({ id, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).post(url)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.ADMIN)}`)
+      .send({ personalizacaoIds: [] }).expect(403);
+    user.mockResolvedValue({ id, perfil: PerfilUsuario.CLIENTE });
+    const bearer = `Bearer ${await token(PerfilUsuario.CLIENTE)}`;
+    await request(app.getHttpServer()).post(url).set('Authorization', bearer)
+      .send({ personalizacaoIds: ['invalid'] }).expect(400);
+    await request(app.getHttpServer()).post(url).set('Authorization', bearer)
+      .send({ personalizacaoIds: [], precoUnitario: '0.01' }).expect(400);
+    const result = await request(app.getHttpServer()).post(url).set('Authorization', bearer)
+      .send({ personalizacaoIds: [] }).expect(200);
+    expect(result.body).toEqual({ precoUnitario: '12.30' });
+    query.mockResolvedValueOnce([]);
+    await request(app.getHttpServer()).post(url).set('Authorization', bearer)
+      .send({ personalizacaoIds: [] }).expect(404);
   });
 });

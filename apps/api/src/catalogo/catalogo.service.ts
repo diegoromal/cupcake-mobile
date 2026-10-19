@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
@@ -13,6 +13,10 @@ type CatalogProductRow = {
   imagem: string | null;
 };
 type CatalogDetailRow = CatalogProductRow & { descricao: string | null };
+type PublicOptionRow = {
+  id: string; nome: string; descricao: string | null;
+  disponivel: boolean; ajusteValor: Prisma.Decimal | null;
+};
 
 export const MAX_PRODUCT_IMAGE_BYTES = 2 * 1024 * 1024;
 const eligibleProduct = Prisma.sql`p."ativo" = true AND e."quantidadeFisica" > e."quantidadeReservada"`;
@@ -63,6 +67,58 @@ export class CatalogoService {
   }
 
   async detail(produtoId: string) {
+    const product = await this.eligibleDetail(produtoId);
+    const options = await this.options(produtoId);
+    return {
+      id: product.id,
+      nome: product.nome,
+      descricao: product.descricao,
+      precoAtual: product.precoAtual.toFixed(2),
+      categoria: { id: product.categoriaId, nome: product.categoriaNome },
+      imagemDisponivel: isManagedProductImage(product.imagem, product.id),
+      disponivel: true,
+      personalizacoes: options.map((option) => ({
+        id: option.id, nome: option.nome, descricao: option.descricao,
+        disponivel: option.disponivel,
+        ajusteValor: option.ajusteValor?.toFixed(2) ?? null,
+      })),
+    };
+  }
+
+  async price(produtoId: string, personalizacaoIds: string[]) {
+    const product = await this.eligibleDetail(produtoId);
+    if (new Set(personalizacaoIds).size !== personalizacaoIds.length) {
+      throw new ConflictException('Seleção de personalizações inválida.');
+    }
+    const options = await this.options(produtoId);
+    const selected = new Set(personalizacaoIds);
+    const valid = options.filter((option) => selected.has(option.id) && option.disponivel);
+    if (valid.length !== selected.size) {
+      throw new ConflictException('Seleção de personalizações inválida.');
+    }
+    const price = valid.reduce(
+      (sum, option) => sum.plus(option.ajusteValor ?? new Prisma.Decimal(0)),
+      product.precoAtual,
+    );
+    if (price.isNegative()) {
+      throw new ConflictException({
+        code: 'PRECO_NEGATIVO', message: 'Preço unitário negativo para a seleção.',
+      });
+    }
+    return { precoUnitario: price.toFixed(2) };
+  }
+
+  private async options(produtoId: string): Promise<PublicOptionRow[]> {
+    return this.prisma.$queryRaw<PublicOptionRow[]>(Prisma.sql`
+      SELECT z."id", z."nome", z."descricao", z."disponibilidade" AS "disponivel", z."ajusteValor"
+      FROM "ProdutoPersonalizacao" pp
+      INNER JOIN "Personalizacao" z ON z."id" = pp."personalizacaoId"
+      WHERE pp."produtoId" = ${produtoId}::uuid
+      ORDER BY z."nome" ASC, z."id" ASC
+    `);
+  }
+
+  private async eligibleDetail(produtoId: string): Promise<CatalogDetailRow> {
     const [product] = await this.prisma.$queryRaw<CatalogDetailRow[]>(Prisma.sql`
       SELECT p."id", p."nome", p."descricao", p."precoAtual", p."categoriaId",
              c."nome" AS "categoriaNome", p."imagem"
@@ -72,15 +128,7 @@ export class CatalogoService {
       WHERE p."id" = ${produtoId}::uuid AND ${eligibleProduct}
     `);
     if (!product) throw new NotFoundException('Produto indisponível.');
-    return {
-      id: product.id,
-      nome: product.nome,
-      descricao: product.descricao,
-      precoAtual: product.precoAtual.toFixed(2),
-      categoria: { id: product.categoriaId, nome: product.categoriaNome },
-      imagemDisponivel: isManagedProductImage(product.imagem, product.id),
-      disponivel: true,
-    };
+    return product;
   }
 
   async getImage(produtoId: string): Promise<Buffer> {

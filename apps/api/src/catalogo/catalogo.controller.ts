@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Header, Param, ParseUUIDPipe, Query, Res,
+  Body, Controller, Get, Header, HttpCode, Param, ParseUUIDPipe, Post, Query, Res,
   UseGuards, UsePipes, ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -8,6 +8,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PerfilUsuario } from '../generated/prisma/enums';
 import { CatalogoQueryDto } from './dto/catalogo-query.dto';
+import { PricePreviewDto } from './dto/price-preview.dto';
 import { CatalogoService } from './catalogo.service';
 
 @Controller('catalogo')
@@ -35,6 +36,13 @@ export class CatalogoController {
   @Get('produtos/:id')
   detail(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.catalogo.detail(id);
+  }
+
+  @Post('produtos/:id/preco')
+  @HttpCode(200)
+  @Header('Cache-Control', 'private, no-store')
+  price(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: PricePreviewDto) {
+    return this.catalogo.price(id, body.personalizacaoIds);
   }
 
   @Get('produtos/:id/imagem')

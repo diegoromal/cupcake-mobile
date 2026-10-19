@@ -22,6 +22,44 @@ String _token() => 'secret-session-value';
 
 void main() {
   test(
+    'price preview posts IDs and parses success, conflict and auth states',
+    () async {
+      var status = HttpStatus.ok;
+      var body = '{"precoUnitario":"11.25"}';
+      final server = await _server((request) async {
+        expect(request.method, 'POST');
+        expect(request.uri.path, '/catalogo/produtos/$_id/preco');
+        expect(
+          request.headers.value(HttpHeaders.authorizationHeader),
+          'Bearer ${_token()}',
+        );
+        expect(jsonDecode(await utf8.decoder.bind(request).join()), {
+          'personalizacaoIds': ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'],
+        });
+        request.response.statusCode = status;
+        request.response.write(body);
+        await request.response.close();
+      });
+      addTearDown(server.close);
+      final api = _api(server);
+      Future<CatalogPriceResult> call() => api.previewPrice(
+        productId: _id,
+        accessToken: _token(),
+        personalizationIds: ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'],
+      );
+      expect((await call()).unitPrice, '11.25');
+      status = HttpStatus.conflict;
+      body = '{"code":"PRECO_NEGATIVO"}';
+      expect((await call()).status, CatalogRequestStatus.negativePrice);
+      body = '{"message":"Seleção inválida"}';
+      expect((await call()).status, CatalogRequestStatus.invalidSelection);
+      status = HttpStatus.unauthorized;
+      expect((await call()).status, CatalogRequestStatus.unauthorized);
+      status = HttpStatus.forbidden;
+      expect((await call()).status, CatalogRequestStatus.forbidden);
+    },
+  );
+  test(
     'detail uses Bearer, parses public fields, and distinguishes HTTP errors',
     () async {
       var status = HttpStatus.ok;
@@ -36,6 +74,7 @@ void main() {
         },
         'imagemDisponivel': false,
         'disponivel': true,
+        'personalizacoes': [],
       });
       final server = await _server((request) async {
         expect(request.uri.path, '/catalogo/produtos/$_id');
@@ -56,6 +95,17 @@ void main() {
       expect(success.status, CatalogRequestStatus.success);
       expect(success.product?.description, isNull);
       expect(success.product?.imageAvailable, isFalse);
+      expect(success.product?.personalizations, isEmpty);
+      body = body.replaceFirst(
+        '"personalizacoes":[]',
+        '"personalizacoes":[{"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","nome":"Extra","descricao":"Cacau","disponivel":true,"ajusteValor":"-0.50"}]',
+      );
+      final withOption = await api.fetchDetail(
+        productId: _id,
+        accessToken: _token(),
+      );
+      expect(withOption.product?.personalizations.single.description, 'Cacau');
+      expect(withOption.product?.personalizations.single.adjustment, '-0.50');
       body = body.replaceFirst('"disponivel":true', '"disponivel":false');
       expect(
         (await api.fetchDetail(productId: _id, accessToken: _token())).status,
