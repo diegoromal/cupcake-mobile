@@ -267,6 +267,8 @@ produtos.
 
 - [x] **D118 — Consolidar UX/UI e referências visuais do produto**
 - [x] **D119 — Corrigir e consolidar referências Admin após auditoria D118**
+- [ ] **D120 — Implementar UX/UI do Admin conforme referências D118/D119**
+      — aplicar ao Admin existente as referências visuais consolidadas em D118 e corrigidas em D119, preservando contratos e funcionalidades existentes.
 
 ## Regras de trabalho
 
