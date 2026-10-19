@@ -277,7 +277,7 @@ Usuário autenticado sem perfil ADMIN não deve visualizar dados administrativos
 
 ## Navegação administrativa
 
-A referência utiliza:
+O recorte visual de `product-list.png` mostra estes itens da navegação:
 
 - Pedidos;
 - Produtos / Cardápio;
@@ -285,7 +285,9 @@ A referência utiliza:
 
 `Produtos / Cardápio` deve aparecer como seção ativa.
 
-A navegação deve acompanhar as referências administrativas aprovadas da D118.
+A referência completa, com cinco destinos na ordem consolidada, está em
+`docs/design/NAVIGATION.md`. Os destinos ausentes deste recorte continuam na
+referência; sua presença nela não afirma que já possuam rota implementada.
 
 ---
 

@@ -58,13 +58,14 @@ A referência principal utiliza:
 - Em preparo;
 - Saiu para entrega;
 - Entregue;
+- Retirado;
 - Cancelado.
 
 `Pendente de pagamento` não aparece na referência principal da fila operacional
 de produção.
 
-Pedidos de Retirada também podem estar `Pronto para retirada` ou `Retirado`,
-embora esses estados não apareçam no PNG principal.
+Pedidos de Retirada também podem estar `Pronto para retirada`; esse estado não
+aparece no PNG principal. O pedido `#ORD-1041` demonstra `Retirada / Retirado`.
 
 ---
 
@@ -84,9 +85,7 @@ Estados operacionais representáveis:
 
 Não criar estados visuais adicionais.
 
-`Entregue` pertence a Delivery; `Retirado` pertence a Retirada. A linha de
-Retirada marcada `Entregue` no PNG é uma inconsistência demonstrativa e deve
-usar o status real do pedido na implementação.
+`Entregue` pertence a Delivery; `Retirado` pertence a Retirada.
 
 O significado não deve depender somente de cor.
 
@@ -297,14 +296,16 @@ Quando o usuário autenticado não possuir permissão ADMIN:
 
 ## Navegação administrativa
 
-A referência utiliza:
+O recorte visual de `order-list.png` mostra estes itens da navegação:
 
 - Pedidos;
 - Produtos / Cardápio.
 
 `Pedidos` deve aparecer como seção ativa.
 
-A navegação real deve respeitar as rotas administrativas existentes.
+A referência completa, com cinco destinos na ordem consolidada, está em
+`docs/design/NAVIGATION.md`. Os destinos ausentes deste recorte continuam na
+referência; sua presença nela não afirma que já possuam rota implementada.
 
 ---
 

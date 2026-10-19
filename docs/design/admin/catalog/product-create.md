@@ -302,13 +302,17 @@ Fluxo esperado:
 
 ## Navegação administrativa
 
-A referência utiliza:
+O recorte visual de `product-create.png` mostra estes itens da navegação:
 
 - Pedidos;
 - Produtos / Cardápio;
 - Relatório de Vendas.
 
 `Produtos / Cardápio` deve permanecer como contexto ativo.
+
+A referência completa, com cinco destinos na ordem consolidada, está em
+`docs/design/NAVIGATION.md`. Os destinos ausentes deste recorte continuam na
+referência; sua presença nela não afirma que já possuam rota implementada.
 
 ---
 
