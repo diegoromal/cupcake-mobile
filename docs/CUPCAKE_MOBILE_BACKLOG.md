@@ -265,8 +265,8 @@ produtos.
 
 ## FASES COMPLEMENTARES
 
-- [ ] **D118 — Consolidar UX/UI e referências visuais do produto**
-      — definir e versionar design system, fluxos, referências do Admin Web e do Aplicativo Flutter a partir de protótipos aprovados.
+- [x] **D118 — Consolidar UX/UI e referências visuais do produto**
+- [x] **D119 — Corrigir e consolidar referências Admin após auditoria D118**
 
 ## Regras de trabalho
 
