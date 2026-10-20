@@ -13,7 +13,7 @@
 - [x] Fase 0 --- Fundação e documentação
 - [x] Fase 1 --- Usuários e segurança
 - [x] Fase 2 --- Catálogo
-- [ ] Fase 3 --- Aplicativo Flutter
+- [x] Fase 3 --- Aplicativo Flutter
 - [ ] Fase 4 --- Carrinho
 - [ ] Fase 5 --- Endereço, cobertura e frete
 - [ ] Fase 6 --- Pedido e reserva de estoque
@@ -267,8 +267,7 @@ produtos.
 
 - [x] **D118 — Consolidar UX/UI e referências visuais do produto**
 - [x] **D119 — Corrigir e consolidar referências Admin após auditoria D118**
-- [ ] **D120 — Implementar UX/UI do Admin conforme referências D118/D119**
-      — aplicar ao Admin existente as referências visuais consolidadas em D118 e corrigidas em D119, preservando contratos e funcionalidades existentes.
+- [x] **D120 — Implementar UX/UI do Admin conforme referências D118/D119**
 
 ## Regras de trabalho
 
