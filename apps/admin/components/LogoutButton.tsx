@@ -16,7 +16,7 @@ export default function LogoutButton() {
     finally { submitting.current = false; setBusy(false); }
   }
   return <>
-    <button className="secondary" disabled={busy} onClick={logout}>{busy ? 'Saindo...' : 'Sair'}</button>
+    <button className="secondary" disabled={busy} onClick={logout}>{busy ? 'Saindo...' : 'Sair do Sistema'}</button>
     {error && <p className="error" role="alert">{error}</p>}
   </>;
 }

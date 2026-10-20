@@ -19,6 +19,19 @@ function deferred() {
 
 beforeEach(() => { request.mockReset(); replace.mockReset(); push.mockReset(); });
 
+test('login mantém senha oculta por padrão e alterna visibilidade localmente', async () => {
+  const user = userEvent.setup();
+  render(<LoginForm />);
+  const password = screen.getByLabelText('Senha');
+  expect(password).toHaveAttribute('type', 'password');
+  expect(screen.getByRole('button', { name: 'Entrar' })).toBeDisabled();
+  await user.click(screen.getByRole('button', { name: 'Mostrar senha' }));
+  expect(password).toHaveAttribute('type', 'text');
+  await user.click(screen.getByRole('button', { name: 'Ocultar senha' }));
+  expect(password).toHaveAttribute('type', 'password');
+  expect(request).not.toHaveBeenCalled();
+});
+
 test('login desabilita controles durante request, bloqueia submit concorrente e restaura após erro', async () => {
   const pending = deferred();
   request.mockReturnValue(pending.promise);
@@ -54,7 +67,7 @@ test('logout desabilita botão durante request e bloqueia cliques concorrentes',
   request.mockReturnValue(pending.promise);
   const user = userEvent.setup();
   render(<LogoutButton />);
-  await user.click(screen.getByRole('button', { name: 'Sair' }));
+  await user.click(screen.getByRole('button', { name: 'Sair do Sistema' }));
   expect(request).toHaveBeenCalledWith('/api/session/logout', { method: 'POST' });
   expect(request).toHaveBeenCalledTimes(1);
   const button = screen.getByRole('button', { name: 'Saindo...' });
@@ -73,14 +86,14 @@ test('logout exibe erro e restaura botão após falha', async () => {
   request.mockReturnValue(pending.promise);
   const user = userEvent.setup();
   render(<LogoutButton />);
-  await user.click(screen.getByRole('button', { name: 'Sair' }));
+  await user.click(screen.getByRole('button', { name: 'Sair do Sistema' }));
   expect(screen.getByRole('button', { name: 'Saindo...' })).toBeDisabled();
   pending.reject(new Error('Falha ao sair'));
   expect(await screen.findByRole('alert')).toHaveTextContent('Falha ao sair');
-  expect(screen.getByRole('button', { name: 'Sair' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Sair do Sistema' })).toBeEnabled();
   expect(push).not.toHaveBeenCalled();
   request.mockResolvedValueOnce(undefined);
-  await user.click(screen.getByRole('button', { name: 'Sair' }));
+  await user.click(screen.getByRole('button', { name: 'Sair do Sistema' }));
   expect(request).toHaveBeenCalledTimes(2);
   await waitFor(() => expect(push).toHaveBeenCalledWith('/login'));
 });

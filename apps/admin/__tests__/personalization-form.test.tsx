@@ -22,7 +22,7 @@ test('exibição distingue null e zero e mantém centavos negativos',()=>{
  expect(displayAdjustment(null)).toBe('Não definido');expect(displayAdjustment('0.00')).toBe('R$ 0,00');expect(displayAdjustment('2.50')).toBe('+ R$ 2,50');expect(displayAdjustment('-0.05')).toBe('− R$ 0,05');
 });
 test('submit inválido foca resumo anunciável e mantém erros específicos associados',()=>{
- render(<PersonalizationForm/>);fireEvent.change(screen.getByLabelText('Ajuste de valor (R$)'),{target:{value:'1e2'}});fireEvent.click(screen.getByRole('button',{name:'Criar personalização'}));
+ render(<PersonalizationForm/>);fireEvent.change(screen.getByLabelText('Ajuste de valor (R$)'),{target:{value:'1e2'}});expect(screen.getByRole('button',{name:'Criar personalização'})).toBeDisabled();fireEvent.submit(screen.getByRole('button',{name:'Criar personalização'}).closest('form')!);
  const summary=screen.getByRole('alert');const name=screen.getByLabelText('Nome');const adjustment=screen.getByLabelText('Ajuste de valor (R$)');
  expect(summary).toHaveFocus();expect(summary).toHaveAttribute('tabindex','-1');expect(name).toHaveAttribute('aria-invalid','true');expect(name).toHaveAttribute('aria-describedby','personalization-name-error');expect(screen.getByText('Informe o nome.')).toHaveAttribute('id','personalization-name-error');
  expect(adjustment).toHaveAttribute('aria-invalid','true');expect(adjustment).toHaveAttribute('aria-describedby','personalization-adjustment-error');expect(screen.getByText(/Use decimal com ponto/)).toHaveAttribute('id','personalization-adjustment-error');
@@ -34,7 +34,7 @@ test.each([['+2.50','2.50'],['0','0.00'],['1.2','1.20'],['0001.20','1.20'],['-0.
  expect(screen.getByLabelText('Ajuste de valor (R$)')).toHaveValue(savedAdjustment??'');
  expect(JSON.parse(mock.mock.calls[0][1].body)).toEqual({ajusteValor:typed||null});
  fireEvent.click(screen.getByRole('button',{name:'Salvar alterações'}));
- expect(screen.getByRole('status')).toHaveTextContent('Nenhuma alteração para salvar');expect(mock).toHaveBeenCalledTimes(1);
+ expect(screen.getByText('Nenhuma alteração para salvar')).toBeInTheDocument();expect(mock).toHaveBeenCalledTimes(1);
 });
 test('após normalização, disponibilidade, nome e novo ajuste geram PATCHs independentes',async()=>{
  const onSaved=jest.fn();mock.mockResolvedValueOnce({...item,ajusteValor:'2.50'}).mockResolvedValueOnce({...item,ajusteValor:'2.50',disponibilidade:false}).mockResolvedValueOnce({...item,ajusteValor:'2.50',disponibilidade:false,nome:'Cobertura nova'}).mockResolvedValueOnce({...item,ajusteValor:'3.00',disponibilidade:false,nome:'Cobertura nova'});

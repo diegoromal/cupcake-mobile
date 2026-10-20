@@ -8,5 +8,5 @@ export default function ProductDetail({id}:{id:string}) {
   const load=useCallback(async()=>{setMessage('');try{setProduct(await adminApi<Produto>(`/api/admin/produtos/${id}`));}catch(e){setMessage(e instanceof AdminApiError&&e.status===404?'Produto não encontrado.':e instanceof Error?e.message:'Falha ao carregar produto.');}},[id]);
   useEffect(()=>{void load();},[load]);
   if(!product)return <section><h1>Produto</h1>{message?<p role="alert" className="error">{message} <button onClick={load}>Tentar novamente</button></p>:<p role="status">Carregando produto...</p>}</section>;
-  return <div className="stack"><h1>{product.nome}</h1><ProductForm product={product} onSaved={setProduct}/><ProductImage id={id} image={product.imagem} onChange={imagem=>setProduct(p=>p?{...p,imagem}:p)}/><ProductPersonalizations id={id}/><ProductStock id={id}/><DeleteProductButton id={id} name={product.nome}/></div>;
+  return <div className="stack product-detail"><div className="page-intro"><h1>{product.nome}</h1><p>Gerencie os dados, a imagem, as personalizações e o estoque deste produto.</p></div><ProductForm product={product} onSaved={setProduct}/><ProductImage id={id} image={product.imagem} onChange={imagem=>setProduct(p=>p?{...p,imagem}:p)}/><ProductPersonalizations id={id}/><ProductStock id={id}/><DeleteProductButton id={id} name={product.nome}/></div>;
 }
