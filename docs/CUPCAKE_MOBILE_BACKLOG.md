@@ -13,7 +13,7 @@
 - [x] Fase 0 --- Fundação e documentação
 - [x] Fase 1 --- Usuários e segurança
 - [x] Fase 2 --- Catálogo
-- [ ] Fase 3 --- Aplicativo Flutter
+- [x] Fase 3 --- Aplicativo Flutter
 - [ ] Fase 4 --- Carrinho
 - [ ] Fase 5 --- Endereço, cobertura e frete
 - [ ] Fase 6 --- Pedido e reserva de estoque
