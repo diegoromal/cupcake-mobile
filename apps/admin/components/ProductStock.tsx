@@ -20,14 +20,13 @@ export default function ProductStock({ id }: { id: string }) {
     setErro('');
     setErroHistorico('');
     try {
-      const [novoSaldo, novasMovimentacoes] = await Promise.all([
+      const [novoSaldo, novasMovimentacoes] = await Promise.allSettled([
         adminApi<Estoque>(base), adminApi<MovimentacaoEstoque[]>(`${base}/movimentacoes`),
       ]);
-      setSaldo(novoSaldo);
-      setHistorico(novasMovimentacoes);
-      setAlvo(String(novoSaldo.quantidadeDisponivel));
-    } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Falha ao carregar estoque.');
+      if(novoSaldo.status==='fulfilled') {setSaldo(novoSaldo.value);setAlvo(String(novoSaldo.value.quantidadeDisponivel));}
+      else setErro(novoSaldo.reason instanceof Error?novoSaldo.reason.message:'Falha ao carregar estoque.');
+      if(novasMovimentacoes.status==='fulfilled') setHistorico(novasMovimentacoes.value);
+      else setErroHistorico('Não foi possível carregar o histórico.');
     } finally { setCarregando(false); }
   }, [base]);
 

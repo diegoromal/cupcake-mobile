@@ -1,2 +1,2 @@
 import Link from 'next/link';import AdminHeader from '@/components/AdminHeader';import PersonalizationForm from '@/components/PersonalizationForm';
-export default function NewPersonalizationPage(){return <main className="container stack"><AdminHeader/><Link href="/personalizacoes">← Personalizações</Link><PersonalizationForm/></main>;}
+export default function NewPersonalizationPage(){return <main className="container stack"><AdminHeader/><Link href="/personalizacoes">← Personalizações</Link><div className="page-intro"><h1>Nova personalização</h1><p>Cadastre uma nova opção de personalização no catálogo.</p></div><PersonalizationForm/></main>;}

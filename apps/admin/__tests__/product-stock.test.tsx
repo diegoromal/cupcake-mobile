@@ -56,6 +56,20 @@ test('mostra loading e histórico vazio ao concluir a consulta', async () => {
   expect(screen.queryByText('Carregando estoque...')).not.toBeInTheDocument();
 });
 
+test('falha inicial do histórico mantém saldo disponível e permite recarregar só o histórico', async () => {
+  let historyReads = 0;
+  mock.mockImplementation((path: string) => path.endsWith('movimentacoes')
+    ? ++historyReads === 1 ? Promise.reject(new Error('Falha de rede.')) : Promise.resolve([movimento])
+    : Promise.resolve(saldo));
+  render(<ProductStock id="p1" />);
+  expect(await screen.findByText(/Físico: 8/)).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o histórico.');
+  fireEvent.click(screen.getByRole('button', { name: 'Recarregar histórico' }));
+  expect(await screen.findByText('Ajuste administrativo')).toBeInTheDocument();
+  expect(mock.mock.calls.filter(call => call[0].endsWith('movimentacoes'))).toHaveLength(2);
+  expect(mock.mock.calls.filter(call => !call[0].endsWith('movimentacoes'))).toHaveLength(1);
+});
+
 test('mostra falha de consulta e permite recarregar saldo e histórico', async () => {
   const user = userEvent.setup();
   let failed = false;

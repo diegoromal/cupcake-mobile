@@ -13,11 +13,11 @@ export default function DeleteConfirmation({kind,id,name,lockRef,busy,setBusy}:{
     lockRef.current=true;setBusy(true);setMessage('');
     try { await adminApi(`/api/admin/${plural}/${id}`,{method:'DELETE'});if(mounted.current)router.push(`/${plural}`); }
     catch(e) { const status=e instanceof AdminApiError?e.status:0;
-      if(mounted.current)setMessage(status===404?`${kind==='categoria'?'Categoria':'Personalização'} não encontrada.`:status===409?kind==='categoria'?'Categoria em uso por produtos. Remova os vínculos antes de excluir.':'Personalização em uso. Você ainda pode editar a disponibilidade.':status===403?'Acesso negado.':status===400?'Dados inválidos.':e instanceof Error?e.message:'Falha ao excluir.'); }
+      if(mounted.current)setMessage(status===404?`${kind==='categoria'?'Categoria':'Personalização'} não encontrada.`:status===409?kind==='categoria'?'Esta categoria está em uso por produtos e não pode ser excluída.':'Esta personalização está em uso e não pode ser excluída. Você pode alterar sua disponibilidade.':status===403?'Acesso negado.':status===400?'Dados inválidos.':e instanceof Error?e.message:'Falha ao excluir.'); }
     finally { lockRef.current=false;if(mounted.current)setBusy(false); }
   }
   function cancel(){setOpen(false);setTyped('');requestAnimationFrame(()=>trigger.current?.focus());}
-  return <section className="card danger"><h2>Excluir {label}</h2>{message&&<p className="error" role="alert">{message}</p>}
+  return <section className="card danger"><h2>Excluir {label}</h2><p>A exclusão é permanente e exige confirmação.</p>{message&&<p className="error" role="alert">{message}</p>}
     {!open?<button ref={trigger} type="button" className="danger-button" disabled={busy} onClick={()=>{setOpen(true);requestAnimationFrame(()=>input.current?.focus());}}>Excluir {label}</button>:<>
       <p>Digite <strong>{name}</strong> para confirmar.</p><label htmlFor={`${plural}-confirm-name`}>Nome da {label}</label>
       <input ref={input} id={`${plural}-confirm-name`} value={typed} onChange={e=>setTyped(e.target.value)} disabled={busy} onKeyDown={e=>{if(e.key==='Escape'&&!busy)cancel();}} />
