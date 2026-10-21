@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe,
+  Body, Controller, Get, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe,
 } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/authenticated-user';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,6 +20,13 @@ import { AdicionarItemCarrinhoDto } from './dto/adicionar-item.dto';
 }))
 export class CarrinhoController {
   constructor(private readonly carrinho: CarrinhoService) {}
+
+  @Get()
+  obter(@Req() request: AuthenticatedRequest) {
+    const usuarioId = request.user?.id;
+    if (!usuarioId) throw new UnauthorizedException('Access token inválido.');
+    return this.carrinho.obter(usuarioId);
+  }
 
   @Post('itens')
   adicionar(@Req() request: AuthenticatedRequest, @Body() body: AdicionarItemCarrinhoDto) {

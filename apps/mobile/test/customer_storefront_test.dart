@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
+import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
+import 'package:cupcake_mobile/features/cart/presentation/cart_page.dart';
 import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
 import 'package:cupcake_mobile/features/catalog/presentation/storefront_page.dart';
 import 'package:flutter/material.dart';
@@ -109,14 +112,27 @@ void _disposeSession(CustomerSession session) {
   session.dispose();
 }
 
+class _CartApi extends CustomerCartApi {
+  int calls = 0;
+  @override
+  Future<CartResult> fetchCart({required String accessToken}) async {
+    calls++;
+    return const CartResult(
+      CartRequestStatus.success,
+      cart: CustomerCart(id: null, items: []),
+    );
+  }
+}
+
 Widget _app(
   CustomerSession session,
   CustomerCatalogApi api, {
   double scale = 1,
+  CustomerCartApi? cartApi,
 }) => MaterialApp(
   home: MediaQuery(
     data: MediaQueryData(textScaler: TextScaler.linear(scale)),
-    child: StorefrontPage(session: session, api: api),
+    child: StorefrontPage(session: session, api: api, cartApi: cartApi),
   ),
 );
 
@@ -752,6 +768,107 @@ void main() {
       },
     );
   }
+
+  testWidgets('Carrinho abre por push e o pop conserva a mesma vitrine', (
+    tester,
+  ) async {
+    final session = await _session();
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi([
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, [_product(1)]),
+      ),
+    ]);
+    final cartApi = _CartApi();
+    await tester.pumpWidget(_app(session, api, cartApi: cartApi));
+    await tester.pumpAndSettle();
+    _expectCarrinhoInAppBarActions(tester);
+    final storefront = tester.state(find.byType(StorefrontPage));
+    await tester.tap(find.widgetWithText(TextButton, 'Carrinho'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CartPage), findsOneWidget);
+    expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
+    expect(cartApi.calls, 1);
+    expect(api.calls, 1);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(CartPage), findsNothing);
+    expect(tester.state(find.byType(StorefrontPage)), same(storefront));
+    expect(find.text('Cupcake número 1'), findsOneWidget);
+    expect(api.calls, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final width in [320.0, 390.0, 430.0]) {
+    for (final scale in [1.0, 2.0]) {
+      testWidgets(
+        'AppBar com Carrinho em ${width.toInt()} dp e texto ${scale.toInt()}x não estoura',
+        (tester) async {
+          tester.view.devicePixelRatio = 1;
+          tester.view.physicalSize = Size(width, 800);
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final session = await _session();
+          addTearDown(() => _disposeSession(session));
+          final api = _CatalogApi([
+            (page) async => CatalogPageResult(
+              CatalogRequestStatus.success,
+              page: _page(page, [_product(1)]),
+            ),
+          ]);
+          await tester.pumpWidget(_app(session, api, scale: scale));
+          await tester.pumpAndSettle();
+          _expectCarrinhoInAppBarActions(tester);
+          expect(tester.takeException(), isNull);
+          final bar = tester.getRect(find.byType(AppBar));
+          final title = tester.getRect(find.text('Vitrine'));
+          for (final label in ['Atualizar', 'Carrinho', 'Sair']) {
+            final rect = tester.getRect(find.widgetWithText(TextButton, label));
+            expect(rect.left, greaterThanOrEqualTo(bar.left));
+            expect(rect.right, lessThanOrEqualTo(bar.right + 0.1));
+            expect(rect.top, greaterThanOrEqualTo(bar.top));
+            expect(rect.bottom, lessThanOrEqualTo(bar.bottom + 0.1));
+            expect(rect.overlaps(title), isFalse);
+          }
+          await tester.pumpWidget(const SizedBox.shrink());
+        },
+      );
+    }
+  }
+}
+
+void _expectCarrinhoInAppBarActions(WidgetTester tester) {
+  final button = find.widgetWithText(TextButton, 'Carrinho');
+  expect(button, findsOneWidget);
+  final element = tester.element(button);
+  AppBar? bar;
+  element.visitAncestorElements((ancestor) {
+    if (ancestor.widget is AppBar) {
+      bar = ancestor.widget as AppBar;
+      return false;
+    }
+    return true;
+  });
+  final actions = bar?.actions;
+  expect(actions, isNotNull);
+  var inActions = actions!.any((action) => identical(action, element.widget));
+  if (!inActions) {
+    element.visitAncestorElements((ancestor) {
+      if (actions.any((action) => identical(action, ancestor.widget))) {
+        inActions = true;
+        return false;
+      }
+      if (ancestor.widget is AppBar) return false;
+      return true;
+    });
+  }
+  expect(inActions, isTrue);
+  expect(find.widgetWithText(TextButton, 'Atualizar'), findsOneWidget);
+  expect(find.widgetWithText(TextButton, 'Sair'), findsOneWidget);
+  final size = tester.getSize(button);
+  expect(size.width, greaterThanOrEqualTo(AppTokens.touchTarget));
+  expect(size.height, greaterThanOrEqualTo(AppTokens.touchTarget));
 }
 
 String _testToken(String type, [String id = 'fixed']) {
