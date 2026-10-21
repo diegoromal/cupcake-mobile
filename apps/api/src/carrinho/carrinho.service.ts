@@ -74,6 +74,28 @@ export class CarrinhoService {
     return this.criarItem(carrinho.id, input.produtoId, input.quantidade, personalizacaoIds);
   }
 
+  async alterarQuantidade(usuarioId: string, itemId: string, quantidade: number) {
+    const item = await this.prisma.itemCarrinho.findFirst({
+      where: { id: itemId, carrinho: { usuarioId } },
+      select: { id: true, produtoId: true, quantidade: true },
+    });
+    if (!item) throw new NotFoundException('Item não encontrado.');
+    await this.ensureDisponivel(item.produtoId, quantidade);
+    const updated = await this.prisma.itemCarrinho.updateMany({
+      where: { id: itemId, carrinho: { usuarioId } },
+      data: { quantidade },
+    });
+    if (updated.count !== 1) throw new NotFoundException('Item não encontrado.');
+    return this.obter(usuarioId);
+  }
+
+  async removerItem(usuarioId: string, itemId: string): Promise<void> {
+    const removed = await this.prisma.itemCarrinho.deleteMany({
+      where: { id: itemId, carrinho: { usuarioId } },
+    });
+    if (removed.count === 0) throw new NotFoundException('Item não encontrado.');
+  }
+
   private async ensureProduto(id: string): Promise<void> {
     const produto = await this.prisma.produto.findUnique({
       where: { id },

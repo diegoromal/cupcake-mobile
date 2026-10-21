@@ -24,11 +24,23 @@ class CartPage extends StatefulWidget {
   State<CartPage> createState() => _CartPageState();
 }
 
+const _maxQuantity = 2147483647;
+const _missingItem = 'Item não encontrado.';
+const _unavailableQuantity = 'Quantidade superior à disponibilidade.';
+const _quantityFailure = 'Não foi possível atualizar a quantidade.';
+const _removeFailure = 'Não foi possível remover o item.';
+
 class _CartPageState extends State<CartPage> {
   int _generation = 0;
   CartRequestStatus? _status;
   CustomerCart? _cart;
   final Map<String, Future<Uint8List?>?> _images = {};
+  bool _busy = false;
+  String? _busyItemId;
+  String? _busyLabel;
+  String? _errorItemId;
+  String? _errorText;
+  String? _detachedMessage;
 
   @override
   void initState() {
@@ -59,6 +71,7 @@ class _CartPageState extends State<CartPage> {
     setState(() {
       _cart = null;
       _status = null;
+      _clearOperation();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.session.isAuthenticated) return;
@@ -82,6 +95,7 @@ class _CartPageState extends State<CartPage> {
     setState(() {
       _cart = null;
       _status = null;
+      _clearOperation();
     });
     await widget.session.refreshIfNeeded();
     var token = widget.session.accessToken;
@@ -147,6 +161,209 @@ class _CartPageState extends State<CartPage> {
     return result.bytes;
   }
 
+  void _clearOperation() {
+    _busy = false;
+    _busyItemId = null;
+    _busyLabel = null;
+    _errorItemId = null;
+    _errorText = null;
+    _detachedMessage = null;
+  }
+
+  bool get _controlsEnabled =>
+      !_busy && _status == CartRequestStatus.success && _cart != null;
+
+  Future<void> _changeQuantity(CartItem item, int quantity) {
+    if (quantity < 1 || quantity > _maxQuantity) return Future<void>.value();
+    return _mutate(item: item, removing: false, quantity: quantity);
+  }
+
+  Future<void> _mutate({
+    required CartItem item,
+    required bool removing,
+    int? quantity,
+  }) async {
+    if (_busy) return;
+    final generation = _generation;
+    setState(() {
+      _busy = true;
+      _busyItemId = item.id;
+      _busyLabel = removing ? 'Removendo item…' : 'Atualizando quantidade…';
+      _errorItemId = null;
+      _errorText = null;
+      _detachedMessage = null;
+    });
+    final result = await _authorized(
+      generation,
+      (token) => removing
+          ? widget.cartApi.removeItem(accessToken: token, itemId: item.id)
+          : widget.cartApi.updateQuantity(
+              accessToken: token,
+              itemId: item.id,
+              quantity: quantity ?? item.quantity,
+            ),
+    );
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    if (result.status == CartRequestStatus.forbidden) {
+      setState(() {
+        _clearOperation();
+        _status = CartRequestStatus.forbidden;
+        _cart = null;
+        _images.clear();
+      });
+      return;
+    }
+    if (result.status == CartRequestStatus.notFound) {
+      setState(() {
+        _busyLabel = null;
+        _errorItemId = item.id;
+        _errorText = _missingItem;
+      });
+      await _syncAfterNotFound(generation, item.id);
+      return;
+    }
+    if (result.status == CartRequestStatus.success) {
+      setState(() {
+        _clearOperation();
+        if (removing) {
+          _dropItem(item.id);
+        } else if (result.cart != null) {
+          _replaceCart(result.cart!, generation);
+        } else {
+          _errorItemId = item.id;
+          _errorText = _quantityFailure;
+        }
+      });
+      return;
+    }
+    setState(() {
+      _clearOperation();
+      _errorItemId = item.id;
+      _errorText = result.status == CartRequestStatus.conflict
+          ? (result.message ?? _unavailableQuantity)
+          : (removing ? _removeFailure : _quantityFailure);
+    });
+  }
+
+  Future<CartResult> _authorized(
+    int generation,
+    Future<CartResult> Function(String token) send,
+  ) async {
+    await widget.session.refreshIfNeeded();
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return const CartResult(CartRequestStatus.unauthorized);
+    }
+    final token = widget.session.accessToken;
+    if (token == null) return const CartResult(CartRequestStatus.unauthorized);
+    final result = await send(token);
+    if (result.status != CartRequestStatus.unauthorized ||
+        !mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return result;
+    }
+    final refreshed = await widget.session.refreshAfterUnauthorized(token);
+    if (refreshed == null ||
+        !mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return result;
+    }
+    return send(refreshed);
+  }
+
+  Future<void> _syncAfterNotFound(int generation, String itemId) async {
+    await widget.session.refreshIfNeeded();
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    var token = widget.session.accessToken;
+    var result = token == null
+        ? const CartResult(CartRequestStatus.unauthorized)
+        : await widget.cartApi.fetchCart(accessToken: token);
+    if (result.status == CartRequestStatus.unauthorized &&
+        token != null &&
+        mounted &&
+        generation == _generation &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (token != null &&
+          mounted &&
+          generation == _generation &&
+          widget.session.isAuthenticated) {
+        result = await widget.cartApi.fetchCart(accessToken: token);
+      }
+    }
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    setState(() {
+      _busy = false;
+      _busyItemId = null;
+      _busyLabel = null;
+      if (result.status == CartRequestStatus.forbidden) {
+        _status = CartRequestStatus.forbidden;
+        _cart = null;
+        _images.clear();
+        _errorItemId = null;
+        _errorText = null;
+        _detachedMessage = null;
+        return;
+      }
+      if (result.status == CartRequestStatus.success && result.cart != null) {
+        final cart = result.cart!;
+        _replaceCart(cart, generation);
+        if (cart.items.every((line) => line.id != itemId)) {
+          _detachedMessage = _missingItem;
+          _errorItemId = null;
+          _errorText = null;
+        }
+        return;
+      }
+      _errorItemId = itemId;
+      _errorText = _missingItem;
+    });
+  }
+
+  void _replaceCart(CustomerCart cart, int generation) {
+    final images = <String, Future<Uint8List?>?>{};
+    for (final line in cart.items) {
+      if (_images.containsKey(line.id)) {
+        images[line.id] = _images[line.id];
+      } else {
+        images[line.id] = line.imageAvailable
+            ? _loadImage(line.productId, generation)
+            : null;
+      }
+    }
+    _images
+      ..clear()
+      ..addAll(images);
+    _cart = cart;
+    _status = CartRequestStatus.success;
+  }
+
+  void _dropItem(String itemId) {
+    final cart = _cart;
+    if (cart == null) return;
+    _images.remove(itemId);
+    _cart = CustomerCart(
+      id: cart.id,
+      items: List.unmodifiable(cart.items.where((line) => line.id != itemId)),
+    );
+    _status = CartRequestStatus.success;
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Carrinho')),
@@ -167,10 +384,20 @@ class _CartPageState extends State<CartPage> {
         onRetry: _load,
       );
     }
-    if (cart.items.isEmpty) return const _EmptyCart();
+    if (cart.items.isEmpty) return _EmptyCart(notice: _detachedMessage);
     return ListView(
       padding: const EdgeInsets.all(AppTokens.spacing16),
       children: [
+        if (_detachedMessage != null) ...[
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              _detachedMessage!,
+              style: const TextStyle(color: AppTokens.danger),
+            ),
+          ),
+          const SizedBox(height: AppTokens.spacing12),
+        ],
         Semantics(
           header: true,
           child: Text(
@@ -180,7 +407,21 @@ class _CartPageState extends State<CartPage> {
         ),
         const SizedBox(height: AppTokens.spacing16),
         for (final item in cart.items) ...[
-          _CartLine(item: item, image: _images[item.id]),
+          _CartLine(
+            item: item,
+            image: _images[item.id],
+            busyLabel: _busyItemId == item.id ? _busyLabel : null,
+            error: _errorItemId == item.id ? _errorText : null,
+            onDecrease: _controlsEnabled && item.quantity > 1
+                ? () => unawaited(_changeQuantity(item, item.quantity - 1))
+                : null,
+            onIncrease: _controlsEnabled && item.quantity < _maxQuantity
+                ? () => unawaited(_changeQuantity(item, item.quantity + 1))
+                : null,
+            onRemove: _controlsEnabled
+                ? () => unawaited(_mutate(item: item, removing: true))
+                : null,
+          ),
           const SizedBox(height: AppTokens.spacing12),
         ],
         const _ContinueButton(),
@@ -243,7 +484,8 @@ class _CartNotice extends StatelessWidget {
 }
 
 class _EmptyCart extends StatelessWidget {
-  const _EmptyCart();
+  const _EmptyCart({this.notice});
+  final String? notice;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -253,6 +495,17 @@ class _EmptyCart extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (notice != null) ...[
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                notice!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppTokens.danger),
+              ),
+            ),
+            const SizedBox(height: AppTokens.spacing16),
+          ],
           Semantics(
             liveRegion: true,
             child: Text(
@@ -296,9 +549,22 @@ class _ContinueButton extends StatelessWidget {
 }
 
 class _CartLine extends StatelessWidget {
-  const _CartLine({required this.item, required this.image});
+  const _CartLine({
+    required this.item,
+    required this.image,
+    required this.busyLabel,
+    required this.error,
+    required this.onDecrease,
+    required this.onIncrease,
+    required this.onRemove,
+  });
   final CartItem item;
   final Future<Uint8List?>? image;
+  final String? busyLabel;
+  final String? error;
+  final VoidCallback? onDecrease;
+  final VoidCallback? onIncrease;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -327,43 +593,65 @@ class _CartLine extends StatelessWidget {
             runSpacing: AppTokens.spacing12,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const _DisabledCartAction(
+              _CartAction(
                 label: 'Diminuir quantidade',
                 icon: Icons.remove,
+                onPressed: onDecrease,
               ),
               Semantics(
                 label: 'Quantidade ${item.quantity}',
                 child: ExcludeSemantics(child: Text('${item.quantity}')),
               ),
-              const _DisabledCartAction(
+              _CartAction(
                 label: 'Aumentar quantidade',
                 icon: Icons.add,
+                onPressed: onIncrease,
               ),
-              const _DisabledCartAction(
+              _CartAction(
                 label: 'Remover item',
                 icon: Icons.delete_outline,
+                onPressed: onRemove,
               ),
             ],
           ),
+          if (busyLabel != null) ...[
+            const SizedBox(height: AppTokens.spacing12),
+            Semantics(liveRegion: true, child: Text(busyLabel!)),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: AppTokens.spacing12),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                error!,
+                style: const TextStyle(color: AppTokens.danger),
+              ),
+            ),
+          ],
         ],
       ),
     ),
   );
 }
 
-class _DisabledCartAction extends StatelessWidget {
-  const _DisabledCartAction({required this.label, required this.icon});
+class _CartAction extends StatelessWidget {
+  const _CartAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
   final String label;
   final IconData icon;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
-    enabled: false,
+    enabled: onPressed != null,
     label: label,
     child: ExcludeSemantics(
       child: IconButton(
-        onPressed: null,
+        onPressed: onPressed,
         constraints: const BoxConstraints(
           minWidth: AppTokens.touchTarget,
           minHeight: AppTokens.touchTarget,

@@ -165,4 +165,183 @@ void main() {
       CartRequestStatus.unavailable,
     );
   });
+
+  test('PATCH envia a quantidade absoluta e aceita o corpo do GET', () async {
+    final seen = <String>[];
+    var body = '';
+    final server = await _server((request) async {
+      seen.add('${request.method} ${request.uri.path}');
+      body = await utf8.decoder.bind(request).join();
+      expect(
+        request.headers.value(HttpHeaders.authorizationHeader),
+        'Bearer secret-session-value',
+      );
+      expect(
+        request.headers.value(HttpHeaders.contentTypeHeader),
+        contains('application/json'),
+      );
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode({
+            'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+            'itens': [_item(quantity: 4)],
+          }),
+        );
+      await request.response.close();
+    });
+    addTearDown(server.close);
+    final api = _api(server);
+    final updated = await api.updateQuantity(
+      accessToken: 'secret-session-value',
+      itemId: _itemId,
+      quantity: 4,
+    );
+    expect(seen, ['PATCH /carrinho/itens/$_itemId']);
+    expect(body, '{"quantidade":4}');
+    expect(updated.status, CartRequestStatus.success);
+    expect(updated.cart?.items.single.quantity, 4);
+
+    final priced = await _server((request) async {
+      await request.drain<void>();
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..write(
+          jsonEncode({
+            'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+            'itens': [
+              {..._item(), 'precoAtual': '10.00'},
+            ],
+          }),
+        );
+      await request.response.close();
+    });
+    addTearDown(priced.close);
+    expect(
+      (await _api(priced).updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+        quantity: 1,
+      )).status,
+      CartRequestStatus.unavailable,
+    );
+  });
+
+  test('DELETE espera 204 e distingue 409, 404, 401, 403 e rede', () async {
+    var status = HttpStatus.noContent;
+    var payload = '';
+    final methods = <String>[];
+    final server = await _server((request) async {
+      methods.add(request.method);
+      expect(request.uri.path, '/carrinho/itens/$_itemId');
+      await request.drain<void>();
+      request.response.statusCode = status;
+      if (payload.isNotEmpty) request.response.write(payload);
+      await request.response.close();
+    });
+    addTearDown(server.close);
+    final api = _api(server);
+    final removed = await api.removeItem(
+      accessToken: 'secret-session-value',
+      itemId: _itemId,
+    );
+    expect(removed.status, CartRequestStatus.success);
+    expect(removed.cart, isNull);
+    expect(methods, ['DELETE']);
+
+    status = HttpStatus.notFound;
+    expect(
+      (await api.removeItem(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+      )).status,
+      CartRequestStatus.notFound,
+    );
+    status = HttpStatus.unauthorized;
+    expect(
+      (await api.updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+        quantity: 2,
+      )).status,
+      CartRequestStatus.unauthorized,
+    );
+    status = HttpStatus.forbidden;
+    expect(
+      (await api.updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+        quantity: 2,
+      )).status,
+      CartRequestStatus.forbidden,
+    );
+    expect(methods, ['DELETE', 'DELETE', 'PATCH', 'PATCH']);
+
+    final conflict = await _server((request) async {
+      expect(request.method, 'PATCH');
+      await request.drain<void>();
+      request.response
+        ..statusCode = HttpStatus.conflict
+        ..write(
+          jsonEncode({'message': 'Quantidade superior à disponibilidade.'}),
+        );
+      await request.response.close();
+    });
+    addTearDown(conflict.close);
+    final conflictResult = await _api(conflict).updateQuantity(
+      accessToken: 'secret-session-value',
+      itemId: _itemId,
+      quantity: 9,
+    );
+    expect(conflictResult.status, CartRequestStatus.conflict);
+    expect(conflictResult.message, 'Quantidade superior à disponibilidade.');
+
+    final bare = await _server((request) async {
+      await request.drain<void>();
+      request.response.statusCode = HttpStatus.conflict;
+      await request.response.close();
+    });
+    addTearDown(bare.close);
+    expect(
+      (await _api(bare).updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+        quantity: 9,
+      )).message,
+      'Quantidade superior à disponibilidade.',
+    );
+
+    final closed = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final offline = CustomerCartApi(
+      config: ApiConfig(
+        baseUrl: 'http://${closed.address.address}:${closed.port}',
+      ),
+      timeout: const Duration(milliseconds: 200),
+    );
+    await closed.close();
+    expect(
+      (await offline.updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+        quantity: 1,
+      )).status,
+      CartRequestStatus.unavailable,
+    );
+    expect(
+      (await offline.removeItem(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+      )).status,
+      CartRequestStatus.unavailable,
+    );
+    expect(
+      (await api.updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: 'item-invalido',
+        quantity: 1,
+      )).status,
+      CartRequestStatus.notConfigured,
+    );
+  });
 }

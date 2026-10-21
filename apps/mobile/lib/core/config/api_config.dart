@@ -4,6 +4,10 @@ class ApiConfig {
   ApiConfig({String? baseUrl}) : _baseUrl = baseUrl ?? _configuredBaseUrl;
 
   static const _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static final _itemIdPattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
   final String _baseUrl;
 
   Uri? get usersUri {
@@ -39,6 +43,11 @@ class ApiConfig {
       _validBaseUri?.resolve('/catalogo/produtos/$productId/preco');
 
   Uri? get cartUri => _validBaseUri?.resolve('/carrinho');
+
+  Uri? cartItemUri(String itemId) {
+    if (!_itemIdPattern.hasMatch(itemId)) return null;
+    return _validBaseUri?.resolve('/carrinho/itens/$itemId');
+  }
 
   Uri? get _validBaseUri {
     final value = _baseUrl.trim();

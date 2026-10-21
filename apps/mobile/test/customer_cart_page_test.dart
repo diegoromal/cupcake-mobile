@@ -59,15 +59,48 @@ class _AuthApi extends CustomerAuthApi {
   }
 }
 
+class _Mutation {
+  const _Mutation(this.method, this.itemId, this.quantity, this.token);
+  final String method;
+  final String itemId;
+  final int? quantity;
+  final String token;
+}
+
 class _CartApi extends CustomerCartApi {
   _CartApi(this.responses);
   final List<Future<CartResult>> responses;
   int calls = 0;
+  final mutations = <_Mutation>[];
+  Future<CartResult> Function(_Mutation mutation)? onMutation;
 
   @override
   Future<CartResult> fetchCart({required String accessToken}) {
     calls++;
     return responses.removeAt(0);
+  }
+
+  @override
+  Future<CartResult> updateQuantity({
+    required String accessToken,
+    required String itemId,
+    required int quantity,
+  }) {
+    final mutation = _Mutation('PATCH', itemId, quantity, accessToken);
+    mutations.add(mutation);
+    return onMutation?.call(mutation) ??
+        Future.value(const CartResult(CartRequestStatus.unavailable));
+  }
+
+  @override
+  Future<CartResult> removeItem({
+    required String accessToken,
+    required String itemId,
+  }) {
+    final mutation = _Mutation('DELETE', itemId, null, accessToken);
+    mutations.add(mutation);
+    return onMutation?.call(mutation) ??
+        Future.value(const CartResult(CartRequestStatus.unavailable));
   }
 }
 
@@ -166,6 +199,23 @@ Future<CustomerSession> _session(_AuthApi auth) async {
   return session;
 }
 
+Future<void> reveal(WidgetTester tester, Finder finder) async {
+  final scrollable = find.byType(Scrollable);
+  for (
+    var attempt = 0;
+    attempt < 40 && finder.hitTestable().evaluate().isEmpty;
+    attempt++
+  ) {
+    await tester.drag(scrollable.first, const Offset(0, -160));
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await reveal(tester, finder);
+  await tester.tap(finder.hitTestable());
+}
+
 Widget _app({
   required CustomerSession session,
   required CustomerCartApi cartApi,
@@ -249,90 +299,88 @@ void main() {
     expect(cartApi.calls, 1);
   });
 
-  testWidgets('itens contam linhas, personalizações e controles sem request', (
-    tester,
-  ) async {
-    final auth = _AuthApi();
-    final session = await _session(auth);
-    addTearDown(session.dispose);
-    final catalog = _CatalogApi();
-    final cartApi = _CartApi([
-      Future.value(
-        _cart([
-          _line(
-            id: _itemId,
-            name: _longName,
-            quantity: 3,
-            personalizations: const [
-              CartPersonalization(id: _optionId, name: _longOption),
-            ],
-          ),
-          _line(id: _secondItemId, quantity: 4),
-        ]),
-      ),
-    ]);
-    await tester.pumpWidget(
-      _app(session: session, cartApi: cartApi, catalogApi: catalog),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('ITENS SELECIONADOS (2)'), findsOneWidget);
-    expect(find.text('7'), findsNothing);
-    expect(find.text(_longName), findsOneWidget);
-    expect(find.text(_longOption), findsOneWidget);
-    expect(find.text('Cupcake de festa'), findsOneWidget);
-    expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
-    expect(find.bySemanticsLabel('Quantidade 4'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Imagem do produto indisponível'),
-      findsNWidgets(2),
-    );
-    expect(find.textContaining('R\$'), findsNothing);
-    expect(find.textContaining('Subtotal'), findsNothing);
-    expect(find.textContaining('Frete'), findsNothing);
-    expect(find.textContaining('Total'), findsNothing);
-    final name = tester.widget<Text>(find.text(_longName));
-    final option = tester.widget<Text>(find.text(_longOption));
-    expect(name.maxLines, isNull);
-    expect(name.overflow, isNull);
-    expect(option.maxLines, isNull);
-    expect(option.overflow, isNull);
-    expect(find.bySemanticsLabel('Diminuir quantidade'), findsNWidgets(2));
-    expect(find.bySemanticsLabel('Aumentar quantidade'), findsNWidgets(2));
-    expect(find.bySemanticsLabel('Remover item'), findsNWidgets(2));
-    for (final button in tester.widgetList<IconButton>(
-      find.byType(IconButton),
-    )) {
-      expect(button.onPressed, isNull);
-    }
-    await tester.scrollUntilVisible(
-      find.text('Continuar'),
-      400,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(
-      tester
-          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Continuar'))
-          .onPressed,
-      isNull,
-    );
-    await tester.tap(find.byIcon(Icons.remove).first, warnIfMissed: false);
-    await tester.tap(find.byIcon(Icons.add).first, warnIfMissed: false);
-    await tester.tap(
-      find.byIcon(Icons.delete_outline).first,
-      warnIfMissed: false,
-    );
-    await tester.tap(
-      find.widgetWithText(FilledButton, 'Continuar'),
-      warnIfMissed: false,
-    );
-    await tester.pump();
-    expect(cartApi.calls, 1);
-    expect(catalog.imageCalls, 0);
-    expect(
-      find.text('ITENS SELECIONADOS (2)', skipOffstage: false),
-      findsOneWidget,
-    );
-  });
+  testWidgets(
+    'itens contam linhas, personalizações e controles de quantidade',
+    (tester) async {
+      final auth = _AuthApi();
+      final session = await _session(auth);
+      addTearDown(session.dispose);
+      final catalog = _CatalogApi();
+      final cartApi = _CartApi([
+        Future.value(
+          _cart([
+            _line(
+              id: _itemId,
+              name: _longName,
+              quantity: 3,
+              personalizations: const [
+                CartPersonalization(id: _optionId, name: _longOption),
+              ],
+            ),
+            _line(id: _secondItemId, quantity: 4),
+          ]),
+        ),
+      ]);
+      await tester.pumpWidget(
+        _app(session: session, cartApi: cartApi, catalogApi: catalog),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('ITENS SELECIONADOS (2)'), findsOneWidget);
+      expect(find.text('7'), findsNothing);
+      expect(find.text(_longName), findsOneWidget);
+      expect(find.text(_longOption), findsOneWidget);
+      expect(find.text('Cupcake de festa'), findsOneWidget);
+      expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
+      expect(find.bySemanticsLabel('Quantidade 4'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Imagem do produto indisponível'),
+        findsNWidgets(2),
+      );
+      expect(find.textContaining('R\$'), findsNothing);
+      expect(find.textContaining('Subtotal'), findsNothing);
+      expect(find.textContaining('Frete'), findsNothing);
+      expect(find.textContaining('Total'), findsNothing);
+      final name = tester.widget<Text>(find.text(_longName));
+      final option = tester.widget<Text>(find.text(_longOption));
+      expect(name.maxLines, isNull);
+      expect(name.overflow, isNull);
+      expect(option.maxLines, isNull);
+      expect(option.overflow, isNull);
+      expect(find.bySemanticsLabel('Diminuir quantidade'), findsNWidgets(2));
+      expect(find.bySemanticsLabel('Aumentar quantidade'), findsNWidgets(2));
+      expect(find.bySemanticsLabel('Remover item'), findsNWidgets(2));
+      for (final button in tester.widgetList<IconButton>(
+        find.byType(IconButton),
+      )) {
+        expect(button.onPressed, isNotNull);
+      }
+      await tester.scrollUntilVisible(
+        find.text('Continuar'),
+        400,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Continuar'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Continuar'),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(cartApi.calls, 1);
+      expect(cartApi.mutations, isEmpty);
+      expect(catalog.imageCalls, 0);
+      expect(
+        find.text('ITENS SELECIONADOS (2)', skipOffstage: false),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('falha de imagem mantém o nome e não vira erro da tela', (
     tester,
@@ -483,6 +531,365 @@ void main() {
     expect(find.text('Vitrine'), findsOneWidget);
   });
 
+  Future<void> pumpCart(
+    WidgetTester tester, {
+    required _CartApi cartApi,
+    required CustomerSession session,
+    CustomerCatalogApi? catalogApi,
+  }) async {
+    await tester.pumpWidget(
+      _app(
+        session: session,
+        cartApi: cartApi,
+        catalogApi: catalogApi ?? _CatalogApi(),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+    'mais e menos enviam quantidade absoluta e mantêm personalização',
+    (tester) async {
+      final auth = _AuthApi();
+      final session = await _session(auth);
+      addTearDown(session.dispose);
+      final catalog = _CatalogApi(imageStatus: CatalogRequestStatus.success);
+      final cartApi = _CartApi([
+        Future.value(
+          _cart([
+            _line(
+              id: _itemId,
+              quantity: 3,
+              imageAvailable: true,
+              personalizations: const [
+                CartPersonalization(id: _optionId, name: 'Aroma'),
+              ],
+            ),
+          ]),
+        ),
+      ]);
+      cartApi.onMutation = (mutation) async => _cart([
+        _line(
+          id: mutation.itemId,
+          quantity: mutation.quantity ?? 0,
+          imageAvailable: true,
+          personalizations: const [
+            CartPersonalization(id: _optionId, name: 'Aroma'),
+          ],
+        ),
+      ]);
+      await pumpCart(
+        tester,
+        cartApi: cartApi,
+        session: session,
+        catalogApi: catalog,
+      );
+      expect(catalog.imageCalls, 1);
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.remove));
+      await tester.pumpAndSettle();
+      expect(cartApi.mutations.map((item) => item.quantity).toList(), [4, 3]);
+      expect(cartApi.mutations.map((item) => item.method).toList(), [
+        'PATCH',
+        'PATCH',
+      ]);
+      expect(cartApi.mutations.map((item) => item.itemId).toSet(), {_itemId});
+      expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
+      expect(find.text('Aroma'), findsOneWidget);
+      expect(catalog.imageCalls, 1);
+      expect(find.textContaining('R\$'), findsNothing);
+      expect(find.textContaining('Subtotal'), findsNothing);
+      expect(find.textContaining('Frete'), findsNothing);
+      expect(find.textContaining('Total'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Continuar'),
+            )
+            .onPressed,
+        isNull,
+      );
+    },
+  );
+
+  testWidgets('quantidade 1 e quantidade máxima não disparam request', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart([
+          _line(id: _itemId, name: 'Mínimo', quantity: 1),
+          _line(id: _secondItemId, name: 'Máximo', quantity: 2147483647),
+        ]),
+      ),
+    ]);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    final buttons = tester
+        .widgetList<IconButton>(find.byType(IconButton))
+        .toList();
+    expect(buttons[0].onPressed, isNull);
+    expect(buttons[1].onPressed, isNotNull);
+    expect(buttons[3].onPressed, isNotNull);
+    expect(buttons[4].onPressed, isNull);
+    await tester.tap(find.byIcon(Icons.remove).first);
+    await tester.tap(find.byIcon(Icons.add).at(1));
+    await tester.pump();
+    expect(cartApi.mutations, isEmpty);
+    expect(find.text('Mínimo'), findsOneWidget);
+    expect(find.text('Máximo'), findsOneWidget);
+  });
+
+  testWidgets('lixeira remove só a linha e o último item mostra vazio', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart([
+          _line(
+            id: _itemId,
+            name: 'Linha A',
+            personalizations: const [
+              CartPersonalization(id: _optionId, name: 'Aroma'),
+            ],
+          ),
+          _line(id: _secondItemId, name: 'Linha B'),
+        ]),
+      ),
+    ]);
+    cartApi.onMutation = (_) async =>
+        const CartResult(CartRequestStatus.success);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tapVisible(tester, find.byIcon(Icons.delete_outline).at(1));
+    await tester.pumpAndSettle();
+    expect(cartApi.mutations.single.method, 'DELETE');
+    expect(cartApi.mutations.single.itemId, _secondItemId);
+    expect(find.text('Linha A'), findsOneWidget);
+    expect(find.text('Aroma'), findsOneWidget);
+    expect(find.text('Linha B'), findsNothing);
+    expect(find.text('ITENS SELECIONADOS (1)'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AlertDialog), findsNothing);
+    await tapVisible(tester, find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
+    expect(find.text('Linha A'), findsNothing);
+    expect(find.byType(CartPage), findsOneWidget);
+    expect(find.byType(StorefrontPage), findsNothing);
+    expect(find.text('Continuar comprando'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Continuar'))
+          .onPressed,
+      isNull,
+    );
+    expect(cartApi.calls, 1);
+  });
+
+  testWidgets('operação pendente bloqueia segundo toque e mantém a lista', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final gate = Completer<CartResult>();
+    final cartApi = _CartApi([
+      Future.value(
+        _cart([
+          _line(id: _itemId, name: 'Linha A', quantity: 3),
+          _line(id: _secondItemId, name: 'Linha B', quantity: 4),
+        ]),
+      ),
+    ]);
+    cartApi.onMutation = (_) => gate.future;
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pump();
+    expect(cartApi.mutations, hasLength(1));
+    expect(find.text('ITENS SELECIONADOS (2)'), findsOneWidget);
+    expect(find.text('Atualizando quantidade…'), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text('Atualizando quantidade…'),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.liveRegion == true,
+        ),
+      ),
+      findsOneWidget,
+    );
+    for (final button in tester.widgetList<IconButton>(
+      find.byType(IconButton),
+    )) {
+      expect(button.onPressed, isNull);
+    }
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.tap(find.byIcon(Icons.remove).first);
+    await tester.tap(find.byIcon(Icons.delete_outline).at(1));
+    await tester.pump();
+    expect(cartApi.mutations, hasLength(1));
+    gate.complete(
+      _cart([
+        _line(id: _itemId, name: 'Linha A', quantity: 4),
+        _line(id: _secondItemId, name: 'Linha B', quantity: 4),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Quantidade 4'), findsNWidgets(2));
+    expect(find.text('Atualizando quantidade…'), findsNothing);
+  });
+
+  testWidgets('409 mantém quantidade e erro de rede mantém a linha', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart([
+          _line(id: _itemId, name: 'Linha A', quantity: 3),
+          _line(id: _secondItemId, name: 'Linha B'),
+        ]),
+      ),
+    ]);
+    cartApi.onMutation = (mutation) async => mutation.method == 'PATCH'
+        ? const CartResult(
+            CartRequestStatus.conflict,
+            message: 'Quantidade superior à disponibilidade.',
+          )
+        : const CartResult(CartRequestStatus.unavailable);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pumpAndSettle();
+    expect(cartApi.mutations.single.quantity, 4);
+    expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
+    expect(find.text('Quantidade superior à disponibilidade.'), findsOneWidget);
+    expect(
+      find.text('Não foi possível carregar o carrinho. Tente novamente.'),
+      findsNothing,
+    );
+    await tester.tap(find.byIcon(Icons.delete_outline).at(1));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    expect(cartApi.mutations, hasLength(2));
+    expect(find.text('Linha A'), findsOneWidget);
+    expect(find.text('Linha B'), findsOneWidget);
+    expect(find.text('Não foi possível remover o item.'), findsOneWidget);
+    expect(cartApi.calls, 1);
+    expect(auth.refreshCalls, 0);
+  });
+
+  testWidgets('401 repete a mesma operação uma vez e 403 não repete', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(_cart([_line(id: _itemId, quantity: 3)])),
+    ]);
+    var attempts = 0;
+    cartApi.onMutation = (mutation) async {
+      attempts++;
+      if (attempts == 1) {
+        return const CartResult(CartRequestStatus.unauthorized);
+      }
+      return _cart([_line(id: mutation.itemId, quantity: mutation.quantity!)]);
+    };
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(auth.refreshCalls, 1);
+    expect(cartApi.mutations.map((item) => item.quantity).toList(), [4, 4]);
+    expect(cartApi.mutations.first.token, isNot(cartApi.mutations.last.token));
+    expect(find.bySemanticsLabel('Quantidade 4'), findsOneWidget);
+    expect(session.isAuthenticated, isTrue);
+
+    final denied = _CartApi([
+      Future.value(_cart([_line(id: _itemId, quantity: 2)])),
+    ]);
+    denied.onMutation = (_) async =>
+        const CartResult(CartRequestStatus.forbidden);
+    await tester.pumpWidget(
+      _app(session: session, cartApi: denied, catalogApi: _CatalogApi()),
+    );
+    await tester.pumpAndSettle();
+    final refreshes = auth.refreshCalls;
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Sua conta não tem acesso ao carrinho.'), findsOneWidget);
+    expect(find.text('Tentar novamente'), findsNothing);
+    expect(denied.mutations, hasLength(1));
+    expect(auth.refreshCalls, refreshes);
+    expect(session.isAuthenticated, isTrue);
+  });
+
+  testWidgets('segundo 401 não faz outro refresh', (tester) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(_cart([_line(id: _itemId, quantity: 2)])),
+    ]);
+    cartApi.onMutation = (_) async =>
+        const CartResult(CartRequestStatus.unauthorized);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(auth.refreshCalls, 1);
+    expect(cartApi.mutations, hasLength(2));
+    expect(
+      find.text('Não foi possível atualizar a quantidade.'),
+      findsOneWidget,
+    );
+    expect(find.text('Cupcake de festa'), findsOneWidget);
+    expect(session.isAuthenticated, isTrue);
+    expect(find.byType(CartPage), findsOneWidget);
+  });
+
+  testWidgets('404 mostra a mensagem, sincroniza e não vira erro global', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart([
+          _line(id: _itemId, name: 'Linha A'),
+          _line(id: _secondItemId, name: 'Linha B'),
+        ]),
+      ),
+      Future.value(_cart([_line(id: _secondItemId, name: 'Linha B')])),
+    ]);
+    cartApi.onMutation = (_) async =>
+        const CartResult(CartRequestStatus.notFound);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await tester.pumpAndSettle();
+    expect(cartApi.mutations, hasLength(1));
+    expect(cartApi.calls, 2);
+    expect(find.text('Item não encontrado.'), findsOneWidget);
+    expect(find.text('Linha A'), findsNothing);
+    expect(find.text('Linha B'), findsOneWidget);
+    expect(
+      find.text('Não foi possível carregar o carrinho. Tente novamente.'),
+      findsNothing,
+    );
+    expect(find.text('Tentar novamente'), findsNothing);
+    expect(session.isAuthenticated, isTrue);
+  });
+
   for (final width in [320.0, 390.0, 430.0]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
@@ -521,6 +928,29 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.text(_longName), findsOneWidget);
           expect(find.text(_longOption), findsOneWidget);
+          expect(
+            tester
+                .widgetList<IconButton>(find.byType(IconButton))
+                .every((button) => button.onPressed != null),
+            isTrue,
+          );
+          expect(tester.takeException(), isNull);
+          cartApi.onMutation = (_) async => const CartResult(
+            CartRequestStatus.conflict,
+            message: 'Quantidade superior à disponibilidade.',
+          );
+          await tapVisible(tester, find.byIcon(Icons.add).first);
+          await tester.pumpAndSettle();
+          final unavailable = find.text(
+            'Quantidade superior à disponibilidade.',
+          );
+          await reveal(tester, unavailable);
+          expect(unavailable.hitTestable(), findsOneWidget);
+          expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
+          expect(find.textContaining('R\$'), findsNothing);
+          expect(find.textContaining('Subtotal'), findsNothing);
+          expect(find.textContaining('Frete'), findsNothing);
+          expect(find.textContaining('Total'), findsNothing);
           expect(tester.takeException(), isNull);
           await tester.scrollUntilVisible(
             find.text('Continuar'),
@@ -528,6 +958,14 @@ void main() {
             scrollable: find.byType(Scrollable),
           );
           expect(find.text('Continuar'), findsOneWidget);
+          expect(
+            tester
+                .widget<FilledButton>(
+                  find.widgetWithText(FilledButton, 'Continuar'),
+                )
+                .onPressed,
+            isNull,
+          );
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox.shrink());
         },
