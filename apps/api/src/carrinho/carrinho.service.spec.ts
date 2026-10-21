@@ -1,0 +1,312 @@
+import { ConflictException } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CarrinhoService } from './carrinho.service';
+
+const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const produtoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const cartId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const itemId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const secondItemId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const optionA = '11111111-1111-4111-8111-111111111111';
+const optionB = '22222222-2222-4222-8222-222222222222';
+const p2002 = new Prisma.PrismaClientKnownRequestError('P2002', {
+  code: 'P2002', clientVersion: '7.10.0',
+});
+
+describe('CarrinhoService', () => {
+  const produtoFind = jest.fn();
+  const estoqueFind = jest.fn();
+  const estoqueUpdate = jest.fn();
+  const personalizacaoFindMany = jest.fn();
+  const linkFindMany = jest.fn();
+  const carrinhoFind = jest.fn();
+  const carrinhoCreate = jest.fn();
+  const itemCreate = jest.fn();
+  const itemUpdate = jest.fn();
+  const itemFindMany = jest.fn();
+  const reservaCreate = jest.fn();
+  const reservaUpdate = jest.fn();
+  const service = new CarrinhoService({
+    produto: { findUnique: produtoFind },
+    estoque: { findUnique: estoqueFind, update: estoqueUpdate },
+    personalizacao: { findMany: personalizacaoFindMany },
+    produtoPersonalizacao: { findMany: linkFindMany },
+    carrinho: { findUnique: carrinhoFind, create: carrinhoCreate },
+    itemCarrinho: { create: itemCreate, update: itemUpdate, findMany: itemFindMany },
+    reservaEstoque: { create: reservaCreate, update: reservaUpdate },
+  } as unknown as PrismaService);
+  let itemIds: string[];
+
+  beforeEach(() => {
+    for (const fn of [produtoFind, estoqueFind, estoqueUpdate, personalizacaoFindMany, linkFindMany,
+      carrinhoFind, carrinhoCreate, itemCreate, itemUpdate, itemFindMany, reservaCreate, reservaUpdate]) {
+      fn.mockReset();
+    }
+    itemIds = [itemId, secondItemId];
+    produtoFind.mockResolvedValue({ id: produtoId });
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 10, quantidadeReservada: 0 });
+    personalizacaoFindMany.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) =>
+      where.id.in.map((id) => ({ id })));
+    linkFindMany.mockImplementation(async ({ where }: { where: { personalizacaoId: { in: string[] } } }) =>
+      where.personalizacaoId.in.map((personalizacaoId) => ({ personalizacaoId })));
+    carrinhoFind.mockResolvedValue(null);
+    carrinhoCreate.mockResolvedValue({ id: cartId });
+    itemCreate.mockImplementation(async ({ data }: {
+      data: {
+        carrinhoId: string;
+        produtoId: string;
+        quantidade: number;
+        personalizacoes: { create: Array<{ personalizacaoId: string }> };
+      };
+    }) => ({
+      id: itemIds.shift() ?? itemId,
+      carrinhoId: data.carrinhoId,
+      produtoId: data.produtoId,
+      quantidade: data.quantidade,
+      personalizacoes: data.personalizacoes.create.map((row) => ({
+        personalizacaoId: row.personalizacaoId,
+      })),
+    }));
+  });
+
+  it('cria carrinho e item sem personalização, preço ou escrita de estoque', async () => {
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 2, personalizacaoIds: [],
+    })).resolves.toEqual({
+      id: itemId, carrinhoId: cartId, produtoId, quantidade: 2, personalizacaoIds: [],
+    });
+    expect(produtoFind).toHaveBeenCalledWith({ where: { id: produtoId }, select: { id: true } });
+    expect(carrinhoFind).toHaveBeenCalledWith({ where: { usuarioId: userId }, select: { id: true } });
+    expect(carrinhoCreate).toHaveBeenCalledWith({ data: { usuarioId: userId }, select: { id: true } });
+    expect(personalizacaoFindMany).not.toHaveBeenCalled();
+    expect(linkFindMany).not.toHaveBeenCalled();
+    expect(itemFindMany).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+    expect(reservaUpdate).not.toHaveBeenCalled();
+    expect(itemCreate).toHaveBeenCalledWith({
+      data: {
+        carrinhoId: cartId, produtoId, quantidade: 2,
+        personalizacoes: { create: [] },
+      },
+      select: {
+        id: true, carrinhoId: true, produtoId: true, quantidade: true,
+        personalizacoes: { select: { personalizacaoId: true } },
+      },
+    });
+  });
+
+  it('grava uma personalização no item novo', async () => {
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA],
+    })).resolves.toMatchObject({ personalizacaoIds: [optionA] });
+    expect(personalizacaoFindMany).toHaveBeenCalledWith({
+      where: { id: { in: [optionA] } }, select: { id: true },
+    });
+    expect(itemCreate.mock.calls[0][0].data.personalizacoes).toEqual({
+      create: [{ personalizacaoId: optionA }],
+    });
+  });
+
+  it('grava várias personalizações na ordem do body', async () => {
+    personalizacaoFindMany.mockResolvedValueOnce([{ id: optionB }, { id: optionA }]);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA, optionB],
+    })).resolves.toMatchObject({ personalizacaoIds: [optionA, optionB] });
+    expect(linkFindMany).toHaveBeenCalledWith({
+      where: { produtoId, personalizacaoId: { in: [optionA, optionB] } },
+      select: { personalizacaoId: true },
+    });
+    expect(itemCreate.mock.calls[0][0].data.personalizacoes.create).toEqual([
+      { personalizacaoId: optionA }, { personalizacaoId: optionB },
+    ]);
+  });
+
+  it('reutiliza o carrinho do usuário', async () => {
+    carrinhoFind.mockResolvedValue({ id: cartId });
+    await service.adicionar(userId, { produtoId, quantidade: 1, personalizacaoIds: [] });
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate.mock.calls[0][0].data.carrinhoId).toBe(cartId);
+  });
+
+  it('retorna 404 quando o produto não existe e não cria carrinho', async () => {
+    produtoFind.mockResolvedValue(null);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).rejects.toThrow('Produto não encontrado.');
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('retorna 404 quando falta personalização', async () => {
+    personalizacaoFindMany.mockResolvedValue([{ id: optionA }]);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA, optionB],
+    })).rejects.toThrow('Personalização não encontrada.');
+    expect(linkFindMany).not.toHaveBeenCalled();
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('retorna 409 quando a personalização não está vinculada ao produto', async () => {
+    linkFindMany.mockResolvedValueOnce([]);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA],
+    })).rejects.toThrow('Personalização incompatível com o produto.');
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejeita ids de personalização repetidos antes da leitura', async () => {
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA, optionA],
+    })).rejects.toThrow('Seleção de personalizações inválida.');
+    expect(personalizacaoFindMany).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('devolve o uuid canônico quando a personalização chega em maiúsculas', async () => {
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA.toUpperCase()],
+    })).resolves.toMatchObject({ personalizacaoIds: [optionA] });
+    expect(personalizacaoFindMany).toHaveBeenCalledWith({
+      where: { id: { in: [optionA] } }, select: { id: true },
+    });
+    expect(linkFindMany).toHaveBeenCalledWith({
+      where: { produtoId, personalizacaoId: { in: [optionA] } },
+      select: { personalizacaoId: true },
+    });
+    expect(itemCreate.mock.calls[0][0].data.personalizacoes).toEqual({
+      create: [{ personalizacaoId: optionA }],
+    });
+  });
+
+  it('grava personalizações distintas enviadas em maiúsculas', async () => {
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1,
+      personalizacaoIds: [optionA.toUpperCase(), optionB.toUpperCase()],
+    })).resolves.toMatchObject({ personalizacaoIds: [optionA, optionB] });
+    expect(itemCreate.mock.calls[0][0].data.personalizacoes.create).toEqual([
+      { personalizacaoId: optionA }, { personalizacaoId: optionB },
+    ]);
+  });
+
+  it('trata o mesmo uuid em caixas diferentes como duplicata', async () => {
+    const error = await service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [optionA, optionA.toUpperCase()],
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect((error as ConflictException).getStatus()).toBe(409);
+    expect((error as ConflictException).message).toBe('Seleção de personalizações inválida.');
+    expect(personalizacaoFindMany).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('compara só a quantidade do body com físico menos reservado', async () => {
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 4, quantidadeReservada: 1 });
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 4, personalizacaoIds: [],
+    })).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 4, personalizacaoIds: [],
+    })).rejects.toThrow('Quantidade superior à disponibilidade.');
+    expect(itemFindMany).not.toHaveBeenCalled();
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 3, personalizacaoIds: [],
+    })).resolves.toMatchObject({ quantidade: 3 });
+  });
+
+  it('rejeita saldo zero e produto sem linha de estoque', async () => {
+    estoqueFind.mockResolvedValueOnce({ quantidadeFisica: 0, quantidadeReservada: 0 });
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).rejects.toThrow('Quantidade superior à disponibilidade.');
+    estoqueFind.mockResolvedValueOnce(null);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).rejects.toThrow('Quantidade superior à disponibilidade.');
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('cria outra linha no segundo POST sem somar quantidade nem atualizar a primeira', async () => {
+    carrinhoFind.mockResolvedValue({ id: cartId });
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 2, quantidadeReservada: 0 });
+    const first = await service.adicionar(userId, {
+      produtoId, quantidade: 2, personalizacaoIds: [optionA],
+    });
+    const second = await service.adicionar(userId, {
+      produtoId, quantidade: 2, personalizacaoIds: [optionA],
+    });
+    expect(first.id).not.toBe(second.id);
+    expect(second).toMatchObject({ carrinhoId: cartId, produtoId, quantidade: 2 });
+    expect(itemCreate).toHaveBeenCalledTimes(2);
+    expect(itemCreate.mock.calls.map((call) => call[0].data.quantidade)).toEqual([2, 2]);
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(itemFindMany).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('cria outra linha quando o segundo POST traz outras personalizações', async () => {
+    carrinhoFind.mockResolvedValue({ id: cartId });
+    await service.adicionar(userId, { produtoId, quantidade: 1, personalizacaoIds: [optionA] });
+    await service.adicionar(userId, { produtoId, quantidade: 4, personalizacaoIds: [optionB] });
+    expect(itemCreate.mock.calls[1][0].data).toMatchObject({
+      quantidade: 4,
+      personalizacoes: { create: [{ personalizacaoId: optionB }] },
+    });
+    expect(itemUpdate).not.toHaveBeenCalled();
+  });
+
+  it('segue no carrinho encontrado quando a criação recebe P2002', async () => {
+    carrinhoFind.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: cartId });
+    carrinhoCreate.mockReset();
+    carrinhoCreate.mockRejectedValueOnce(p2002);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).resolves.toMatchObject({ carrinhoId: cartId });
+    expect(carrinhoCreate).toHaveBeenCalledTimes(1);
+    expect(carrinhoFind).toHaveBeenLastCalledWith({
+      where: { usuarioId: userId }, select: { id: true },
+    });
+  });
+
+  it('repete a criação do carrinho uma vez se a releitura não achar', async () => {
+    carrinhoFind.mockResolvedValue(null);
+    carrinhoCreate.mockReset();
+    carrinhoCreate.mockRejectedValueOnce(p2002).mockResolvedValueOnce({ id: cartId });
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).resolves.toMatchObject({ carrinhoId: cartId });
+    expect(carrinhoCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it('propaga o segundo P2002 e não trata erro que não é corrida', async () => {
+    carrinhoFind.mockResolvedValue(null);
+    carrinhoCreate.mockReset();
+    carrinhoCreate.mockRejectedValue(p2002);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).rejects.toBe(p2002);
+    expect(carrinhoCreate).toHaveBeenCalledTimes(2);
+    expect(itemCreate).not.toHaveBeenCalled();
+
+    const failure = new Error('db down');
+    carrinhoCreate.mockReset();
+    carrinhoCreate.mockRejectedValue(failure);
+    await expect(service.adicionar(userId, {
+      produtoId, quantidade: 1, personalizacaoIds: [],
+    })).rejects.toBe(failure);
+    expect(carrinhoCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa o usuarioId argumento e não um id vindo do corpo', async () => {
+    await service.adicionar(userId, { produtoId, quantidade: 1, personalizacaoIds: [] });
+    expect(carrinhoCreate.mock.calls[0][0].data).toEqual({ usuarioId: userId });
+    expect(JSON.stringify(itemCreate.mock.calls[0][0])).not.toContain('usuarioId');
+  });
+});
