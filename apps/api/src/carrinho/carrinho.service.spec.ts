@@ -309,4 +309,84 @@ describe('CarrinhoService', () => {
     expect(carrinhoCreate.mock.calls[0][0].data).toEqual({ usuarioId: userId });
     expect(JSON.stringify(itemCreate.mock.calls[0][0])).not.toContain('usuarioId');
   });
+
+  it('devolve linhas distintas do mesmo produto com nome, quantidade e personalizações', async () => {
+    const aroma = '33333333-3333-4333-8333-333333333333';
+    const managed = `produtos/${produtoId}/11111111-1111-4111-8111-111111111111.webp`;
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [
+        {
+          id: secondItemId, produtoId, quantidade: 4,
+          produto: { nome: 'Cupcake de festa', imagem: 'fora-do-padrao', precoAtual: '8.00', ativo: false },
+          personalizacoes: [],
+        },
+        {
+          id: itemId, produtoId, quantidade: 2,
+          produto: { nome: 'Cupcake de festa', imagem: managed, precoAtual: '9.90', ativo: false },
+          personalizacoes: [
+            { personalizacao: { id: optionB, nome: 'Creme' } },
+            { personalizacao: { id: optionA, nome: 'Creme' } },
+            { personalizacao: { id: aroma, nome: 'Aroma' } },
+          ],
+        },
+      ],
+    });
+    const result = await service.obter(userId);
+    expect(result).toEqual({
+      id: cartId,
+      itens: [
+        {
+          id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: true, quantidade: 2,
+          personalizacoes: [
+            { id: aroma, nome: 'Aroma' },
+            { id: optionA, nome: 'Creme' },
+            { id: optionB, nome: 'Creme' },
+          ],
+        },
+        {
+          id: secondItemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 4,
+          personalizacoes: [],
+        },
+      ],
+    });
+    expect(result.itens[0].id).not.toBe(result.itens[1].id);
+    expect(JSON.stringify(result)).not.toMatch(/preco|subtotal|frete|desconto|estoque|modalidade/i);
+    const query = carrinhoFind.mock.calls[0][0];
+    expect(query.where).toEqual({ usuarioId: userId });
+    expect(query.select.itens.orderBy).toEqual({ id: 'asc' });
+    expect(query.select.itens.select.personalizacoes.orderBy).toEqual([
+      { personalizacao: { nome: 'asc' } },
+      { personalizacaoId: 'asc' },
+    ]);
+    expect(query.select.itens.select.produto.select).toEqual({ nome: true, imagem: true });
+    expect(JSON.stringify(query)).not.toMatch(/preco|estoque|reserva/i);
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(itemFindMany).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+    expect(reservaUpdate).not.toHaveBeenCalled();
+  });
+
+  it('devolve carrinho inexistente e carrinho sem itens sem criar registro', async () => {
+    await expect(service.obter(userId)).resolves.toEqual({ id: null, itens: [] });
+    carrinhoFind.mockResolvedValue({ id: cartId, itens: [] });
+    await expect(service.obter(userId)).resolves.toEqual({ id: cartId, itens: [] });
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('lê somente o usuarioId argumento', async () => {
+    const otherId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+    await service.obter(otherId);
+    expect(carrinhoFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: { usuarioId: otherId },
+    }));
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+  });
 });

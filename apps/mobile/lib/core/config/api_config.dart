@@ -38,6 +38,8 @@ class ApiConfig {
   Uri? catalogPriceUri(String productId) =>
       _validBaseUri?.resolve('/catalogo/produtos/$productId/preco');
 
+  Uri? get cartUri => _validBaseUri?.resolve('/carrinho');
+
   Uri? get _validBaseUri {
     final value = _baseUrl.trim();
     final uri = Uri.tryParse(value);

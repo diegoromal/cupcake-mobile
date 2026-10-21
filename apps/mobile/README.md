@@ -27,6 +27,7 @@ um erro controlado e não inicia uma conexão. HTTP aceita somente
 - `lib/features/auth/`: cadastro, login, cliente de autenticação, sessão e
   armazenamento seguro.
 - `lib/features/catalog/`: consulta paginada, vitrine e detalhe autenticado D31.
+- `lib/features/cart/`: leitura do carrinho autenticado e tela D35.
 - `test/`: testes de cadastro, autenticação, sessão, navegação e acessibilidade.
 
 ## Validação
@@ -186,3 +187,22 @@ npx --no-install ts-node test/d32-catalogo-postgres.ts
 ```
 
 O harness cria IDs próprios e os remove no `finally`.
+
+## Carrinho — D35
+
+A vitrine autenticada mostra a ação `Carrinho` e abre a tela com
+`Navigator.push`. A tela consulta `GET /carrinho` com Bearer. A resposta tem
+`id` e `itens`; cada item traz `id`, `produtoId`, `nome`, `imagemDisponivel`,
+`quantidade` e `personalizacoes` (`id`, `nome`). Sem carrinho, `id` é `null` e
+`itens` é `[]`. Carrinho existente sem itens também é estado vazio, não erro.
+O GET não cria carrinho.
+
+A contagem é o número de linhas, não a soma das quantidades. A imagem reutiliza
+`GET /catalogo/produtos/:id/imagem` e o fallback do detalhe; falha de imagem
+não derruba a tela. 401 atualiza a sessão e repete o GET uma vez. 403 mantém a
+sessão e não dispara nova tentativa automática. Erro transitório, corpo
+inválido ou API indisponível oferece `Tentar novamente` e não cria carrinho.
+
+`Continuar comprando` volta para a mesma vitrine. `Continuar`, diminuir,
+aumentar e remover ficam visíveis e desabilitados. Quantidade, remoção, preço,
+frete e total ficam para D36 e D37.

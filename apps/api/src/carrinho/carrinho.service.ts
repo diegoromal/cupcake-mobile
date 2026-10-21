@@ -1,7 +1,17 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isManagedProductImage } from '../produtos/produto-imagens.service';
 import { AdicionarItemCarrinhoDto } from './dto/adicionar-item.dto';
+
+type CarrinhoItemLeitura = {
+  id: string;
+  produtoId: string;
+  nome: string;
+  imagemDisponivel: boolean;
+  quantidade: number;
+  personalizacoes: Array<{ id: string; nome: string }>;
+};
 
 const itemSelect = {
   id: true,
@@ -14,6 +24,45 @@ const itemSelect = {
 @Injectable()
 export class CarrinhoService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async obter(usuarioId: string): Promise<{ id: string | null; itens: CarrinhoItemLeitura[] }> {
+    const carrinho = await this.prisma.carrinho.findUnique({
+      where: { usuarioId },
+      select: {
+        id: true,
+        itens: {
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            produtoId: true,
+            quantidade: true,
+            produto: { select: { nome: true, imagem: true } },
+            personalizacoes: {
+              orderBy: [
+                { personalizacao: { nome: 'asc' } },
+                { personalizacaoId: 'asc' },
+              ],
+              select: { personalizacao: { select: { id: true, nome: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (!carrinho) return { id: null, itens: [] };
+    return {
+      id: carrinho.id,
+      itens: carrinho.itens.map((item) => ({
+        id: item.id,
+        produtoId: item.produtoId,
+        nome: item.produto.nome,
+        imagemDisponivel: isManagedProductImage(item.produto.imagem, item.produtoId),
+        quantidade: item.quantidade,
+        personalizacoes: item.personalizacoes
+          .map((row) => ({ id: row.personalizacao.id, nome: row.personalizacao.nome }))
+          .sort(compareNomeThenId),
+      })).sort((a, b) => compareId(a.id, b.id)),
+    };
+  }
 
   async adicionar(usuarioId: string, input: AdicionarItemCarrinhoDto) {
     const personalizacaoIds = input.personalizacaoIds.map((id) => id.toLowerCase());
@@ -125,4 +174,19 @@ export class CarrinhoService {
   private isPrismaError(error: unknown, code: string): boolean {
     return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
   }
+}
+
+function compareId(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+function compareNomeThenId(
+  a: { nome: string; id: string },
+  b: { nome: string; id: string },
+): number {
+  if (a.nome < b.nome) return -1;
+  if (a.nome > b.nome) return 1;
+  return compareId(a.id, b.id);
 }

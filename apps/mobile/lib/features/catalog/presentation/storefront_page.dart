@@ -1,18 +1,27 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
+import '../../cart/data/customer_cart_api.dart';
+import '../../cart/presentation/cart_page.dart';
 import '../data/customer_catalog_api.dart';
 import 'product_detail_page.dart';
 
 class StorefrontPage extends StatefulWidget {
-  const StorefrontPage({super.key, required this.session, required this.api});
+  const StorefrontPage({
+    super.key,
+    required this.session,
+    required this.api,
+    this.cartApi,
+  });
   final CustomerSession session;
   final CustomerCatalogApi api;
+  final CustomerCartApi? cartApi;
 
   @override
   State<StorefrontPage> createState() => _StorefrontPageState();
@@ -205,6 +214,19 @@ class _StorefrontPageState extends State<StorefrontPage> {
     return bytes;
   }
 
+  void _openCart() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => CartPage(
+          session: widget.session,
+          cartApi: widget.cartApi ?? CustomerCartApi(),
+          catalogApi: widget.api,
+        ),
+      ),
+    );
+  }
+
   Future<void> _signOut() async {
     if (_signOutBusy) return;
     setState(() => _signOutBusy = true);
@@ -215,65 +237,87 @@ class _StorefrontPageState extends State<StorefrontPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Vitrine'),
-      automaticallyImplyLeading: false,
-      actions: [
-        TextButton(
-          onPressed: _loading ? null : _refresh,
-          child: const Text('Atualizar'),
-        ),
-        TextButton(
-          onPressed: _signOutBusy ? null : _signOut,
-          child: const Text('Sair'),
-        ),
-      ],
-    ),
-    body: SafeArea(
-      child: Column(
-        children: [
-          if (widget.session.refreshUnavailable)
-            MaterialBanner(
-              content: const Text(
-                'Não foi possível atualizar sua sessão agora.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: widget.session.retryRefresh,
-                  child: const Text('Tentar novamente'),
+  Widget build(BuildContext context) {
+    final metrics = _StorefrontBarMetrics.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        toolbarHeight: metrics.toolbarHeight,
+        actions: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(header: true, child: const Text('Vitrine')),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _barAction('Atualizar', _loading ? null : _refresh),
+                    _barAction('Carrinho', _openCart),
+                    _barAction('Sair', _signOutBusy ? null : _signOut),
+                  ],
                 ),
               ],
             ),
-          _categorySelector(),
-          Expanded(
-            child: _loading
-                ? _StatusState(
-                    label: _selectedCategory == null
-                        ? 'Carregando produtos…'
-                        : 'Carregando produtos de ${_selectedCategory!.name}…',
-                    loading: true,
-                  )
-                : _error != null && _products.isEmpty
-                ? _StatusState(
-                    label: _error!,
-                    actionLabel: 'Tentar carregar novamente',
-                    onAction: () => _load(reset: true),
-                    error: true,
-                  )
-                : _products.isEmpty
-                ? _StatusState(
-                    label: _selectedCategory == null
-                        ? 'Não há produtos disponíveis no momento.'
-                        : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
-                    actionLabel: 'Atualizar',
-                    onAction: _refresh,
-                  )
-                : _productList(),
           ),
         ],
       ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (widget.session.refreshUnavailable)
+              MaterialBanner(
+                content: const Text(
+                  'Não foi possível atualizar sua sessão agora.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: widget.session.retryRefresh,
+                    child: const Text('Tentar novamente'),
+                  ),
+                ],
+              ),
+            _categorySelector(),
+            Expanded(
+              child: _loading
+                  ? _StatusState(
+                      label: _selectedCategory == null
+                          ? 'Carregando produtos…'
+                          : 'Carregando produtos de ${_selectedCategory!.name}…',
+                      loading: true,
+                    )
+                  : _error != null && _products.isEmpty
+                  ? _StatusState(
+                      label: _error!,
+                      actionLabel: 'Tentar carregar novamente',
+                      onAction: () => _load(reset: true),
+                      error: true,
+                    )
+                  : _products.isEmpty
+                  ? _StatusState(
+                      label: _selectedCategory == null
+                          ? 'Não há produtos disponíveis no momento.'
+                          : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
+                      actionLabel: 'Atualizar',
+                      onAction: _refresh,
+                    )
+                  : _productList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _barAction(String label, VoidCallback? onPressed) => TextButton(
+    style: TextButton.styleFrom(
+      minimumSize: const Size(AppTokens.touchTarget, AppTokens.touchTarget),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     ),
+    onPressed: onPressed,
+    child: Text(label, textAlign: TextAlign.center),
   );
 
   Widget _categorySelector() => Column(
@@ -611,4 +655,97 @@ String _formatPrice(String decimal) {
     (_) => '.',
   );
   return 'R\$ $whole,${parts[1]}';
+}
+
+class _StorefrontBarMetrics {
+  const _StorefrontBarMetrics({required this.toolbarHeight});
+
+  final double toolbarHeight;
+
+  static const _labels = ['Atualizar', 'Carrinho', 'Sair'];
+  static const _widthSlack = 4.0;
+
+  static _StorefrontBarMetrics of(BuildContext context) {
+    final view = View.of(context);
+    final width = math.max(
+      AppTokens.touchTarget,
+      view.physicalSize.width / view.devicePixelRatio -
+          MediaQuery.paddingOf(context).horizontal,
+    );
+    final title = _measure(
+      context,
+      'Vitrine',
+      Theme.of(context).textTheme.titleLarge,
+      width,
+    );
+    var x = 0.0;
+    var rowHeight = 0.0;
+    var buttons = 0.0;
+    var tallest = title.height;
+    for (final label in _labels) {
+      final size = _measureAction(context, label, width);
+      if (x > 0 && x + size.width > width) {
+        buttons += rowHeight;
+        x = 0;
+        rowHeight = 0;
+      }
+      x += size.width;
+      rowHeight = math.max(rowHeight, size.height);
+      tallest = math.max(tallest, size.height);
+    }
+    buttons += rowHeight;
+    return _StorefrontBarMetrics(
+      toolbarHeight: math.max(kToolbarHeight, title.height + buttons + tallest),
+    );
+  }
+
+  static Size _measure(
+    BuildContext context,
+    String label,
+    TextStyle? style,
+    double maxWidth,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: maxWidth);
+    return Size(painter.width, math.max(painter.height, 24));
+  }
+
+  static Size _measureAction(
+    BuildContext context,
+    String label,
+    double maxWidth,
+  ) {
+    final style = Theme.of(context).textTheme.labelLarge;
+    final fontSize = style?.fontSize ?? 14;
+    final multiplier = MediaQuery.textScalerOf(context).scale(fontSize) / 14;
+    final padding = ButtonStyleButton.scaledPadding(
+      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      const EdgeInsets.symmetric(horizontal: 8),
+      const EdgeInsets.symmetric(horizontal: 4),
+      multiplier,
+    ).resolve(Directionality.of(context));
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final naturalWidth = math.max(
+      AppTokens.touchTarget,
+      painter.width + padding.horizontal + _widthSlack,
+    );
+    if (naturalWidth <= maxWidth) {
+      return Size(
+        naturalWidth,
+        math.max(AppTokens.touchTarget, painter.height + padding.vertical),
+      );
+    }
+    painter.layout(maxWidth: math.max(0, maxWidth - padding.horizontal));
+    return Size(
+      maxWidth,
+      math.max(AppTokens.touchTarget, painter.height + padding.vertical),
+    );
+  }
 }

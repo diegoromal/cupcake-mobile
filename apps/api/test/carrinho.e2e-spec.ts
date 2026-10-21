@@ -156,4 +156,117 @@ describe('POST /carrinho/itens', () => {
     expect(carrinhoCreate).not.toHaveBeenCalled();
     expect(itemCreate).not.toHaveBeenCalled();
   });
+
+  const otherId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  const aroma = '33333333-3333-4333-8333-333333333333';
+  const cremeB = '22222222-2222-4222-8222-222222222222';
+  const managed = `produtos/${produtoId}/11111111-1111-4111-8111-111111111111.webp`;
+
+  function keysOf(value: unknown, found = new Set<string>()): Set<string> {
+    if (Array.isArray(value)) {
+      for (const item of value) keysOf(item, found);
+      return found;
+    }
+    if (value !== null && typeof value === 'object') {
+      for (const [key, child] of Object.entries(value)) {
+        found.add(key);
+        keysOf(child, found);
+      }
+    }
+    return found;
+  }
+
+  it('devolve o carrinho do cliente com linhas, nomes, quantidades e ordem', async () => {
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [
+        {
+          id: secondItemId, produtoId, quantidade: 4,
+          produto: { nome: 'Cupcake de festa', imagem: null, precoAtual: '8.00' },
+          personalizacoes: [],
+        },
+        {
+          id: itemId, produtoId, quantidade: 1,
+          produto: { nome: 'Cupcake de festa', imagem: managed, precoAtual: '9.90' },
+          personalizacoes: [
+            { personalizacao: { id: optionId, nome: 'Creme' } },
+            { personalizacao: { id: aroma, nome: 'Aroma' } },
+            { personalizacao: { id: cremeB, nome: 'Creme' } },
+          ],
+        },
+      ],
+    });
+    const response = await request(app.getHttpServer())
+      .get('/carrinho')
+      .query({ usuarioId: otherId, carrinhoId: cartId })
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`)
+      .expect(200);
+    expect(response.body).toEqual({
+      id: cartId,
+      itens: [
+        {
+          id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: true, quantidade: 1,
+          personalizacoes: [
+            { id: aroma, nome: 'Aroma' },
+            { id: optionId, nome: 'Creme' },
+            { id: cremeB, nome: 'Creme' },
+          ],
+        },
+        {
+          id: secondItemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 4,
+          personalizacoes: [],
+        },
+      ],
+    });
+    expect(response.body.itens[0].id).not.toBe(response.body.itens[1].id);
+    expect([...keysOf(response.body)].sort()).toEqual([
+      'id', 'imagemDisponivel', 'itens', 'nome', 'personalizacoes', 'produtoId', 'quantidade',
+    ]);
+    expect(carrinhoFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: { usuarioId: userId },
+    }));
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(produtoFind).not.toHaveBeenCalled();
+  });
+
+  it('devolve carrinho vazio ou inexistente em 200 e não cria carrinho', async () => {
+    const http = request(app.getHttpServer());
+    const bearer = `Bearer ${await token(PerfilUsuario.CLIENTE)}`;
+    const missing = await http.get('/carrinho').set('Authorization', bearer).expect(200);
+    expect(missing.body).toEqual({ id: null, itens: [] });
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    carrinhoFind.mockResolvedValue({ id: cartId, itens: [] });
+    const empty = await http.get('/carrinho').set('Authorization', bearer).expect(200);
+    expect(empty.body).toEqual({ id: cartId, itens: [] });
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  it('nega o carrinho de outro usuário, anônimo e perfil sem CLIENTE', async () => {
+    carrinhoFind.mockImplementation(async ({ where }: { where: { usuarioId: string } }) =>
+      where.usuarioId === userId ? { id: cartId, itens: [] } : null);
+    const http = request(app.getHttpServer());
+    user.mockResolvedValue({ id: otherId, perfil: PerfilUsuario.CLIENTE });
+    const foreign = await http.get('/carrinho')
+      .query({ usuarioId: userId, carrinhoId: cartId })
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE, otherId)}`)
+      .expect(200);
+    expect(foreign.body).toEqual({ id: null, itens: [] });
+    expect(carrinhoFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: { usuarioId: otherId },
+    }));
+    const anonymous = await http.get('/carrinho').expect(401);
+    expect(anonymous.body.message).toBe('Access token inválido.');
+    for (const perfil of [PerfilUsuario.ADMIN, PerfilUsuario.ENTREGADOR]) {
+      user.mockResolvedValue({ id: userId, perfil });
+      const response = await http.get('/carrinho')
+        .set('Authorization', `Bearer ${await token(perfil)}`).expect(403);
+      expect(response.body.message).toBe('Acesso negado.');
+    }
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+  });
 });
