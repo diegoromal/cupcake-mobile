@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
+import { CarrinhoModule } from './carrinho/carrinho.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { HealthModule } from './health/health.module';
@@ -8,6 +9,6 @@ import { ProdutosModule } from './produtos/produtos.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule],
+  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule],
 })
 export class AppModule {}
