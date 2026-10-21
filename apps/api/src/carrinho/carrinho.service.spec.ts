@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CarrinhoService } from './carrinho.service';
@@ -25,6 +25,11 @@ describe('CarrinhoService', () => {
   const itemCreate = jest.fn();
   const itemUpdate = jest.fn();
   const itemFindMany = jest.fn();
+  const itemFindFirst = jest.fn();
+  const itemUpdateMany = jest.fn();
+  const itemDeleteMany = jest.fn();
+  const itemOptionDelete = jest.fn();
+  const carrinhoDelete = jest.fn();
   const reservaCreate = jest.fn();
   const reservaUpdate = jest.fn();
   const service = new CarrinhoService({
@@ -32,15 +37,20 @@ describe('CarrinhoService', () => {
     estoque: { findUnique: estoqueFind, update: estoqueUpdate },
     personalizacao: { findMany: personalizacaoFindMany },
     produtoPersonalizacao: { findMany: linkFindMany },
-    carrinho: { findUnique: carrinhoFind, create: carrinhoCreate },
-    itemCarrinho: { create: itemCreate, update: itemUpdate, findMany: itemFindMany },
+    carrinho: { findUnique: carrinhoFind, create: carrinhoCreate, delete: carrinhoDelete },
+    itemCarrinho: {
+      create: itemCreate, update: itemUpdate, findMany: itemFindMany,
+      findFirst: itemFindFirst, updateMany: itemUpdateMany, deleteMany: itemDeleteMany,
+    },
+    itemCarrinhoPersonalizacao: { delete: itemOptionDelete },
     reservaEstoque: { create: reservaCreate, update: reservaUpdate },
   } as unknown as PrismaService);
   let itemIds: string[];
 
   beforeEach(() => {
     for (const fn of [produtoFind, estoqueFind, estoqueUpdate, personalizacaoFindMany, linkFindMany,
-      carrinhoFind, carrinhoCreate, itemCreate, itemUpdate, itemFindMany, reservaCreate, reservaUpdate]) {
+      carrinhoFind, carrinhoCreate, carrinhoDelete, itemCreate, itemUpdate, itemFindMany,
+      itemFindFirst, itemUpdateMany, itemDeleteMany, itemOptionDelete, reservaCreate, reservaUpdate]) {
       fn.mockReset();
     }
     itemIds = [itemId, secondItemId];
@@ -52,6 +62,9 @@ describe('CarrinhoService', () => {
       where.personalizacaoId.in.map((personalizacaoId) => ({ personalizacaoId })));
     carrinhoFind.mockResolvedValue(null);
     carrinhoCreate.mockResolvedValue({ id: cartId });
+    itemFindFirst.mockResolvedValue(null);
+    itemUpdateMany.mockResolvedValue({ count: 0 });
+    itemDeleteMany.mockResolvedValue({ count: 0 });
     itemCreate.mockImplementation(async ({ data }: {
       data: {
         carrinhoId: string;
@@ -388,5 +401,119 @@ describe('CarrinhoService', () => {
       where: { usuarioId: otherId },
     }));
     expect(carrinhoCreate).not.toHaveBeenCalled();
+  });
+
+  const otherId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  const ownedItem = { id: itemId, produtoId, quantidade: 2 };
+  const cartRead = {
+    id: cartId,
+    itens: [{
+      id: itemId, produtoId, quantidade: 2,
+      produto: { nome: 'Cupcake de festa', imagem: null, precoAtual: '9.90' },
+      personalizacoes: [{ personalizacao: { id: optionA, nome: 'Aroma' } }],
+    }],
+  };
+
+  it('altera só a quantidade do item do usuário e devolve a leitura do GET', async () => {
+    itemFindFirst.mockResolvedValue(ownedItem);
+    itemUpdateMany.mockResolvedValue({ count: 1 });
+    carrinhoFind.mockResolvedValue(cartRead);
+    const result = await service.alterarQuantidade(userId, itemId, 2);
+    expect(result).toMatchObject({
+      id: cartId,
+      itens: [{ id: itemId, quantidade: 2, personalizacoes: [{ id: optionA, nome: 'Aroma' }] }],
+    });
+    expect(JSON.stringify(result)).not.toMatch(/preco|subtotal|frete|desconto/i);
+    expect(itemFindFirst).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: userId } },
+      select: { id: true, produtoId: true, quantidade: true },
+    });
+    expect(itemUpdateMany).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: userId } },
+      data: { quantidade: 2 },
+    });
+    expect(JSON.stringify(itemUpdateMany.mock.calls)).not.toMatch(/personalizac|quantidadeReservada|preco/i);
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+  });
+
+  it('aceita quantidade 1 e quantidade igual ao saldo sem somar a quantidade antiga', async () => {
+    itemFindFirst.mockResolvedValue({ id: itemId, produtoId, quantidade: 2 });
+    itemUpdateMany.mockResolvedValue({ count: 1 });
+    carrinhoFind.mockResolvedValue({ id: cartId, itens: [] });
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 2, quantidadeReservada: 0 });
+    await expect(service.alterarQuantidade(userId, itemId, 2)).resolves.toMatchObject({ id: cartId });
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 4, quantidadeReservada: 1 });
+    await expect(service.alterarQuantidade(userId, itemId, 1)).resolves.toMatchObject({ id: cartId });
+    await expect(service.alterarQuantidade(userId, itemId, 3)).resolves.toMatchObject({ id: cartId });
+    expect(itemUpdateMany.mock.calls.map((call) => call[0].data)).toEqual([
+      { quantidade: 2 }, { quantidade: 1 }, { quantidade: 3 },
+    ]);
+    expect(itemFindMany).not.toHaveBeenCalled();
+  });
+
+  it('rejeita saldo insuficiente, saldo zero e estoque ausente sem gravar', async () => {
+    itemFindFirst.mockResolvedValue(ownedItem);
+    estoqueFind.mockResolvedValueOnce({ quantidadeFisica: 4, quantidadeReservada: 1 });
+    await expect(service.alterarQuantidade(userId, itemId, 4)).rejects.toBeInstanceOf(ConflictException);
+    estoqueFind.mockResolvedValueOnce({ quantidadeFisica: 0, quantidadeReservada: 0 });
+    await expect(service.alterarQuantidade(userId, itemId, 1))
+      .rejects.toThrow('Quantidade superior à disponibilidade.');
+    estoqueFind.mockResolvedValueOnce(null);
+    const error = await service.alterarQuantidade(userId, itemId, 1).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect((error as ConflictException).getStatus()).toBe(409);
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 para item ausente, item de outro usuário e update que não grava uma linha', async () => {
+    await expect(service.alterarQuantidade(otherId, itemId, 1)).rejects.toBeInstanceOf(NotFoundException);
+    expect(itemFindFirst).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: otherId } },
+      select: { id: true, produtoId: true, quantidade: true },
+    });
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+    itemFindFirst.mockResolvedValue(ownedItem);
+    itemUpdateMany.mockResolvedValue({ count: 0 });
+    await expect(service.alterarQuantidade(userId, itemId, 1)).rejects.toThrow('Item não encontrado.');
+    expect(carrinhoFind).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+  });
+
+  it('remove só o item do usuário e não apaga carrinho, personalização nem estoque', async () => {
+    itemDeleteMany.mockResolvedValue({ count: 1 });
+    await expect(service.removerItem(userId, itemId)).resolves.toBeUndefined();
+    expect(itemDeleteMany).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: userId } },
+    });
+    expect(itemOptionDelete).not.toHaveBeenCalled();
+    expect(carrinhoDelete).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+    expect(itemFindFirst).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 ao remover item ausente ou de outro usuário', async () => {
+    await expect(service.removerItem(otherId, itemId)).rejects.toThrow('Item não encontrado.');
+    expect(itemDeleteMany).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: otherId } },
+    });
+    expect(carrinhoDelete).not.toHaveBeenCalled();
+    expect(itemOptionDelete).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+  });
+
+  it('POST e GET continuam sem findFirst, updateMany ou deleteMany', async () => {
+    await service.adicionar(userId, { produtoId, quantidade: 1, personalizacaoIds: [] });
+    await service.obter(userId);
+    expect(itemFindFirst).not.toHaveBeenCalled();
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+    expect(itemDeleteMany).not.toHaveBeenCalled();
+    expect(carrinhoDelete).not.toHaveBeenCalled();
   });
 });

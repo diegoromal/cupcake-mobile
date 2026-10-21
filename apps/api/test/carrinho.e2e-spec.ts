@@ -25,6 +25,13 @@ describe('POST /carrinho/itens', () => {
   const itemCreate = jest.fn();
   const itemUpdate = jest.fn();
   const itemFindMany = jest.fn();
+  const itemFindFirst = jest.fn();
+  const itemUpdateMany = jest.fn();
+  const itemDeleteMany = jest.fn();
+  const itemOptionDelete = jest.fn();
+  const carrinhoDelete = jest.fn();
+  const estoqueUpdate = jest.fn();
+  const reservaCreate = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
     { sub, perfil, type: 'access' },
@@ -38,11 +45,16 @@ describe('POST /carrinho/itens', () => {
       .overrideProvider(PrismaService).useValue({
         usuario: { findUnique: user },
         produto: { findUnique: produtoFind },
-        estoque: { findUnique: estoqueFind },
+        estoque: { findUnique: estoqueFind, update: estoqueUpdate },
         personalizacao: { findMany: personalizacaoFindMany },
         produtoPersonalizacao: { findMany: linkFindMany },
-        carrinho: { findUnique: carrinhoFind, create: carrinhoCreate },
-        itemCarrinho: { create: itemCreate, update: itemUpdate, findMany: itemFindMany },
+        carrinho: { findUnique: carrinhoFind, create: carrinhoCreate, delete: carrinhoDelete },
+        itemCarrinho: {
+          create: itemCreate, update: itemUpdate, findMany: itemFindMany,
+          findFirst: itemFindFirst, updateMany: itemUpdateMany, deleteMany: itemDeleteMany,
+        },
+        itemCarrinhoPersonalizacao: { delete: itemOptionDelete },
+        reservaEstoque: { create: reservaCreate },
       }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
@@ -52,6 +64,9 @@ describe('POST /carrinho/itens', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    itemFindFirst.mockResolvedValue(null);
+    itemUpdateMany.mockResolvedValue({ count: 0 });
+    itemDeleteMany.mockResolvedValue({ count: 0 });
     cart = null;
     itemIds = [itemId, secondItemId];
     user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
@@ -268,5 +283,193 @@ describe('POST /carrinho/itens', () => {
     }
     expect(carrinhoCreate).not.toHaveBeenCalled();
     expect(itemCreate).not.toHaveBeenCalled();
+  });
+
+  const cartBody = (quantidade: number) => ({
+    id: cartId,
+    itens: [{
+      id: itemId, produtoId, quantidade,
+      produto: { nome: 'Cupcake de festa', imagem: null, precoAtual: '9.90' },
+      personalizacoes: [
+        { personalizacao: { id: optionId, nome: 'Aroma' } },
+      ],
+    }],
+  });
+
+  it('altera a quantidade em 200 no formato do GET sem preço nem escrita de estoque', async () => {
+    itemFindFirst.mockResolvedValue({ id: itemId, produtoId, quantidade: 2 });
+    itemUpdateMany.mockResolvedValue({ count: 1 });
+    carrinhoFind.mockResolvedValue(cartBody(3));
+    const response = await request(app.getHttpServer())
+      .patch(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`)
+      .send({ quantidade: 3 })
+      .expect(200);
+    expect(response.body).toEqual({
+      id: cartId,
+      itens: [{
+        id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 3,
+        personalizacoes: [{ id: optionId, nome: 'Aroma' }],
+      }],
+    });
+    expect([...keysOf(response.body)].sort()).toEqual([
+      'id', 'imagemDisponivel', 'itens', 'nome', 'personalizacoes', 'produtoId', 'quantidade',
+    ]);
+    expect(itemUpdateMany).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: userId } },
+      data: { quantidade: 3 },
+    });
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+    expect(JSON.stringify(itemUpdateMany.mock.calls)).not.toMatch(/quantidadeReservada|personalizac|preco/i);
+  });
+
+  it('aceita quantidade igual ao saldo e rejeita acima, zero de saldo e estoque ausente', async () => {
+    const http = request(app.getHttpServer());
+    const bearer = `Bearer ${await token(PerfilUsuario.CLIENTE)}`;
+    itemFindFirst.mockResolvedValue({ id: itemId, produtoId, quantidade: 2 });
+    itemUpdateMany.mockResolvedValue({ count: 1 });
+    carrinhoFind.mockResolvedValue(cartBody(2));
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 2, quantidadeReservada: 0 });
+    await http.patch(`/carrinho/itens/${itemId}`).set('Authorization', bearer)
+      .send({ quantidade: 2 }).expect(200);
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 4, quantidadeReservada: 1 });
+    await http.patch(`/carrinho/itens/${itemId}`).set('Authorization', bearer)
+      .send({ quantidade: 4 }).expect(409);
+    estoqueFind.mockResolvedValue({ quantidadeFisica: 0, quantidadeReservada: 0 });
+    const zero = await http.patch(`/carrinho/itens/${itemId}`).set('Authorization', bearer)
+      .send({ quantidade: 1 }).expect(409);
+    expect(zero.body.message).toBe('Quantidade superior à disponibilidade.');
+    estoqueFind.mockResolvedValue(null);
+    const missing = await http.patch(`/carrinho/itens/${itemId}`).set('Authorization', bearer)
+      .send({ quantidade: 1 }).expect(409);
+    expect(missing.body.message).toBe('Quantidade superior à disponibilidade.');
+    expect(itemUpdateMany).toHaveBeenCalledTimes(1);
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('responde 400 sem gravar quantidade inválida, campo extra, usuarioId ou carrinhoId', async () => {
+    const http = request(app.getHttpServer());
+    const bearer = `Bearer ${await token(PerfilUsuario.CLIENTE)}`;
+    const payloads = [
+      { quantidade: 0 },
+      { quantidade: -1 },
+      { quantidade: 1.5 },
+      { quantidade: 2147483648 },
+      { quantidade: '2' },
+      {},
+      { quantidade: 1, usuarioId: userId },
+      { quantidade: 1, carrinhoId: cartId },
+      { quantidade: 1, preco: '10.00' },
+    ];
+    for (const payload of payloads) {
+      await http.patch(`/carrinho/itens/${itemId}`).set('Authorization', bearer).send(payload).expect(400);
+    }
+    await http.patch('/carrinho/itens/nao-uuid').set('Authorization', bearer)
+      .send({ quantidade: 1 }).expect(400);
+    expect(itemFindFirst).not.toHaveBeenCalled();
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 para item ausente ou de outro usuário sem ler estoque', async () => {
+    const http = request(app.getHttpServer());
+    const missing = await http.patch(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`)
+      .send({ quantidade: 1 }).expect(404);
+    expect(missing.body.message).toBe('Item não encontrado.');
+    user.mockResolvedValue({ id: otherId, perfil: PerfilUsuario.CLIENTE });
+    const foreign = await http.patch(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE, otherId)}`)
+      .send({ quantidade: 1 }).expect(404);
+    expect(foreign.body.message).toBe('Item não encontrado.');
+    expect(itemFindFirst).toHaveBeenLastCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: otherId } },
+      select: { id: true, produtoId: true, quantidade: true },
+    });
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 quando a gravação não altera a linha', async () => {
+    itemFindFirst.mockResolvedValue({ id: itemId, produtoId, quantidade: 1 });
+    itemUpdateMany.mockResolvedValue({ count: 0 });
+    const raced = await request(app.getHttpServer())
+      .patch(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`)
+      .send({ quantidade: 1 })
+      .expect(404);
+    expect(raced.body.message).toBe('Item não encontrado.');
+    expect(itemUpdateMany).toHaveBeenCalledTimes(1);
+    expect(carrinhoFind).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('nega PATCH para anônimo, ADMIN e ENTREGADOR', async () => {
+    const http = request(app.getHttpServer());
+    const anonymous = await http.patch(`/carrinho/itens/${itemId}`).send({ quantidade: 1 }).expect(401);
+    expect(anonymous.body.message).toBe('Access token inválido.');
+    for (const perfil of [PerfilUsuario.ADMIN, PerfilUsuario.ENTREGADOR]) {
+      user.mockResolvedValue({ id: userId, perfil });
+      const response = await http.patch(`/carrinho/itens/${itemId}`)
+        .set('Authorization', `Bearer ${await token(perfil)}`).send({ quantidade: 1 }).expect(403);
+      expect(response.body.message).toBe('Acesso negado.');
+    }
+    expect(itemFindFirst).not.toHaveBeenCalled();
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('remove o item em 204 sem apagar carrinho, personalização ou estoque', async () => {
+    itemDeleteMany.mockResolvedValue({ count: 1 });
+    const response = await request(app.getHttpServer())
+      .delete(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`)
+      .expect(204);
+    expect(response.text).toBe('');
+    expect(itemDeleteMany).toHaveBeenCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: userId } },
+    });
+    expect(itemOptionDelete).not.toHaveBeenCalled();
+    expect(carrinhoDelete).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 ao remover item ausente ou de outro usuário', async () => {
+    const http = request(app.getHttpServer());
+    const missing = await http.delete(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`).expect(404);
+    expect(missing.body.message).toBe('Item não encontrado.');
+    user.mockResolvedValue({ id: otherId, perfil: PerfilUsuario.CLIENTE });
+    const foreign = await http.delete(`/carrinho/itens/${itemId}`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE, otherId)}`).expect(404);
+    expect(foreign.body.message).toBe('Item não encontrado.');
+    expect(itemDeleteMany).toHaveBeenLastCalledWith({
+      where: { id: itemId, carrinho: { usuarioId: otherId } },
+    });
+    expect(carrinhoDelete).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
+  });
+
+  it('nega DELETE para anônimo, ADMIN, ENTREGADOR e uuid inválido', async () => {
+    const http = request(app.getHttpServer());
+    const anonymous = await http.delete(`/carrinho/itens/${itemId}`).expect(401);
+    expect(anonymous.body.message).toBe('Access token inválido.');
+    for (const perfil of [PerfilUsuario.ADMIN, PerfilUsuario.ENTREGADOR]) {
+      user.mockResolvedValue({ id: userId, perfil });
+      const response = await http.delete(`/carrinho/itens/${itemId}`)
+        .set('Authorization', `Bearer ${await token(perfil)}`).expect(403);
+      expect(response.body.message).toBe('Acesso negado.');
+    }
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
+    await http.delete('/carrinho/itens/nao-uuid')
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`).expect(400);
+    expect(itemDeleteMany).not.toHaveBeenCalled();
+    expect(estoqueFind).not.toHaveBeenCalled();
   });
 });

@@ -203,6 +203,11 @@ não derruba a tela. 401 atualiza a sessão e repete o GET uma vez. 403 mantém 
 sessão e não dispara nova tentativa automática. Erro transitório, corpo
 inválido ou API indisponível oferece `Tentar novamente` e não cria carrinho.
 
-`Continuar comprando` volta para a mesma vitrine. `Continuar`, diminuir,
-aumentar e remover ficam visíveis e desabilitados. Quantidade, remoção, preço,
-frete e total ficam para D36 e D37.
+`Continuar comprando` volta para a mesma vitrine. `Continuar` fica visível e
+desabilitado. Diminuir, aumentar e remover ficam visíveis. Diminuir envia a
+quantidade absoluta já reduzida em `PATCH /carrinho/itens/:itemId` e fica
+inerte na quantidade 1. Aumentar envia a quantidade absoluta já somada e fica
+inerte em 2147483647. A lixeira envia `DELETE /carrinho/itens/:itemId` e remove
+somente a linha selecionada. Não há diálogo nem aviso temporário. Durante a
+operação, diminuir, aumentar e remover ficam desabilitados. Preço, frete e
+total ficam para D37.

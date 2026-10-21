@@ -23,6 +23,8 @@ enum CartRequestStatus {
   success,
   unauthorized,
   forbidden,
+  conflict,
+  notFound,
   unavailable,
   notConfigured,
 }
@@ -134,9 +136,10 @@ class CustomerCart {
 }
 
 class CartResult {
-  const CartResult(this.status, {this.cart});
+  const CartResult(this.status, {this.cart, this.message});
   final CartRequestStatus status;
   final CustomerCart? cart;
+  final String? message;
 }
 
 class CustomerCartApi {
@@ -183,6 +186,98 @@ class CustomerCartApi {
     } finally {
       client.close(force: true);
     }
+  }
+
+  Future<CartResult> updateQuantity({
+    required String accessToken,
+    required String itemId,
+    required int quantity,
+  }) => _mutate(
+    accessToken: accessToken,
+    itemId: itemId,
+    method: 'PATCH',
+    body: jsonEncode({'quantidade': quantity}),
+  );
+
+  Future<CartResult> removeItem({
+    required String accessToken,
+    required String itemId,
+  }) => _mutate(accessToken: accessToken, itemId: itemId, method: 'DELETE');
+
+  Future<CartResult> _mutate({
+    required String accessToken,
+    required String itemId,
+    required String method,
+    String? body,
+  }) async {
+    final uri = _config.cartItemUri(itemId);
+    if (uri == null) return const CartResult(CartRequestStatus.notConfigured);
+    final client = _clientFactory();
+    try {
+      final request = method == 'PATCH'
+          ? await client.patchUrl(uri).timeout(timeout)
+          : await client.deleteUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+      if (body != null) {
+        request.headers.contentType = ContentType.json;
+        request.write(body);
+      }
+      final response = await request.close().timeout(timeout);
+      if (response.statusCode == HttpStatus.unauthorized) {
+        return const CartResult(CartRequestStatus.unauthorized);
+      }
+      if (response.statusCode == HttpStatus.forbidden) {
+        return const CartResult(CartRequestStatus.forbidden);
+      }
+      if (response.statusCode == HttpStatus.notFound) {
+        return const CartResult(CartRequestStatus.notFound);
+      }
+      if (response.statusCode == HttpStatus.conflict) {
+        return CartResult(
+          CartRequestStatus.conflict,
+          message: await _conflictMessage(response),
+        );
+      }
+      if (method == 'DELETE') {
+        if (response.statusCode != HttpStatus.noContent) {
+          return const CartResult(CartRequestStatus.unavailable);
+        }
+        return const CartResult(CartRequestStatus.success);
+      }
+      if (response.statusCode != HttpStatus.ok) {
+        return const CartResult(CartRequestStatus.unavailable);
+      }
+      final cart = CustomerCart.parse(
+        jsonDecode(await utf8.decoder.bind(response.timeout(timeout)).join()),
+      );
+      return cart == null
+          ? const CartResult(CartRequestStatus.unavailable)
+          : CartResult(CartRequestStatus.success, cart: cart);
+    } on Object {
+      return const CartResult(CartRequestStatus.unavailable);
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<String> _conflictMessage(HttpClientResponse response) async {
+    try {
+      final raw = jsonDecode(
+        await utf8.decoder.bind(response.timeout(timeout)).join(),
+      );
+      if (raw is Map<String, dynamic> &&
+          raw['message'] is String &&
+          (raw['message'] as String).isNotEmpty) {
+        return raw['message'] as String;
+      }
+    } on Object {
+      return 'Quantidade superior à disponibilidade.';
+    }
+    return 'Quantidade superior à disponibilidade.';
   }
 }
 
