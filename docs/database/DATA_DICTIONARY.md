@@ -1,6 +1,6 @@
 # Dicionário de dados — Cupcake Mobile
 
-Este dicionário descreve o projeto físico em `apps/api/prisma/schema.prisma` e nas migrations de `apps/api/prisma/migrations/`, incluindo a evolução D13 do bloqueio de login. O modelo lógico, o diagrama de classes e o modelo de domínio fornecem o significado dos dados. Em caso de diferença, os objetos físicos abaixo seguem o schema e as migrations.
+Este dicionário descreve o projeto físico em `apps/api/prisma/schema.prisma` e nas migrations de `apps/api/prisma/migrations/`, incluindo a evolução D13 do bloqueio de login e D39–D41 da localização de endereços. O modelo lógico, o diagrama de classes e o modelo de domínio fornecem o significado dos dados. Em caso de diferença, os objetos físicos abaixo seguem o schema e as migrations.
 
 ## Convenções
 
@@ -182,12 +182,16 @@ Endereço reutilizável cadastrado por usuário.
 | `cep` | `String` | `TEXT` | Sim | — | — | — / — | CEP. |
 | `complemento` | `String?` | `TEXT` | Não | — | — | — / — | Complemento opcional. |
 | `referencia` | `String?` | `TEXT` | Não | — | — | — / — | Ponto de referência opcional. |
+| `latitude` | `Decimal? @db.Decimal(9, 6)` | `DECIMAL(9,6)` | Não | CHECK | — | — / — | Latitude obtida após geocodificação; nula enquanto pendente. |
+| `longitude` | `Decimal? @db.Decimal(9, 6)` | `DECIMAL(9,6)` | Não | CHECK | — | — / — | Longitude obtida após geocodificação; nula enquanto pendente. |
 
 **Índices declarados na migration:**
 
 | Nome | Colunas | UNIQUE |
 | --- | --- | --- |
 | `Endereco_usuarioId_idx` | `usuarioId` | Não |
+
+**CHECKs físicos adicionados em D39–D41:** `Endereco_coordenadas_par` exige ambas as coordenadas nulas ou ambas preenchidas; `Endereco_latitude_range` limita latitude a `[-90,90]`; `Endereco_longitude_range` limita longitude a `[-180,180]`.
 
 ### `ConfiguracaoLojaEntrega`
 
@@ -201,6 +205,8 @@ Parâmetros da localização, cobertura e cálculo do frete da loja.
 | `raioMaximoAtendimento` | `Decimal @db.Decimal(10, 3)` | `DECIMAL(10,3)` | Sim | — | — | — / — | Raio máximo de atendimento configurado. |
 | `taxaBase` | `Decimal @db.Decimal(12, 2)` | `DECIMAL(12,2)` | Sim | — | — | — / — | Taxa base usada no cálculo de frete. |
 | `valorPorQuilometro` | `Decimal @db.Decimal(12, 2)` | `DECIMAL(12,2)` | Sim | — | — | — / — | Valor cobrado por quilômetro. |
+
+O índice único por expressão `ConfiguracaoLojaEntrega_unica_idx` em `(true)` limita a tabela a uma linha sem adicionar coluna de negócio. A migration D39–D41 interrompe se encontrar mais de uma linha preexistente.
 
 **CHECKs físicos:**
 

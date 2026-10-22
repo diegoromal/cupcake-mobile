@@ -44,6 +44,13 @@ class ApiConfig {
 
   Uri? get cartUri => _validBaseUri?.resolve('/carrinho');
 
+  Uri? get addressesUri => _validBaseUri?.resolve('/enderecos');
+  Uri? cepUri(String cep) => _validBaseUri?.resolve('/enderecos/cep/$cep');
+  Uri? geocodingUri(String id) {
+    if (!_itemIdPattern.hasMatch(id)) return null;
+    return _validBaseUri?.resolve('/enderecos/$id/geocodificacao');
+  }
+
   Uri? cartItemUri(String itemId) {
     if (!_itemIdPattern.hasMatch(itemId)) return null;
     return _validBaseUri?.resolve('/carrinho/itens/$itemId');

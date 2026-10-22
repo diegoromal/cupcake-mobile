@@ -14,6 +14,7 @@ export function apiBase(): string {
   return url.origin;
 }
 export function allowed(method: string, parts: string[]): boolean {
+  if (parts.length === 1 && parts[0] === 'configuracao-loja-entrega') return ['GET','PUT'].includes(method);
   if (parts.length === 1) return ['produtos','categorias','personalizacoes'].includes(parts[0]) && ['GET','POST'].includes(method);
   if (['categorias','personalizacoes'].includes(parts[0])) return parts.length === 2 && uuid.test(parts[1]) && ['GET','PATCH','DELETE'].includes(method);
   if (parts[0] !== 'produtos' || !uuid.test(parts[1])) return false;
@@ -76,7 +77,7 @@ export async function proxyAdmin(request: NextRequest, parts: string[]): Promise
     const length = request.headers.get('content-length');
     if (isImage && length !== null && /^\d+$/.test(length) && BigInt(length) > BigInt(MULTIPART_REQUEST_LIMIT)) return NextResponse.json({ message: 'Imagem excede o limite.' }, { status: 413 });
     // A cópia preserva boundary, filename e bytes; o envelope também tem limite local.
-    const body = method === 'POST' || method === 'PATCH' ? await request.arrayBuffer() : undefined;
+    const body = ['POST','PATCH','PUT'].includes(method) ? await request.arrayBuffer() : undefined;
     if (isImage && body && body.byteLength > MULTIPART_REQUEST_LIMIT) return NextResponse.json({ message: 'Imagem excede o limite.' }, { status: 413 });
     let upstream = await call(path, method, access, body, contentType || undefined);
     if (upstream.status === 401 && refresh && !refreshedAccess) {

@@ -155,6 +155,8 @@ model Endereco {
   cep         String
   complemento String?
   referencia  String?
+  latitude    Decimal? @db.Decimal(9, 6)
+  longitude   Decimal? @db.Decimal(9, 6)
   usuario     Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
 
   @@index([usuarioId])
