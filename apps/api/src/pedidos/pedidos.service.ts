@@ -67,6 +67,23 @@ export class PedidosService {
         throw new ConflictException('Total do pedido inválido.');
       }
 
+      const demanda = new Map<string, { quantidade: number; fisica: number; reservada: number }>();
+      for (const { persistido } of linhas) {
+        const estoque = persistido.produto.estoque;
+        if (!estoque) throw new ConflictException('Estoque indisponível.');
+        const anterior = demanda.get(persistido.produtoId);
+        demanda.set(persistido.produtoId, {
+          quantidade: (anterior?.quantidade ?? 0) + persistido.quantidade,
+          fisica: estoque.quantidadeFisica,
+          reservada: estoque.quantidadeReservada,
+        });
+      }
+      for (const { quantidade, fisica, reservada } of demanda.values()) {
+        if (quantidade > fisica - reservada) {
+          throw new ConflictException('Estoque indisponível.');
+        }
+      }
+
       const pedido = await db.pedido.create({
         data: {
           identificadorNegocio: `PED-${randomUUID()}`,
@@ -97,6 +114,21 @@ export class PedidosService {
           itens: { include: { personalizacoes: true } },
         },
       });
+      for (const [produtoId, { quantidade }] of demanda) {
+        await db.estoque.update({ where: { produtoId }, data: {
+          quantidadeReservada: { increment: quantidade },
+        } });
+      }
+      const momentoExpiracaoValidade = new Date(pedido.data.getTime() + 15 * 60 * 1000);
+      for (const item of pedido.itens) {
+        await db.reservaEstoque.create({ data: {
+          pedidoId: pedido.id,
+          produtoId: item.produtoId,
+          quantidade: item.quantidade,
+          estado: 'ATIVA',
+          momentoExpiracaoValidade,
+        } });
+      }
       return {
         id: pedido.id,
         identificadorNegocio: pedido.identificadorNegocio,

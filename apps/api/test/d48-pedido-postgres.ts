@@ -42,11 +42,13 @@ async function main() {
   let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined;
   let databaseReady = false;
   let checks = 0;
-  async function assertStockIntacto() {
+  async function assertStock(fisica: number, reservadoA: number, reservadoB: number) {
     const stock = await prisma.estoque.findMany({ where: { produtoId: { in: productIds } } });
     assert.equal(stock.length, productIds.length); checks++;
     assert.deepEqual(stock.map((row) => row.produtoId).sort(), [...productIds].sort()); checks++;
-    assert(stock.every((row) => row.quantidadeFisica === 10 && row.quantidadeReservada === 2)); checks++;
+    assert(stock.every((row) => row.quantidadeFisica === fisica)); checks++;
+    assert.equal(stock.find((row) => row.produtoId === productIds[0])?.quantidadeReservada, reservadoA); checks++;
+    assert.equal(stock.find((row) => row.produtoId === productIds[1])?.quantidadeReservada, reservadoB); checks++;
   }
   try {
     const [database] = await prisma.$queryRaw<Array<{ name: string; schema: string }>>`
@@ -76,7 +78,7 @@ async function main() {
       { id: productIds[1], categoriaId: categoryId, nome: 'D48 B', precoAtual: '0.11' },
     ] });
     await prisma.estoque.createMany({ data: productIds.map((produtoId) => ({
-      produtoId, quantidadeFisica: 10, quantidadeReservada: 2,
+      produtoId, quantidadeFisica: 30, quantidadeReservada: 0,
     })) });
     await prisma.personalizacao.create({ data: {
       id: personalizationId, nome: 'D48 cobertura', ajusteValor: '0.20',
@@ -161,8 +163,8 @@ async function main() {
     assert.equal(pickupPersisted.freteAplicado.toFixed(2), '0.00'); checks++;
     assert.equal(pickupPersisted.total.toFixed(2), '113.17'); checks++;
     assert.equal(await prisma.itemCarrinho.count({ where: { carrinho: { usuarioId: userId } } }), 3); checks++;
-    assert.equal(await prisma.reservaEstoque.count({ where: { pedidoId: { in: orderIds } } }), 0); checks++;
-    await assertStockIntacto();
+    assert.equal(await prisma.reservaEstoque.count({ where: { pedidoId: { in: orderIds } } }), 6); checks++;
+    await assertStock(30, 18, 2);
     assert.equal(await prisma.movimentacaoEstoque.count({ where: { produtoId: { in: productIds } } }), 0); checks++;
 
     const orderCount = await prisma.pedido.count({ where: { clienteUsuarioId: userId } });
@@ -178,8 +180,8 @@ async function main() {
     assert.equal(await prisma.itemPedidoPersonalizacaoSnapshot.count({
       where: { itemPedido: { pedido: { clienteUsuarioId: userId } } },
     }), snapshotCount); checks++;
-    await assertStockIntacto();
-    assert.equal(await prisma.reservaEstoque.count({ where: { pedidoId: { in: orderIds } } }), 0); checks++;
+    await assertStock(30, 18, 2);
+    assert.equal(await prisma.reservaEstoque.count({ where: { pedidoId: { in: orderIds } } }), 6); checks++;
     assert.equal(await prisma.movimentacaoEstoque.count({ where: { produtoId: { in: productIds } } }), 0); checks++;
     await prisma.$executeRawUnsafe(`ALTER TABLE "ItemPedidoPersonalizacaoSnapshot"
       DROP CONSTRAINT "d48_snapshot_failure"`);
@@ -191,6 +193,7 @@ async function main() {
       await prisma.itemPedidoPersonalizacaoSnapshot.deleteMany({
         where: { itemPedido: { pedidoId: { in: orderIds } } },
       });
+      await prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: orderIds } } });
       await prisma.itemPedido.deleteMany({ where: { pedidoId: { in: orderIds } } });
       await prisma.enderecoEntregaSnapshot.deleteMany({ where: { pedidoId: { in: orderIds } } });
       await prisma.pedido.deleteMany({ where: { id: { in: orderIds } } });
@@ -206,6 +209,7 @@ async function main() {
       assert.equal(await prisma.usuario.count({ where: { id: { in: [userId, otherId] } } }), 0); checks++;
       assert.equal(await prisma.pedido.count({ where: { id: { in: orderIds } } }), 0); checks++;
       assert.equal(await prisma.itemPedido.count({ where: { pedidoId: { in: orderIds } } }), 0); checks++;
+      assert.equal(await prisma.reservaEstoque.count({ where: { pedidoId: { in: orderIds } } }), 0); checks++;
       assert.equal(await prisma.enderecoEntregaSnapshot.count({ where: { pedidoId: { in: orderIds } } }), 0); checks++;
       assert.equal(await prisma.produto.count({ where: { id: { in: productIds } } }), 0); checks++;
       assert.equal(await prisma.estoque.count({ where: { produtoId: { in: productIds } } }), 0); checks++;

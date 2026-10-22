@@ -89,4 +89,13 @@ describe('POST /pedidos', () => {
     criar.mockRejectedValueOnce(new ServiceUnavailableException('Configuração de entrega indisponível.'));
     await post().expect(503);
   });
+
+  it('mantém 409 HTTP para indisponibilidade da demanda agregada', async () => {
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    criar.mockRejectedValueOnce(new ConflictException('Estoque indisponível.'));
+    const response = await request(app.getHttpServer()).post('/pedidos')
+      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA' }).expect(409);
+    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'RETIRADA' });
+    expect(JSON.stringify(response.body)).not.toMatch(/quantidadeReservada|quantidadeFisica/);
+  });
 });
