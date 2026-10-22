@@ -14,7 +14,7 @@
 - [x] Fase 1 --- Usuários e segurança
 - [x] Fase 2 --- Catálogo
 - [x] Fase 3 --- Aplicativo Flutter
-- [ ] Fase 4 --- Carrinho
+- [x] Fase 4 --- Carrinho
 - [ ] Fase 5 --- Endereço, cobertura e frete
 - [ ] Fase 6 --- Pedido e reserva de estoque
 - [ ] Fase 7 --- Pagamento
@@ -100,14 +100,14 @@ produtos.
 
 ## 🛒 FASE 4 --- Carrinho
 
-- [ ] **D33 --- Modelar carrinho e itens**
-- [ ] **D34 --- Adicionar produto personalizado**
-- [ ] **D35 --- Tela do carrinho**
-- [ ] **D36 --- Alterar quantidade e remover itens**
-- [ ] **D37 --- Recalcular valores e validar disponibilidade**
-- [ ] **D38 --- Testes do carrinho**
+- [x] **D33 --- Modelar carrinho e itens**
+- [x] **D34 --- Adicionar produto personalizado**
+- [x] **D35 --- Tela do carrinho**
+- [x] **D36 --- Alterar quantidade e remover itens**
+- [x] **D37 --- Recalcular valores e validar disponibilidade**
+- [x] **D38 --- Testes do carrinho**
 
-**Marco 5:** experiência de compra funciona até o checkout.
+**Marco 5 (concluído):** experiência de compra funciona até o checkout.
 
 ## 📍 FASE 5 --- Endereço, cobertura e frete
 
