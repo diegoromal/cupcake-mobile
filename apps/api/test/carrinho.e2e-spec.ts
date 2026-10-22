@@ -281,6 +281,23 @@ describe('POST /carrinho/itens', () => {
     expect(produtoFind).not.toHaveBeenCalled();
   });
 
+  it('mantém GET /carrinho disponível acima do limite monetário do pedido', async () => {
+    carrinhoFind.mockResolvedValue({ id: cartId, itens: [
+      leituraE2e({ id: itemId, quantidade: 1, preco: '9999999999.99',
+        opcoes: [{ id: optionId, nome: 'Extra', ajuste: '0.01' }] }),
+      leituraE2e({ id: secondItemId, quantidade: 2, preco: '9999999999.99' }),
+    ] });
+    const response = await request(app.getHttpServer()).get('/carrinho')
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`).expect(200);
+    expect(response.body.itens).toEqual([
+      expect.objectContaining({ id: itemId, precoUnitario: '10000000000.00',
+        subtotal: '10000000000.00', disponivel: true }),
+      expect.objectContaining({ id: secondItemId, precoUnitario: '9999999999.99',
+        subtotal: '19999999999.98', disponivel: true }),
+    ]);
+    expect(response.body).toMatchObject({ subtotal: '29999999999.98', total: '29999999999.98' });
+  });
+
   it('devolve carrinho vazio ou inexistente em 200 e não cria carrinho', async () => {
     const http = request(app.getHttpServer());
     const bearer = `Bearer ${await token(PerfilUsuario.CLIENTE)}`;

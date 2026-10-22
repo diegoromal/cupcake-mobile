@@ -443,6 +443,22 @@ describe('CarrinhoService', () => {
     expect(reservaUpdate).not.toHaveBeenCalled();
   });
 
+  it('preserva a leitura D37 quando preço ou subtotal supera o limite monetário do pedido', async () => {
+    carrinhoFind.mockResolvedValue({ id: cartId, itens: [
+      linhaLida({ id: itemId, preco: '9999999999.99',
+        opcoes: [{ id: optionA, nome: 'Extra', ajuste: '0.01' }] }),
+      linhaLida({ id: secondItemId, quantidade: 2, preco: '9999999999.99' }),
+    ] });
+    const result = await service.obter(userId);
+    expect(result.itens).toEqual([
+      expect.objectContaining({ id: itemId, precoUnitario: '10000000000.00',
+        subtotal: '10000000000.00', disponivel: true, motivo: null }),
+      expect.objectContaining({ id: secondItemId, precoUnitario: '9999999999.99',
+        subtotal: '19999999999.98', disponivel: true, motivo: null }),
+    ]);
+    expect(result).toMatchObject({ subtotal: '29999999999.98', total: '29999999999.98' });
+  });
+
   it('soma ajustes vigentes, trata nulo como zero e mantém duas casas', async () => {
     carrinhoFind.mockResolvedValue({
       id: cartId,
