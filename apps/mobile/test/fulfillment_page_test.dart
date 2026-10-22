@@ -401,7 +401,7 @@ void main() {
       await choose(tester, 'Delivery');
       await choose(tester, 'Rua das Flores, 123');
 
-      await userSession.refreshAfterUnauthorized(token('old'));
+      await userSession.refreshAfterUnauthorized(userSession.accessToken!);
       await tester.pumpAndSettle();
       expect(auth.refreshCalls, 1);
       expect(api.listCalls, 2);
