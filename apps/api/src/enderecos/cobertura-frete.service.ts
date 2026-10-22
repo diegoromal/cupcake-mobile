@@ -4,6 +4,15 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const RAIO_TERRA_KM = 6371.0088;
 
+type CoordenadasEndereco = { latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null };
+type ConfiguracaoFrete = {
+  latitudeLoja: Prisma.Decimal;
+  longitudeLoja: Prisma.Decimal;
+  raioMaximoAtendimento: Prisma.Decimal;
+  taxaBase: Prisma.Decimal;
+  valorPorQuilometro: Prisma.Decimal;
+};
+
 @Injectable()
 export class CoberturaFreteService {
   constructor(private readonly prisma: PrismaService) {}
@@ -15,7 +24,7 @@ export class CoberturaFreteService {
     });
     if (!endereco) throw new NotFoundException('Endereço não encontrado.');
     if (!coordenadasValidas(endereco.latitude, endereco.longitude)) {
-      return { situacao: 'LOCALIZACAO_INDISPONIVEL', distanciaKm: null, raioMaximoKm: null, frete: null };
+      return calcularCoberturaFrete(endereco, null);
     }
 
     const configuracao = await this.prisma.configuracaoLojaEntrega.findFirst({
@@ -24,28 +33,38 @@ export class CoberturaFreteService {
         taxaBase: true, valorPorQuilometro: true,
       },
     });
-    if (!configuracao || !coordenadasValidas(configuracao.latitudeLoja, configuracao.longitudeLoja) ||
+    return calcularCoberturaFrete(endereco, configuracao);
+  }
+}
+
+export function calcularCoberturaFrete(
+  endereco: CoordenadasEndereco,
+  configuracao: ConfiguracaoFrete | null,
+) {
+  if (!coordenadasValidas(endereco.latitude, endereco.longitude)) {
+    return { situacao: 'LOCALIZACAO_INDISPONIVEL', distanciaKm: null, raioMaximoKm: null, frete: null };
+  }
+  if (!configuracao || !coordenadasValidas(configuracao.latitudeLoja, configuracao.longitudeLoja) ||
         !decimalNaoNegativo(configuracao.raioMaximoAtendimento) ||
         !decimalNaoNegativo(configuracao.taxaBase) ||
         !decimalNaoNegativo(configuracao.valorPorQuilometro)) {
-      throw new ServiceUnavailableException('Configuração de entrega indisponível.');
-    }
-
-    const distanciaKm = distanciaEmKm(
-      configuracao.latitudeLoja.toNumber(), configuracao.longitudeLoja.toNumber(),
-      endereco.latitude!.toNumber(), endereco.longitude!.toNumber(),
-    );
-    const raioMaximoKm = configuracao.raioMaximoAtendimento.toFixed(3);
-    if (distanciaKm > configuracao.raioMaximoAtendimento.toNumber()) {
-      return { situacao: 'FORA_DA_COBERTURA', distanciaKm: distanciaKm.toFixed(3), raioMaximoKm, frete: null };
-    }
-
-    // A distância integral entra na fórmula; o arredondamento de três casas é apenas de apresentação.
-    const frete = configuracao.taxaBase.plus(
-      configuracao.valorPorQuilometro.times(new Prisma.Decimal(distanciaKm.toString())),
-    );
-    return { situacao: 'ATENDIDO', distanciaKm: distanciaKm.toFixed(3), raioMaximoKm, frete: frete.toFixed(2) };
+    throw new ServiceUnavailableException('Configuração de entrega indisponível.');
   }
+
+  const distanciaKm = distanciaEmKm(
+    configuracao.latitudeLoja.toNumber(), configuracao.longitudeLoja.toNumber(),
+    endereco.latitude!.toNumber(), endereco.longitude!.toNumber(),
+  );
+  const raioMaximoKm = configuracao.raioMaximoAtendimento.toFixed(3);
+  if (distanciaKm > configuracao.raioMaximoAtendimento.toNumber()) {
+    return { situacao: 'FORA_DA_COBERTURA', distanciaKm: distanciaKm.toFixed(3), raioMaximoKm, frete: null };
+  }
+
+  // A distância integral entra na fórmula; o arredondamento de três casas é apenas de apresentação.
+  const frete = configuracao.taxaBase.plus(
+    configuracao.valorPorQuilometro.times(new Prisma.Decimal(distanciaKm.toString())),
+  );
+  return { situacao: 'ATENDIDO', distanciaKm: distanciaKm.toFixed(3), raioMaximoKm, frete: frete.toFixed(2) };
 }
 
 function decimalNaoNegativo(valor: Prisma.Decimal): boolean {

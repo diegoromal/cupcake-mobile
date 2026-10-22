@@ -30,7 +30,7 @@ type CarrinhoLeitura = {
   total: string;
 };
 
-type ItemPersistido = {
+export type ItemPersistido = {
   id: string;
   produtoId: string;
   quantidade: number;
@@ -52,7 +52,7 @@ type ItemPersistido = {
   }>;
 };
 
-const leituraDoCarrinho = {
+export const leituraDoCarrinho = {
   id: true,
   itens: {
     orderBy: { id: 'asc' as const },
@@ -259,7 +259,7 @@ function apresentar(id: string, itens: ItemPersistido[]): CarrinhoLeitura {
   };
 }
 
-function classificar(item: ItemPersistido): { item: CarrinhoItemLeitura; valor: Prisma.Decimal | null } {
+export function classificar(item: ItemPersistido): { item: CarrinhoItemLeitura; valor: Prisma.Decimal | null } {
   const personalizacoes = item.personalizacoes
     .map((row) => ({ id: row.personalizacao.id, nome: row.personalizacao.nome }))
     .sort(compareNomeThenId);
