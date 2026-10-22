@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
+import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
 import '../../cart/data/customer_cart_api.dart';
 import '../../cart/presentation/cart_page.dart';
@@ -227,6 +228,15 @@ class _StorefrontPageState extends State<StorefrontPage> {
     );
   }
 
+  void _openAddresses() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => CustomerAddressPage(session: widget.session),
+      ),
+    );
+  }
+
   Future<void> _signOut() async {
     if (_signOutBusy) return;
     setState(() => _signOutBusy = true);
@@ -263,6 +273,11 @@ class _StorefrontPageState extends State<StorefrontPage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Meus endereços',
+        onPressed: _openAddresses,
+        child: const Icon(Icons.location_on_outlined),
       ),
       body: SafeArea(
         child: Column(

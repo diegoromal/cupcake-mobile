@@ -7,8 +7,10 @@ import { HealthModule } from './health/health.module';
 import { PersonalizacoesModule } from './personalizacoes/personalizacoes.module';
 import { ProdutosModule } from './produtos/produtos.module';
 import { UsersModule } from './users/users.module';
+import { EnderecosModule } from './enderecos/enderecos.module';
+import { ConfiguracaoLojaEntregaModule } from './configuracao-loja-entrega/configuracao-loja-entrega.module';
 
 @Module({
-  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule],
+  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule],
 })
 export class AppModule {}

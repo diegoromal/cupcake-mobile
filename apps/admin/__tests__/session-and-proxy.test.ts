@@ -21,6 +21,7 @@ afterEach(()=>{
  if(originalAppPublicUrl===undefined) delete process.env.APP_PUBLIC_URL; else process.env.APP_PUBLIC_URL=originalAppPublicUrl;
 });
 test('allowlist explícita por método e rota',()=>{
+ expect(allowed('GET',['configuracao-loja-entrega'])).toBe(true);expect(allowed('PUT',['configuracao-loja-entrega'])).toBe(true);expect(allowed('POST',['configuracao-loja-entrega'])).toBe(false);
  expect(allowed('GET',['produtos'])).toBe(true);expect(allowed('POST',['produtos'])).toBe(true);
  expect(allowed('PATCH',['produtos',id])).toBe(true);expect(allowed('POST',['produtos',id,'imagem'])).toBe(true);
  expect(allowed('GET',['produtos',id,'estoque'])).toBe(true);expect(allowed('PATCH',['produtos',id,'estoque'])).toBe(true);
@@ -47,6 +48,17 @@ test('proxy encaminha ajuste de estoque e bloqueia origem cruzada', async () => 
  expect((await proxyAdmin(good,['produtos',id,'estoque'])).status).toBe(200);
  expect(fetchMock).toHaveBeenCalledTimes(1);
  expect(new TextDecoder().decode(fetchMock.mock.calls[0][1]?.body as ArrayBuffer)).toBe('{"quantidadeDisponivel":4}');
+});
+test('proxy encaminha PUT da configuração da loja sem expor credenciais', async () => {
+ const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({taxaBase:'5.00'}));
+ const body=JSON.stringify({latitudeLoja:'-25.000000',longitudeLoja:'-49.000000',raioMaximoAtendimento:'10.000',taxaBase:'5.00',valorPorQuilometro:'2.00'});
+ const mutation=req('/api/admin/configuracao-loja-entrega','PUT',body,{'content-type':'application/json'});
+ mutation.cookies.set('admin_access','token');
+ const response=await proxyAdmin(mutation,['configuracao-loja-entrega']);
+ expect(response.status).toBe(200);
+ expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:3000/admin/configuracao-loja-entrega');
+ expect(fetchMock.mock.calls[0][1]?.method).toBe('PUT');
+ expect(new TextDecoder().decode(fetchMock.mock.calls[0][1]?.body as ArrayBuffer)).toBe(body);
 });
 test('origem cruzada rejeitada e cookies protegidos',async()=>{
  const bad=req('/api/admin/produtos','POST','{}',{'content-type':'application/json',origin:'http://evil.test'});
