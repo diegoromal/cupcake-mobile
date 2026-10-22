@@ -77,12 +77,21 @@ async function main() {
     const patched = await request(http).patch(`/carrinho/itens/${first.body.id}`)
       .set('Authorization', authA).send({ quantidade: 3 }).expect(200);
     assert.equal(patched.body.id, cartId);
-    assert.deepEqual(Object.keys(patched.body).sort(), ['id', 'itens']);
-    const updated = (patched.body.itens as Array<{ id: string; quantidade: number; personalizacoes: unknown[] }>)
-      .find((item) => item.id === first.body.id);
+    assert.deepEqual(Object.keys(patched.body).sort(), ['id', 'itens', 'subtotal', 'total']);
+    const updated = (patched.body.itens as Array<{
+      id: string; quantidade: number; personalizacoes: unknown[];
+      precoUnitario: string; subtotal: string; disponivel: boolean; motivo: string | null;
+    }>).find((item) => item.id === first.body.id);
     assert.equal(updated?.quantidade, 3);
     assert.equal(updated?.personalizacoes.length, 1);
-    assert.equal(JSON.stringify(patched.body).includes('preco'), false);
+    assert.equal(updated?.precoUnitario, '10.00');
+    assert.equal(updated?.subtotal, '30.00');
+    assert.equal(updated?.disponivel, true);
+    assert.equal(updated?.motivo, null);
+    assert.equal(patched.body.subtotal, '40.00');
+    assert.equal(patched.body.total, '40.00');
+    assert.equal(JSON.stringify(patched.body).includes('precoAtual'), false);
+    assert.equal(JSON.stringify(patched.body).includes('precoUnitario'), true);
     const stored = await prisma.itemCarrinho.findUnique({
       where: { id: first.body.id },
       include: { personalizacoes: true },

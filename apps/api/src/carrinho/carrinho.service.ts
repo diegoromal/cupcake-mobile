@@ -1,8 +1,14 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { somarPrecoUnitario } from '../catalogo/preco-unitario';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { isManagedProductImage } from '../produtos/produto-imagens.service';
 import { AdicionarItemCarrinhoDto } from './dto/adicionar-item.dto';
+
+const motivoProduto = 'Produto indisponível.';
+const motivoPersonalizacao = 'Personalização indisponível.';
+const motivoPreco = 'Preço unitário negativo para a seleção.';
+const motivoEstoque = 'Quantidade superior à disponibilidade.';
 
 type CarrinhoItemLeitura = {
   id: string;
@@ -11,6 +17,72 @@ type CarrinhoItemLeitura = {
   imagemDisponivel: boolean;
   quantidade: number;
   personalizacoes: Array<{ id: string; nome: string }>;
+  precoUnitario: string | null;
+  subtotal: string | null;
+  disponivel: boolean;
+  motivo: string | null;
+};
+
+type CarrinhoLeitura = {
+  id: string | null;
+  itens: CarrinhoItemLeitura[];
+  subtotal: string;
+  total: string;
+};
+
+type ItemPersistido = {
+  id: string;
+  produtoId: string;
+  quantidade: number;
+  produto: {
+    nome: string;
+    imagem: string | null;
+    ativo: boolean;
+    precoAtual: Prisma.Decimal;
+    estoque: { quantidadeFisica: number; quantidadeReservada: number } | null;
+    personalizacoes: Array<{ personalizacaoId: string }>;
+  };
+  personalizacoes: Array<{
+    personalizacao: {
+      id: string;
+      nome: string;
+      disponibilidade: boolean;
+      ajusteValor: Prisma.Decimal | null;
+    };
+  }>;
+};
+
+const leituraDoCarrinho = {
+  id: true,
+  itens: {
+    orderBy: { id: 'asc' as const },
+    select: {
+      id: true,
+      produtoId: true,
+      quantidade: true,
+      produto: {
+        select: {
+          nome: true,
+          imagem: true,
+          ativo: true,
+          precoAtual: true,
+          estoque: { select: { quantidadeFisica: true, quantidadeReservada: true } },
+          personalizacoes: { select: { personalizacaoId: true } },
+        },
+      },
+      personalizacoes: {
+        orderBy: [
+          { personalizacao: { nome: 'asc' as const } },
+          { personalizacaoId: 'asc' as const },
+        ],
+        select: {
+          personalizacao: {
+            select: { id: true, nome: true, disponibilidade: true, ajusteValor: true },
+          },
+        },
+      },
+    },
+  },
 };
 
 const itemSelect = {
@@ -25,43 +97,13 @@ const itemSelect = {
 export class CarrinhoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obter(usuarioId: string): Promise<{ id: string | null; itens: CarrinhoItemLeitura[] }> {
+  async obter(usuarioId: string): Promise<CarrinhoLeitura> {
     const carrinho = await this.prisma.carrinho.findUnique({
       where: { usuarioId },
-      select: {
-        id: true,
-        itens: {
-          orderBy: { id: 'asc' },
-          select: {
-            id: true,
-            produtoId: true,
-            quantidade: true,
-            produto: { select: { nome: true, imagem: true } },
-            personalizacoes: {
-              orderBy: [
-                { personalizacao: { nome: 'asc' } },
-                { personalizacaoId: 'asc' },
-              ],
-              select: { personalizacao: { select: { id: true, nome: true } } },
-            },
-          },
-        },
-      },
+      select: leituraDoCarrinho,
     });
-    if (!carrinho) return { id: null, itens: [] };
-    return {
-      id: carrinho.id,
-      itens: carrinho.itens.map((item) => ({
-        id: item.id,
-        produtoId: item.produtoId,
-        nome: item.produto.nome,
-        imagemDisponivel: isManagedProductImage(item.produto.imagem, item.produtoId),
-        quantidade: item.quantidade,
-        personalizacoes: item.personalizacoes
-          .map((row) => ({ id: row.personalizacao.id, nome: row.personalizacao.nome }))
-          .sort(compareNomeThenId),
-      })).sort((a, b) => compareId(a.id, b.id)),
-    };
+    if (!carrinho) return carrinhoVazio(null);
+    return apresentar(carrinho.id, carrinho.itens);
   }
 
   async adicionar(usuarioId: string, input: AdicionarItemCarrinhoDto) {
@@ -196,6 +238,69 @@ export class CarrinhoService {
   private isPrismaError(error: unknown, code: string): boolean {
     return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
   }
+}
+
+function carrinhoVazio(id: string | null): CarrinhoLeitura {
+  return { id, itens: [], subtotal: '0.00', total: '0.00' };
+}
+
+function apresentar(id: string, itens: ItemPersistido[]): CarrinhoLeitura {
+  const linhas = itens.map(classificar);
+  const subtotal = linhas.reduce(
+    (soma, linha) => linha.valor === null ? soma : soma.plus(linha.valor),
+    new Prisma.Decimal(0),
+  );
+  const texto = subtotal.toFixed(2);
+  return {
+    id,
+    itens: linhas.map((linha) => linha.item).sort((a, b) => compareId(a.id, b.id)),
+    subtotal: texto,
+    total: texto,
+  };
+}
+
+function classificar(item: ItemPersistido): { item: CarrinhoItemLeitura; valor: Prisma.Decimal | null } {
+  const personalizacoes = item.personalizacoes
+    .map((row) => ({ id: row.personalizacao.id, nome: row.personalizacao.nome }))
+    .sort(compareNomeThenId);
+  const base = {
+    id: item.id,
+    produtoId: item.produtoId,
+    nome: item.produto.nome,
+    imagemDisponivel: isManagedProductImage(item.produto.imagem, item.produtoId),
+    quantidade: item.quantidade,
+    personalizacoes,
+  };
+  const semPreco = (motivo: string) => ({
+    item: { ...base, precoUnitario: null, subtotal: null, disponivel: false, motivo },
+    valor: null,
+  });
+  if (!item.produto.ativo) return semPreco(motivoProduto);
+  const vinculos = new Set(item.produto.personalizacoes.map((row) => row.personalizacaoId));
+  const personalizacaoInvalida = item.personalizacoes.some((row) =>
+    !row.personalizacao.disponibilidade || !vinculos.has(row.personalizacao.id));
+  if (personalizacaoInvalida) return semPreco(motivoPersonalizacao);
+  const unitario = somarPrecoUnitario(
+    item.produto.precoAtual,
+    item.personalizacoes.map((row) => row.personalizacao.ajusteValor),
+  );
+  if (unitario.isNegative()) return semPreco(motivoPreco);
+  const valor = unitario.times(item.quantidade);
+  const estoque = item.produto.estoque;
+  const saldo = estoque === null
+    ? null
+    : estoque.quantidadeFisica - estoque.quantidadeReservada;
+  const semSaldo = saldo === null || item.quantidade > saldo;
+  return {
+    item: {
+      ...base,
+      precoUnitario: unitario.toFixed(2),
+      subtotal: valor.toFixed(2),
+      disponivel: !semSaldo,
+      motivo: semSaldo ? motivoEstoque : null,
+    },
+    valor,
+  };
 }
 
 function compareId(a: string, b: string): number {

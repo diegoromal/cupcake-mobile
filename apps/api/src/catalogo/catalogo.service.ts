@@ -3,6 +3,7 @@ import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { isManagedProductImage } from '../produtos/produto-imagens.service';
+import { somarPrecoUnitario } from './preco-unitario';
 
 type CatalogProductRow = {
   id: string;
@@ -96,9 +97,9 @@ export class CatalogoService {
     if (valid.length !== selected.size) {
       throw new ConflictException('Seleção de personalizações inválida.');
     }
-    const price = valid.reduce(
-      (sum, option) => sum.plus(option.ajusteValor ?? new Prisma.Decimal(0)),
+    const price = somarPrecoUnitario(
       product.precoAtual,
+      valid.map((option) => option.ajusteValor),
     );
     if (price.isNegative()) {
       throw new ConflictException({

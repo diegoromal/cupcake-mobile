@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { Prisma } from '../src/generated/prisma/client';
 import { PerfilUsuario } from '../src/generated/prisma/enums';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -191,24 +192,51 @@ describe('POST /carrinho/itens', () => {
     return found;
   }
 
-  it('devolve o carrinho do cliente com linhas, nomes, quantidades e ordem', async () => {
+  function leituraE2e(input: {
+    id: string;
+    quantidade: number;
+    preco?: string;
+    imagem?: string | null;
+    ativo?: boolean;
+    opcoes?: Array<{ id: string; nome: string; ajuste?: string | null; disponivel?: boolean }>;
+  }) {
+    const opcoes = input.opcoes ?? [];
+    return {
+      id: input.id,
+      produtoId,
+      quantidade: input.quantidade,
+      produto: {
+        nome: 'Cupcake de festa',
+        imagem: input.imagem === undefined ? null : input.imagem,
+        ativo: input.ativo ?? true,
+        precoAtual: new Prisma.Decimal(input.preco ?? '10.00'),
+        estoque: { quantidadeFisica: 10, quantidadeReservada: 0 },
+        personalizacoes: opcoes.map((opcao) => ({ personalizacaoId: opcao.id })),
+      },
+      personalizacoes: opcoes.map((opcao) => ({
+        personalizacao: {
+          id: opcao.id,
+          nome: opcao.nome,
+          disponibilidade: opcao.disponivel ?? true,
+          ajusteValor: opcao.ajuste == null ? null : new Prisma.Decimal(opcao.ajuste),
+        },
+      })),
+    };
+  }
+
+  it('devolve o carrinho do cliente com preço, subtotal e total vigentes', async () => {
     carrinhoFind.mockResolvedValue({
       id: cartId,
       itens: [
-        {
-          id: secondItemId, produtoId, quantidade: 4,
-          produto: { nome: 'Cupcake de festa', imagem: null, precoAtual: '8.00' },
-          personalizacoes: [],
-        },
-        {
-          id: itemId, produtoId, quantidade: 1,
-          produto: { nome: 'Cupcake de festa', imagem: managed, precoAtual: '9.90' },
-          personalizacoes: [
-            { personalizacao: { id: optionId, nome: 'Creme' } },
-            { personalizacao: { id: aroma, nome: 'Aroma' } },
-            { personalizacao: { id: cremeB, nome: 'Creme' } },
+        leituraE2e({ id: secondItemId, quantidade: 4, preco: '8.00', imagem: null }),
+        leituraE2e({
+          id: itemId, quantidade: 1, preco: '10.00', imagem: managed,
+          opcoes: [
+            { id: optionId, nome: 'Creme', ajuste: '0.10' },
+            { id: aroma, nome: 'Aroma', ajuste: '-0.20' },
+            { id: cremeB, nome: 'Creme', ajuste: null },
           ],
-        },
+        }),
       ],
     });
     const response = await request(app.getHttpServer())
@@ -218,9 +246,12 @@ describe('POST /carrinho/itens', () => {
       .expect(200);
     expect(response.body).toEqual({
       id: cartId,
+      subtotal: '41.90',
+      total: '41.90',
       itens: [
         {
           id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: true, quantidade: 1,
+          precoUnitario: '9.90', subtotal: '9.90', disponivel: true, motivo: null,
           personalizacoes: [
             { id: aroma, nome: 'Aroma' },
             { id: optionId, nome: 'Creme' },
@@ -229,13 +260,15 @@ describe('POST /carrinho/itens', () => {
         },
         {
           id: secondItemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 4,
+          precoUnitario: '8.00', subtotal: '32.00', disponivel: true, motivo: null,
           personalizacoes: [],
         },
       ],
     });
     expect(response.body.itens[0].id).not.toBe(response.body.itens[1].id);
     expect([...keysOf(response.body)].sort()).toEqual([
-      'id', 'imagemDisponivel', 'itens', 'nome', 'personalizacoes', 'produtoId', 'quantidade',
+      'disponivel', 'id', 'imagemDisponivel', 'itens', 'motivo', 'nome', 'personalizacoes',
+      'precoUnitario', 'produtoId', 'quantidade', 'subtotal', 'total',
     ]);
     expect(carrinhoFind).toHaveBeenCalledWith(expect.objectContaining({
       where: { usuarioId: userId },
@@ -251,11 +284,11 @@ describe('POST /carrinho/itens', () => {
     const http = request(app.getHttpServer());
     const bearer = `Bearer ${await token(PerfilUsuario.CLIENTE)}`;
     const missing = await http.get('/carrinho').set('Authorization', bearer).expect(200);
-    expect(missing.body).toEqual({ id: null, itens: [] });
+    expect(missing.body).toEqual({ id: null, itens: [], subtotal: '0.00', total: '0.00' });
     expect(carrinhoCreate).not.toHaveBeenCalled();
     carrinhoFind.mockResolvedValue({ id: cartId, itens: [] });
     const empty = await http.get('/carrinho').set('Authorization', bearer).expect(200);
-    expect(empty.body).toEqual({ id: cartId, itens: [] });
+    expect(empty.body).toEqual({ id: cartId, itens: [], subtotal: '0.00', total: '0.00' });
     expect(carrinhoCreate).not.toHaveBeenCalled();
     expect(itemCreate).not.toHaveBeenCalled();
   });
@@ -269,7 +302,7 @@ describe('POST /carrinho/itens', () => {
       .query({ usuarioId: userId, carrinhoId: cartId })
       .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE, otherId)}`)
       .expect(200);
-    expect(foreign.body).toEqual({ id: null, itens: [] });
+    expect(foreign.body).toEqual({ id: null, itens: [], subtotal: '0.00', total: '0.00' });
     expect(carrinhoFind).toHaveBeenCalledWith(expect.objectContaining({
       where: { usuarioId: otherId },
     }));
@@ -287,16 +320,42 @@ describe('POST /carrinho/itens', () => {
 
   const cartBody = (quantidade: number) => ({
     id: cartId,
-    itens: [{
-      id: itemId, produtoId, quantidade,
-      produto: { nome: 'Cupcake de festa', imagem: null, precoAtual: '9.90' },
-      personalizacoes: [
-        { personalizacao: { id: optionId, nome: 'Aroma' } },
-      ],
-    }],
+    itens: [leituraE2e({
+      id: itemId, quantidade, preco: '9.90', imagem: null,
+      opcoes: [{ id: optionId, nome: 'Aroma' }],
+    })],
   });
 
-  it('altera a quantidade em 200 no formato do GET sem preço nem escrita de estoque', async () => {
+  it('mantém linha indisponível no GET 200, fora do total e sem gravar', async () => {
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [leituraE2e({ id: itemId, quantidade: 2, ativo: false })],
+    });
+    const response = await request(app.getHttpServer())
+      .get('/carrinho')
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`)
+      .expect(200);
+    expect(response.body).toMatchObject({
+      id: cartId,
+      subtotal: '0.00',
+      total: '0.00',
+      itens: [{
+        id: itemId,
+        nome: 'Cupcake de festa',
+        precoUnitario: null,
+        subtotal: null,
+        disponivel: false,
+        motivo: 'Produto indisponível.',
+      }],
+    });
+    expect(carrinhoCreate).not.toHaveBeenCalled();
+    expect(itemCreate).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+  });
+
+  it('altera a quantidade em 200 no formato do GET sem escrita de estoque', async () => {
     itemFindFirst.mockResolvedValue({ id: itemId, produtoId, quantidade: 2 });
     itemUpdateMany.mockResolvedValue({ count: 1 });
     carrinhoFind.mockResolvedValue(cartBody(3));
@@ -307,13 +366,17 @@ describe('POST /carrinho/itens', () => {
       .expect(200);
     expect(response.body).toEqual({
       id: cartId,
+      subtotal: '29.70',
+      total: '29.70',
       itens: [{
         id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 3,
+        precoUnitario: '9.90', subtotal: '29.70', disponivel: true, motivo: null,
         personalizacoes: [{ id: optionId, nome: 'Aroma' }],
       }],
     });
     expect([...keysOf(response.body)].sort()).toEqual([
-      'id', 'imagemDisponivel', 'itens', 'nome', 'personalizacoes', 'produtoId', 'quantidade',
+      'disponivel', 'id', 'imagemDisponivel', 'itens', 'motivo', 'nome', 'personalizacoes',
+      'precoUnitario', 'produtoId', 'quantidade', 'subtotal', 'total',
     ]);
     expect(itemUpdateMany).toHaveBeenCalledWith({
       where: { id: itemId, carrinho: { usuarioId: userId } },

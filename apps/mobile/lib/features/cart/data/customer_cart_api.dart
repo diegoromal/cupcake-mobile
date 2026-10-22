@@ -8,7 +8,9 @@ final _uuidPattern = RegExp(
   caseSensitive: false,
 );
 
-const _cartKeys = {'id', 'itens'};
+final _moneyPattern = RegExp(r'^\d+\.\d{2}$');
+
+const _cartKeys = {'id', 'itens', 'subtotal', 'total'};
 const _itemKeys = {
   'id',
   'produtoId',
@@ -16,6 +18,10 @@ const _itemKeys = {
   'imagemDisponivel',
   'quantidade',
   'personalizacoes',
+  'precoUnitario',
+  'subtotal',
+  'disponivel',
+  'motivo',
 };
 const _personalizationKeys = {'id', 'nome'};
 
@@ -59,6 +65,10 @@ class CartItem {
     required this.imageAvailable,
     required this.quantity,
     required this.personalizations,
+    required this.unitPrice,
+    required this.subtotal,
+    required this.available,
+    required this.reason,
   });
   final String id;
   final String productId;
@@ -66,6 +76,10 @@ class CartItem {
   final bool imageAvailable;
   final int quantity;
   final List<CartPersonalization> personalizations;
+  final String? unitPrice;
+  final String? subtotal;
+  final bool available;
+  final String? reason;
 
   static CartItem? parse(Object? value) {
     if (value is! Map<String, dynamic> || !_sameKeys(value, _itemKeys)) {
@@ -77,6 +91,10 @@ class CartItem {
     final imageAvailable = value['imagemDisponivel'];
     final quantity = value['quantidade'];
     final rawOptions = value['personalizacoes'];
+    final available = value['disponivel'];
+    final reason = value['motivo'];
+    final unitPrice = value['precoUnitario'];
+    final subtotal = value['subtotal'];
     if (id is! String ||
         !_uuidPattern.hasMatch(id) ||
         productId is! String ||
@@ -86,7 +104,11 @@ class CartItem {
         imageAvailable is! bool ||
         quantity is! int ||
         quantity < 1 ||
-        rawOptions is! List) {
+        rawOptions is! List ||
+        available is! bool ||
+        !_pairedMoney(unitPrice, subtotal) ||
+        (available && (reason != null || unitPrice is! String)) ||
+        (!available && (reason is! String || reason.isEmpty))) {
       return null;
     }
     final personalizations = <CartPersonalization>[];
@@ -103,14 +125,25 @@ class CartItem {
       imageAvailable: imageAvailable,
       quantity: quantity,
       personalizations: List.unmodifiable(personalizations),
+      unitPrice: unitPrice as String?,
+      subtotal: subtotal as String?,
+      available: available,
+      reason: reason as String?,
     );
   }
 }
 
 class CustomerCart {
-  const CustomerCart({required this.id, required this.items});
+  const CustomerCart({
+    required this.id,
+    required this.items,
+    this.subtotal = '0.00',
+    this.total = '0.00',
+  });
   final String? id;
   final List<CartItem> items;
+  final String subtotal;
+  final String total;
 
   static CustomerCart? parse(Object? value) {
     if (value is! Map<String, dynamic> || !_sameKeys(value, _cartKeys)) {
@@ -118,9 +151,15 @@ class CustomerCart {
     }
     final rawId = value['id'];
     final rawItems = value['itens'];
+    final subtotal = value['subtotal'];
+    final total = value['total'];
     if ((rawId != null &&
             (rawId is! String || !_uuidPattern.hasMatch(rawId))) ||
-        rawItems is! List) {
+        rawItems is! List ||
+        subtotal is! String ||
+        !_moneyPattern.hasMatch(subtotal) ||
+        total is! String ||
+        !_moneyPattern.hasMatch(total)) {
       return null;
     }
     final items = <CartItem>[];
@@ -131,7 +170,13 @@ class CustomerCart {
       items.add(item);
     }
     if (rawId == null && items.isNotEmpty) return null;
-    return CustomerCart(id: rawId as String?, items: List.unmodifiable(items));
+    if (items.isEmpty && (subtotal != '0.00' || total != '0.00')) return null;
+    return CustomerCart(
+      id: rawId as String?,
+      items: List.unmodifiable(items),
+      subtotal: subtotal,
+      total: total,
+    );
   }
 }
 
@@ -283,3 +328,13 @@ class CustomerCartApi {
 
 bool _sameKeys(Map<String, dynamic> value, Set<String> keys) =>
     value.length == keys.length && value.keys.every(keys.contains);
+
+bool _pairedMoney(Object? unitPrice, Object? subtotal) {
+  final unitOk =
+      unitPrice == null ||
+      (unitPrice is String && _moneyPattern.hasMatch(unitPrice));
+  final subtotalOk =
+      subtotal == null ||
+      (subtotal is String && _moneyPattern.hasMatch(subtotal));
+  return unitOk && subtotalOk && (unitPrice == null) == (subtotal == null);
+}
