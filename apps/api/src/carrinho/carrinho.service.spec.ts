@@ -1,4 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { memoriaIds, novaMemoria, prismaDaMemoria } from '../../test/carrinho-memoria';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CarrinhoService } from './carrinho.service';
@@ -714,5 +715,212 @@ describe('CarrinhoService', () => {
     expect(itemUpdateMany).not.toHaveBeenCalled();
     expect(itemDeleteMany).not.toHaveBeenCalled();
     expect(carrinhoDelete).not.toHaveBeenCalled();
+  });
+
+  describe('fluxo consolidado', () => {
+    function fluxo() {
+      const memoria = novaMemoria();
+      const fluxoService = new CarrinhoService(
+        prismaDaMemoria(() => memoria) as unknown as PrismaService,
+      );
+      return { memoria, fluxoService };
+    }
+
+    function semEscrita(memoria: ReturnType<typeof novaMemoria>) {
+      expect(memoria.writes).toEqual({
+        estoque: 0, reserva: 0, personalizacaoItem: 0, carrinho: 0, itemUpdate: 0, itemFindMany: 0,
+      });
+    }
+
+    it('inclui, lê, altera e relê a mesma linha sem escrever estoque', async () => {
+      const { memoria, fluxoService } = fluxo();
+      const created = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product, quantidade: 1, personalizacaoIds: [],
+      });
+      expect(Object.keys(created).sort()).toEqual([
+        'carrinhoId', 'id', 'personalizacaoIds', 'produtoId', 'quantidade',
+      ]);
+      const read = await fluxoService.obter(memoriaIds.userA);
+      expect(read.itens).toEqual([expect.objectContaining({
+        id: created.id, quantidade: 1, precoUnitario: '10.00', subtotal: '10.00',
+        disponivel: true, motivo: null, personalizacoes: [],
+      })]);
+      expect(read).toMatchObject({ subtotal: '10.00', total: '10.00' });
+      expect(read.id).toBe(created.carrinhoId);
+      const patched = await fluxoService.alterarQuantidade(memoriaIds.userA, created.id, 2);
+      expect(patched.itens).toEqual([expect.objectContaining({
+        id: created.id, quantidade: 2, precoUnitario: '10.00', subtotal: '20.00',
+      })]);
+      expect(patched).toMatchObject({ id: created.carrinhoId, subtotal: '20.00', total: '20.00' });
+      const again = await fluxoService.obter(memoriaIds.userA);
+      expect(again).toEqual(patched);
+      expect(memoria.linha(created.id)?.quantidade).toBe(2);
+      expect(memoria.carts.get(memoriaIds.userA)?.id).toBe(created.carrinhoId);
+      expect(memoria.ultimaLeitura?.orderBy).toEqual({ id: 'asc' });
+      expect(memoria.ultimaLeitura?.select?.personalizacoes?.orderBy).toEqual([
+        { personalizacao: { nome: 'asc' } },
+        { personalizacaoId: 'asc' },
+      ]);
+      expect(memoria.alteracoes).toEqual([{ quantidade: 2 }]);
+      semEscrita(memoria);
+    });
+
+    it('preserva personalizações no PATCH e esvazia só a linha removida', async () => {
+      const { memoria, fluxoService } = fluxo();
+      const first = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product,
+        quantidade: 1,
+        personalizacaoIds: [memoriaIds.optionNull, memoriaIds.optionAdjust],
+      });
+      const second = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product, quantidade: 1, personalizacaoIds: [],
+      });
+      expect(first.id).not.toBe(second.id);
+      const patched = await fluxoService.alterarQuantidade(memoriaIds.userA, first.id, 2);
+      expect(patched.itens.map((item) => item.id)).toEqual([first.id, second.id].sort());
+      const kept = patched.itens.find((item) => item.id === first.id);
+      expect(kept?.quantidade).toBe(2);
+      expect(kept?.personalizacoes).toEqual([
+        { id: memoriaIds.optionAdjust, nome: 'Ajuste' },
+        { id: memoriaIds.optionNull, nome: 'Nulo' },
+      ]);
+      expect(memoria.linha(first.id)?.personalizacaoIds).toEqual([
+        memoriaIds.optionNull, memoriaIds.optionAdjust,
+      ]);
+      await fluxoService.removerItem(memoriaIds.userA, first.id);
+      expect(memoria.linha(first.id)).toBeUndefined();
+      const after = await fluxoService.obter(memoriaIds.userA);
+      expect(after.id).toBe(first.carrinhoId);
+      expect(after.itens.map((item) => item.id)).toEqual([second.id]);
+      await fluxoService.removerItem(memoriaIds.userA, second.id);
+      expect(await fluxoService.obter(memoriaIds.userA)).toEqual({
+        id: first.carrinhoId, itens: [], subtotal: '0.00', total: '0.00',
+      });
+      expect(memoria.carts.has(memoriaIds.userA)).toBe(true);
+      semEscrita(memoria);
+    });
+
+    it('isola carrinhos e responde 404 igual para item ausente ou alheio', async () => {
+      const { memoria, fluxoService } = fluxo();
+      const created = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product, quantidade: 2, personalizacaoIds: [],
+      });
+      expect(await fluxoService.obter(memoriaIds.userB)).toEqual({
+        id: null, itens: [], subtotal: '0.00', total: '0.00',
+      });
+      const foreignPatch = await fluxoService.alterarQuantidade(memoriaIds.userB, created.id, 1)
+        .catch((error: unknown) => error);
+      const missingPatch = await fluxoService.alterarQuantidade(memoriaIds.userA, memoriaIds.optionAdjust, 1)
+        .catch((error: unknown) => error);
+      const foreignDelete = await fluxoService.removerItem(memoriaIds.userB, created.id)
+        .catch((error: unknown) => error);
+      const missingDelete = await fluxoService.removerItem(memoriaIds.userA, memoriaIds.zero)
+        .catch((error: unknown) => error);
+      for (const error of [foreignPatch, missingPatch, foreignDelete, missingDelete]) {
+        expect(error).toBeInstanceOf(NotFoundException);
+        expect((error as NotFoundException).message).toBe('Item não encontrado.');
+      }
+      expect(memoria.linha(created.id)?.quantidade).toBe(2);
+      expect(memoria.carts.has(memoriaIds.userB)).toBe(false);
+      const owned = await fluxoService.obter(memoriaIds.userA);
+      expect(owned.itens).toEqual([expect.objectContaining({ id: created.id, quantidade: 2 })]);
+      semEscrita(memoria);
+    });
+
+    it('valida cada linha contra o saldo sem somar a quantidade antiga nem linhas irmãs', async () => {
+      const { memoria, fluxoService } = fluxo();
+      const first = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product, quantidade: 2, personalizacaoIds: [],
+      });
+      const second = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product, quantidade: 2, personalizacaoIds: [],
+      });
+      const both = await fluxoService.obter(memoriaIds.userA);
+      expect(both.itens).toEqual([
+        expect.objectContaining({ id: first.id, quantidade: 2, disponivel: true, motivo: null }),
+        expect.objectContaining({ id: second.id, quantidade: 2, disponivel: true, motivo: null }),
+      ]);
+      const atBalance = await fluxoService.alterarQuantidade(memoriaIds.userA, first.id, 3);
+      expect(atBalance.itens).toEqual([
+        expect.objectContaining({
+          id: first.id, quantidade: 3, disponivel: true, precoUnitario: '10.00', subtotal: '30.00',
+        }),
+        expect.objectContaining({ id: second.id, quantidade: 2, disponivel: true, subtotal: '20.00' }),
+      ]);
+      expect(atBalance).toMatchObject({ subtotal: '50.00', total: '50.00' });
+      await expect(fluxoService.alterarQuantidade(memoriaIds.userA, first.id, 4))
+        .rejects.toThrow('Quantidade superior à disponibilidade.');
+      expect(memoria.linha(first.id)?.quantidade).toBe(3);
+      expect(memoria.linha(second.id)?.quantidade).toBe(2);
+      memoria.definirEstoque(memoriaIds.product, null);
+      const missingStock = await fluxoService.obter(memoriaIds.userA);
+      expect(missingStock.itens).toEqual([
+        expect.objectContaining({
+          id: first.id, precoUnitario: '10.00', subtotal: '30.00', disponivel: false,
+          motivo: 'Quantidade superior à disponibilidade.',
+        }),
+        expect.objectContaining({
+          id: second.id, precoUnitario: '10.00', subtotal: '20.00', disponivel: false,
+          motivo: 'Quantidade superior à disponibilidade.',
+        }),
+      ]);
+      expect(missingStock).toMatchObject({ subtotal: '50.00', total: '50.00' });
+      await expect(fluxoService.alterarQuantidade(memoriaIds.userA, second.id, 1))
+        .rejects.toBeInstanceOf(ConflictException);
+      expect(memoria.linha(second.id)?.quantidade).toBe(2);
+      expect(memoria.alteracoes).toEqual([{ quantidade: 3 }]);
+      semEscrita(memoria);
+    });
+
+    it('recalcula preço vigente, ajuste nulo, zero e negativo sem gravar o valor', async () => {
+      const { memoria, fluxoService } = fluxo();
+      const priced = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.product,
+        quantidade: 2,
+        personalizacaoIds: [memoriaIds.optionAdjust, memoriaIds.optionNull],
+      });
+      const zero = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.zero, quantidade: 1, personalizacaoIds: [],
+      });
+      const negative = await fluxoService.adicionar(memoriaIds.userA, {
+        produtoId: memoriaIds.negative, quantidade: 1, personalizacaoIds: [memoriaIds.optionNegative],
+      });
+      const read = await fluxoService.obter(memoriaIds.userA);
+      expect(read.itens).toEqual([
+        expect.objectContaining({
+          id: priced.id, quantidade: 2, precoUnitario: '10.10', subtotal: '20.20', disponivel: true,
+          personalizacoes: [
+            { id: memoriaIds.optionAdjust, nome: 'Ajuste' },
+            { id: memoriaIds.optionNull, nome: 'Nulo' },
+          ],
+        }),
+        expect.objectContaining({
+          id: zero.id, precoUnitario: '0.00', subtotal: '0.00', disponivel: true, motivo: null,
+        }),
+        expect.objectContaining({
+          id: negative.id, precoUnitario: null, subtotal: null, disponivel: false,
+          motivo: 'Preço unitário negativo para a seleção.',
+        }),
+      ]);
+      expect(read).toMatchObject({ subtotal: '20.20', total: '20.20' });
+      memoria.definirPreco(memoriaIds.product, '11.00');
+      const reread = await fluxoService.obter(memoriaIds.userA);
+      expect(reread.itens.find((item) => item.id === priced.id)).toEqual(expect.objectContaining({
+        precoUnitario: '11.10', subtotal: '22.20',
+      }));
+      expect(reread).toMatchObject({ subtotal: '22.20', total: '22.20' });
+      const patched = await fluxoService.alterarQuantidade(memoriaIds.userA, priced.id, 1);
+      expect(patched.itens.find((item) => item.id === priced.id)).toEqual(expect.objectContaining({
+        quantidade: 1, precoUnitario: '11.10', subtotal: '11.10',
+        personalizacoes: [
+          { id: memoriaIds.optionAdjust, nome: 'Ajuste' },
+          { id: memoriaIds.optionNull, nome: 'Nulo' },
+        ],
+      }));
+      expect(patched.itens.find((item) => item.id === negative.id)?.precoUnitario).toBeNull();
+      expect(patched).toMatchObject({ subtotal: '11.10', total: '11.10' });
+      expect(JSON.stringify(patched)).not.toMatch(/precoAtual|quantidadeFisica|quantidadeReservada/);
+      semEscrita(memoria);
+    });
   });
 });

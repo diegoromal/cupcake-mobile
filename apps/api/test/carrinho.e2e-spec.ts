@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { Prisma } from '../src/generated/prisma/client';
 import { PerfilUsuario } from '../src/generated/prisma/enums';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { memoriaIds, novaMemoria, prismaDaMemoria, type MemoriaCarrinho } from './carrinho-memoria';
 
 const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const produtoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -534,5 +535,246 @@ describe('POST /carrinho/itens', () => {
       .set('Authorization', `Bearer ${await token(PerfilUsuario.CLIENTE)}`).expect(400);
     expect(itemDeleteMany).not.toHaveBeenCalled();
     expect(estoqueFind).not.toHaveBeenCalled();
+  });
+});
+
+describe('fluxo consolidado do carrinho', () => {
+  let app: INestApplication;
+  let memoria: MemoriaCarrinho;
+  const jwt = new JwtService();
+  const token = (perfil: PerfilUsuario, sub: string) => jwt.signAsync(
+    { sub, perfil, type: 'access' },
+    { secret: process.env.JWT_ACCESS_SECRET, algorithm: 'HS256', expiresIn: '15m' },
+  );
+  const auth = async (perfil: PerfilUsuario, sub: string) =>
+    `Bearer ${await token(perfil, sub)}`;
+
+  beforeAll(async () => {
+    memoria = novaMemoria();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue(prismaDaMemoria(() => memoria))
+      .compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterAll(async () => app.close());
+
+  beforeEach(() => {
+    memoria = novaMemoria();
+  });
+
+  const http = () => request(app.getHttpServer());
+  const clientA = () => auth(PerfilUsuario.CLIENTE, memoriaIds.userA);
+  const clientB = () => auth(PerfilUsuario.CLIENTE, memoriaIds.userB);
+
+  function post(
+    authorization: string,
+    produtoId: string,
+    quantidade: number,
+    personalizacaoIds: string[],
+  ) {
+    return http().post('/carrinho/itens').set('Authorization', authorization)
+      .send({ produtoId, quantidade, personalizacaoIds });
+  }
+
+  it('POST, GET, PATCH e GET preservam a linha, o preço e o saldo', async () => {
+    const authorization = await clientA();
+    const created = await post(authorization, memoriaIds.product, 1, []).expect(201);
+    expect(Object.keys(created.body).sort()).toEqual([
+      'carrinhoId', 'id', 'personalizacaoIds', 'produtoId', 'quantidade',
+    ]);
+    expect(JSON.stringify(created.body)).not.toMatch(/preco|subtotal|total/i);
+    const read = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(read.body).toMatchObject({
+      id: created.body.carrinhoId,
+      subtotal: '10.00',
+      total: '10.00',
+      itens: [{
+        id: created.body.id, quantidade: 1, precoUnitario: '10.00', subtotal: '10.00',
+        disponivel: true, motivo: null, personalizacoes: [],
+      }],
+    });
+    const patched = await http().patch(`/carrinho/itens/${created.body.id}`)
+      .set('Authorization', authorization).send({ quantidade: 2 }).expect(200);
+    expect(patched.body).toMatchObject({
+      id: created.body.carrinhoId,
+      subtotal: '20.00',
+      total: '20.00',
+      itens: [{ id: created.body.id, quantidade: 2, precoUnitario: '10.00', subtotal: '20.00' }],
+    });
+    const again = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(again.body).toEqual(patched.body);
+    expect(memoria.linha(created.body.id)?.quantidade).toBe(2);
+    expect(memoria.writes.estoque).toBe(0);
+    expect(memoria.writes.reserva).toBe(0);
+  });
+
+  it('PATCH preserva personalizações e DELETE deixa o carrinho vazio', async () => {
+    const authorization = await clientA();
+    const first = await post(authorization, memoriaIds.product, 1, [
+      memoriaIds.optionNull, memoriaIds.optionAdjust,
+    ]).expect(201);
+    const second = await post(authorization, memoriaIds.product, 1, []).expect(201);
+    expect(first.body.id).not.toBe(second.body.id);
+    const patched = await http().patch(`/carrinho/itens/${first.body.id}`)
+      .set('Authorization', authorization).send({ quantidade: 2 }).expect(200);
+    const kept = patched.body.itens.find((item: { id: string }) => item.id === first.body.id);
+    expect(kept).toMatchObject({
+      quantidade: 2,
+      personalizacoes: [
+        { id: memoriaIds.optionAdjust, nome: 'Ajuste' },
+        { id: memoriaIds.optionNull, nome: 'Nulo' },
+      ],
+    });
+    expect(memoria.linha(first.body.id)?.personalizacaoIds).toEqual([
+      memoriaIds.optionNull, memoriaIds.optionAdjust,
+    ]);
+    const removed = await http().delete(`/carrinho/itens/${first.body.id}`)
+      .set('Authorization', authorization).expect(204);
+    expect(removed.text).toBe('');
+    expect(memoria.linha(first.body.id)).toBeUndefined();
+    expect(memoria.writes.personalizacaoItem).toBe(0);
+    const after = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(after.body.itens.map((item: { id: string }) => item.id)).toEqual([second.body.id]);
+    await http().delete(`/carrinho/itens/${second.body.id}`)
+      .set('Authorization', authorization).expect(204);
+    const empty = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(empty.body).toEqual({
+      id: first.body.carrinhoId, itens: [], subtotal: '0.00', total: '0.00',
+    });
+    expect(memoria.carts.has(memoriaIds.userA)).toBe(true);
+    expect(memoria.writes.carrinho).toBe(0);
+    expect(memoria.writes.estoque).toBe(0);
+    expect(memoria.writes.reserva).toBe(0);
+  });
+
+  it('isola clientes e nega anônimo, ADMIN e ENTREGADOR', async () => {
+    const authorizationA = await clientA();
+    const authorizationB = await clientB();
+    const created = await post(authorizationA, memoriaIds.product, 2, []).expect(201);
+    const foreignRead = await http().get('/carrinho').set('Authorization', authorizationB).expect(200);
+    expect(foreignRead.body).toEqual({ id: null, itens: [], subtotal: '0.00', total: '0.00' });
+    const foreignPatch = await http().patch(`/carrinho/itens/${created.body.id}`)
+      .set('Authorization', authorizationB).send({ quantidade: 1 }).expect(404);
+    const missingPatch = await http().patch(`/carrinho/itens/${memoriaIds.optionAdjust}`)
+      .set('Authorization', authorizationA).send({ quantidade: 1 }).expect(404);
+    const foreignDelete = await http().delete(`/carrinho/itens/${created.body.id}`)
+      .set('Authorization', authorizationB).expect(404);
+    const missingDelete = await http().delete(`/carrinho/itens/${memoriaIds.zero}`)
+      .set('Authorization', authorizationA).expect(404);
+    for (const response of [foreignPatch, missingPatch, foreignDelete, missingDelete]) {
+      expect(response.body.message).toBe('Item não encontrado.');
+    }
+    expect(memoria.linha(created.body.id)?.quantidade).toBe(2);
+    expect(memoria.carts.has(memoriaIds.userB)).toBe(false);
+    const owned = await http().get('/carrinho').set('Authorization', authorizationA).expect(200);
+    expect(owned.body.itens).toEqual([expect.objectContaining({ id: created.body.id, quantidade: 2 })]);
+    const anonymousGet = await http().get('/carrinho').expect(401);
+    const anonymousPatch = await http().patch(`/carrinho/itens/${created.body.id}`)
+      .send({ quantidade: 1 }).expect(401);
+    const anonymousDelete = await http().delete(`/carrinho/itens/${created.body.id}`).expect(401);
+    for (const response of [anonymousGet, anonymousPatch, anonymousDelete]) {
+      expect(response.body.message).toBe('Access token inválido.');
+    }
+    for (const perfil of [PerfilUsuario.ADMIN, PerfilUsuario.ENTREGADOR]) {
+      const sub = perfil === PerfilUsuario.ADMIN ? memoriaIds.admin : memoriaIds.courier;
+      const authorization = await auth(perfil, sub);
+      const deniedGet = await http().get('/carrinho').set('Authorization', authorization).expect(403);
+      const deniedPatch = await http().patch(`/carrinho/itens/${created.body.id}`)
+        .set('Authorization', authorization).send({ quantidade: 1 }).expect(403);
+      const deniedDelete = await http().delete(`/carrinho/itens/${created.body.id}`)
+        .set('Authorization', authorization).expect(403);
+      for (const response of [deniedGet, deniedPatch, deniedDelete]) {
+        expect(response.body.message).toBe('Acesso negado.');
+      }
+    }
+    expect(memoria.linha(created.body.id)?.quantidade).toBe(2);
+    expect(memoria.writes).toEqual({
+      estoque: 0, reserva: 0, personalizacaoItem: 0, carrinho: 0, itemUpdate: 0, itemFindMany: 0,
+    });
+  });
+
+  it('não soma linhas nem a quantidade antiga e mantém a linha sem estoque', async () => {
+    const authorization = await clientA();
+    const first = await post(authorization, memoriaIds.product, 2, []).expect(201);
+    const second = await post(authorization, memoriaIds.product, 2, []).expect(201);
+    const both = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(both.body.itens).toEqual([
+      expect.objectContaining({ id: first.body.id, quantidade: 2, disponivel: true, motivo: null }),
+      expect.objectContaining({ id: second.body.id, quantidade: 2, disponivel: true, motivo: null }),
+    ]);
+    const atBalance = await http().patch(`/carrinho/itens/${first.body.id}`)
+      .set('Authorization', authorization).send({ quantidade: 3 }).expect(200);
+    expect(atBalance.body).toMatchObject({ subtotal: '50.00', total: '50.00' });
+    expect(atBalance.body.itens).toEqual([
+      expect.objectContaining({ id: first.body.id, quantidade: 3, disponivel: true, subtotal: '30.00' }),
+      expect.objectContaining({ id: second.body.id, quantidade: 2, disponivel: true, subtotal: '20.00' }),
+    ]);
+    const over = await http().patch(`/carrinho/itens/${first.body.id}`)
+      .set('Authorization', authorization).send({ quantidade: 4 }).expect(409);
+    expect(over.body.message).toBe('Quantidade superior à disponibilidade.');
+    expect(memoria.linha(first.body.id)?.quantidade).toBe(3);
+    memoria.definirEstoque(memoriaIds.product, null);
+    const missing = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(missing.body).toMatchObject({ subtotal: '50.00', total: '50.00' });
+    expect(missing.body.itens).toEqual([
+      expect.objectContaining({
+        id: first.body.id, precoUnitario: '10.00', subtotal: '30.00', disponivel: false,
+        motivo: 'Quantidade superior à disponibilidade.',
+      }),
+      expect.objectContaining({
+        id: second.body.id, disponivel: false, motivo: 'Quantidade superior à disponibilidade.',
+      }),
+    ]);
+    const rejected = await http().patch(`/carrinho/itens/${second.body.id}`)
+      .set('Authorization', authorization).send({ quantidade: 1 }).expect(409);
+    expect(rejected.body.message).toBe('Quantidade superior à disponibilidade.');
+    expect(memoria.linha(second.body.id)?.quantidade).toBe(2);
+    expect(memoria.writes.estoque).toBe(0);
+    expect(memoria.writes.reserva).toBe(0);
+  });
+
+  it('devolve preço vigente, ajuste nulo, zero e negativo calculados pela API', async () => {
+    const authorization = await clientA();
+    const priced = await post(authorization, memoriaIds.product, 2, [
+      memoriaIds.optionAdjust, memoriaIds.optionNull,
+    ]).expect(201);
+    const zero = await post(authorization, memoriaIds.zero, 1, []).expect(201);
+    const negative = await post(authorization, memoriaIds.negative, 1, [
+      memoriaIds.optionNegative,
+    ]).expect(201);
+    const read = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    expect(read.body.itens).toEqual([
+      expect.objectContaining({ id: priced.body.id, precoUnitario: '10.10', subtotal: '20.20' }),
+      expect.objectContaining({ id: zero.body.id, precoUnitario: '0.00', subtotal: '0.00' }),
+      expect.objectContaining({
+        id: negative.body.id, precoUnitario: null, subtotal: null, disponivel: false,
+        motivo: 'Preço unitário negativo para a seleção.',
+      }),
+    ]);
+    expect(read.body).toMatchObject({ subtotal: '20.20', total: '20.20' });
+    memoria.definirPreco(memoriaIds.product, '11.00');
+    const reread = await http().get('/carrinho').set('Authorization', authorization).expect(200);
+    const repriced = reread.body.itens.find((item: { id: string }) => item.id === priced.body.id);
+    expect(repriced).toEqual(expect.objectContaining({
+      precoUnitario: '11.10', subtotal: '22.20',
+    }));
+    expect(reread.body.itens.map((item: { id: string }) => item.id)).toEqual(
+      [priced.body.id, zero.body.id, negative.body.id].sort(),
+    );
+    expect(reread.body).toMatchObject({ subtotal: '22.20', total: '22.20' });
+    const patched = await http().patch(`/carrinho/itens/${priced.body.id}`)
+      .set('Authorization', authorization).send({ quantidade: 1 }).expect(200);
+    const patchedLine = patched.body.itens.find((item: { id: string }) => item.id === priced.body.id);
+    expect(patchedLine).toEqual(expect.objectContaining({
+      quantidade: 1, precoUnitario: '11.10', subtotal: '11.10',
+    }));
+    expect(patched.body).toMatchObject({ subtotal: '11.10', total: '11.10' });
+    expect(JSON.stringify(patched.body)).not.toMatch(/precoAtual|quantidadeFisica|frete|desconto/);
+    expect(memoria.alteracoes).toEqual([{ quantidade: 1 }]);
+    expect(memoria.writes.estoque).toBe(0);
+    expect(memoria.writes.reserva).toBe(0);
   });
 });
