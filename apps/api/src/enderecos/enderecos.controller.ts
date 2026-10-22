@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PerfilUsuario } from '../generated/prisma/enums';
 import { CepService } from './cep.service';
+import { CoberturaFreteService } from './cobertura-frete.service';
 import { CreateEnderecoDto } from './dto/create-endereco.dto';
 import { EnderecosService } from './enderecos.service';
 import { GeocodificacaoService } from './geocodificacao.service';
@@ -18,6 +19,7 @@ export class EnderecosController {
     private readonly enderecos: EnderecosService,
     private readonly cep: CepService,
     private readonly geocodificacao: GeocodificacaoService,
+    private readonly coberturaFrete: CoberturaFreteService,
   ) {}
 
   @Post()
@@ -39,6 +41,11 @@ export class EnderecosController {
   @HttpCode(200)
   geocodificar(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
     return this.geocodificacao.geocodificar(this.userId(request), id);
+  }
+
+  @Get(':id/cobertura-frete')
+  consultarCoberturaFrete(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.coberturaFrete.consultar(this.userId(request), id);
   }
 
   private userId(request: AuthenticatedRequest): string {
