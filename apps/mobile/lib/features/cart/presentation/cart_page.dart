@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
+import '../../address/data/customer_address_api.dart';
 import '../../catalog/data/customer_catalog_api.dart';
+import '../../checkout/presentation/fulfillment_page.dart';
 import '../data/customer_cart_api.dart';
 
 class CartPage extends StatefulWidget {
@@ -14,11 +16,13 @@ class CartPage extends StatefulWidget {
     required this.session,
     required this.cartApi,
     required this.catalogApi,
+    this.addressApi,
   });
 
   final CustomerSession session;
   final CustomerCartApi cartApi;
   final CustomerCatalogApi catalogApi;
+  final CustomerAddressApi? addressApi;
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -172,6 +176,23 @@ class _CartPageState extends State<CartPage> {
 
   bool get _controlsEnabled =>
       !_busy && _status == CartRequestStatus.success && _cart != null;
+
+  bool get _canContinue =>
+      _controlsEnabled &&
+      _cart!.items.isNotEmpty &&
+      _cart!.items.every((item) => item.available);
+
+  void _openFulfillment() {
+    if (!_canContinue) return;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => FulfillmentPage(
+          session: widget.session,
+          addressApi: widget.addressApi,
+        ),
+      ),
+    );
+  }
 
   Future<void> _changeQuantity(CartItem item, int quantity) {
     if (quantity < 1 || quantity > _maxQuantity) return Future<void>.value();
@@ -471,7 +492,7 @@ class _CartPageState extends State<CartPage> {
         const SizedBox(height: AppTokens.spacing12),
         Text('Total: ${_formatPrice(cart.total)}'),
         const SizedBox(height: AppTokens.spacing16),
-        const _ContinueButton(),
+        _ContinueButton(onPressed: _canContinue ? _openFulfillment : null),
       ],
     );
   }
@@ -581,17 +602,18 @@ class _EmptyCart extends StatelessWidget {
 }
 
 class _ContinueButton extends StatelessWidget {
-  const _ContinueButton();
+  const _ContinueButton({this.onPressed});
+  final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => const FilledButton(
-    style: ButtonStyle(
+  Widget build(BuildContext context) => FilledButton(
+    style: const ButtonStyle(
       minimumSize: WidgetStatePropertyAll(
         Size.fromHeight(AppTokens.touchTarget),
       ),
     ),
-    onPressed: null,
-    child: Text('Continuar', textAlign: TextAlign.center),
+    onPressed: onPressed,
+    child: const Text('Continuar', textAlign: TextAlign.center),
   );
 }
 
