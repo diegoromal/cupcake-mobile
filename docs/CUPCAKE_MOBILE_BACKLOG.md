@@ -129,7 +129,7 @@ produtos.
 
 ## 📦 FASE 6 --- Pedido e reserva de estoque
 
-- [ ] **D47 --- Modelar Pedido e ItemPedido**
+- [x] **D47 --- Modelar Pedido e ItemPedido**
 - [ ] **D48 --- Criar pedido a partir do carrinho**
 - [ ] **D49 --- Reserva transacional de estoque**
 - [ ] **D50 --- Controle de disponibilidade concorrente**
