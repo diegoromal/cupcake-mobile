@@ -442,4 +442,67 @@ void main() {
       CartRequestStatus.notConfigured,
     );
   });
+
+  test('guarda subtotal e total recebidos sem recalcular', () async {
+    final server = await _server((request) async {
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode(
+            _body(
+              subtotal: '7.11',
+              total: '8.22',
+              items: [_item(quantity: 3, unitPrice: '10.00', subtotal: '7.11')],
+            ),
+          ),
+        );
+      await request.response.close();
+    });
+    addTearDown(server.close);
+    final loaded = await _api(
+      server,
+    ).fetchCart(accessToken: 'secret-session-value');
+    expect(loaded.status, CartRequestStatus.success);
+    expect(loaded.cart?.items.single.quantity, 3);
+    expect(loaded.cart?.items.single.unitPrice, '10.00');
+    expect(loaded.cart?.items.single.subtotal, '7.11');
+    expect(loaded.cart?.subtotal, '7.11');
+    expect(loaded.cart?.total, '8.22');
+  });
+
+  test(
+    'JSON inválido no PATCH e DELETE fora de 204 não inventam carrinho',
+    () async {
+      final invalid = await _server((request) async {
+        await request.drain<void>();
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('nao-json');
+        await request.response.close();
+      });
+      addTearDown(invalid.close);
+      final patched = await _api(invalid).updateQuantity(
+        accessToken: 'secret-session-value',
+        itemId: _itemId,
+        quantity: 4,
+      );
+      expect(patched.status, CartRequestStatus.unavailable);
+      expect(patched.cart, isNull);
+
+      final deleted = await _server((request) async {
+        await request.drain<void>();
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('{"total":"99.00"}');
+        await request.response.close();
+      });
+      addTearDown(deleted.close);
+      final removed = await _api(
+        deleted,
+      ).removeItem(accessToken: 'secret-session-value', itemId: _itemId);
+      expect(removed.status, CartRequestStatus.unavailable);
+      expect(removed.cart, isNull);
+    },
+  );
 }

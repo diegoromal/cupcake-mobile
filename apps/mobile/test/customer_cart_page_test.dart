@@ -22,6 +22,8 @@ const _longName =
     'Cupcake artesanal de chocolate belga com cobertura de frutas vermelhas e nome funcional extenso';
 const _longOption =
     'Personalização com descrição visível por completo sem reticências no rótulo';
+const _longReason =
+    'Quantidade superior à disponibilidade para esta linha isolada, sem remover o item e sem depender apenas da cor do aviso';
 
 String _token(String jti) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -1001,6 +1003,85 @@ void main() {
     expect(session.isAuthenticated, isTrue);
   });
 
+  testWidgets('mostra os valores da API e omite preço da linha inválida', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart(
+          [
+            _line(
+              id: _itemId,
+              quantity: 3,
+              unitPrice: '10.00',
+              subtotal: '7.11',
+            ),
+            _line(
+              id: _secondItemId,
+              name: 'Indisponível',
+              unitPrice: null,
+              subtotal: null,
+              available: false,
+              reason: 'Produto indisponível.',
+            ),
+          ],
+          subtotal: '7.11',
+          total: '8.22',
+        ),
+      ),
+    ]);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    expect(find.text('Preço unitário: R\$ 10,00'), findsOneWidget);
+    expect(find.text('Subtotal do item: R\$ 7,11'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Total: R\$ 8,22'),
+      400,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('Subtotal: R\$ 7,11'), findsOneWidget);
+    expect(find.text('Total: R\$ 8,22'), findsOneWidget);
+    expect(find.text('Subtotal do item: R\$ 30,00'), findsNothing);
+    expect(find.text('Total: R\$ 30,00'), findsNothing);
+    expect(find.text('Total: R\$ 7,11'), findsNothing);
+    expect(find.text('Produto indisponível.'), findsOneWidget);
+    expect(find.textContaining('Preço unitário'), findsOneWidget);
+  });
+
+  testWidgets('PATCH inutilizável preserva quantidade e total anteriores', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart(
+          [_line(id: _itemId, quantity: 3, unitPrice: '10.00')],
+          subtotal: '10.00',
+          total: '10.00',
+        ),
+      ),
+    ]);
+    cartApi.onMutation = (_) async =>
+        const CartResult(CartRequestStatus.unavailable);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(cartApi.mutations, hasLength(1));
+    expect(cartApi.mutations.single.quantity, 4);
+    expect(cartApi.calls, 1);
+    expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
+    expect(find.text('Total: R\$ 10,00'), findsOneWidget);
+    expect(
+      find.text('Não foi possível atualizar a quantidade.'),
+      findsOneWidget,
+    );
+    expect(find.text('Tentar novamente'), findsNothing);
+  });
+
   for (final width in [320.0, 390.0, 430.0]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
@@ -1033,7 +1114,7 @@ void main() {
                     unitPrice: null,
                     subtotal: null,
                     available: false,
-                    reason: 'Produto indisponível.',
+                    reason: _longReason,
                   ),
                 ],
                 subtotal: '3703.68',
@@ -1052,6 +1133,20 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.text(_longName), findsOneWidget);
           expect(find.text(_longOption), findsOneWidget);
+          expect(find.textContaining('Preço unitário'), findsOneWidget);
+          final buttons = tester.widgetList<IconButton>(
+            find.byType(IconButton),
+          );
+          expect(buttons, isNotEmpty);
+          for (final button in buttons) {
+            expect(button.constraints?.minWidth, greaterThanOrEqualTo(48));
+            expect(button.constraints?.minHeight, greaterThanOrEqualTo(48));
+          }
+          final addButton = find.widgetWithIcon(IconButton, Icons.add).first;
+          await reveal(tester, addButton);
+          final addSize = tester.getSize(addButton);
+          expect(addSize.width, greaterThanOrEqualTo(48));
+          expect(addSize.height, greaterThanOrEqualTo(48));
           expect(
             tester
                 .widgetList<IconButton>(find.byType(IconButton))
@@ -1070,6 +1165,20 @@ void main() {
           );
           await reveal(tester, unavailable);
           expect(unavailable.hitTestable(), findsOneWidget);
+          expect(
+            find.ancestor(
+              of: unavailable,
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is Semantics && widget.properties.liveRegion == true,
+              ),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            tester.widget<Text>(unavailable).data,
+            'Quantidade superior à disponibilidade.',
+          );
           expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
           expect(find.text('Preço unitário: R\$ 1.234,56'), findsOneWidget);
           expect(find.text('Subtotal do item: R\$ 3.703,68'), findsOneWidget);
@@ -1084,9 +1193,16 @@ void main() {
             find.text('Total: R\$ 3.703,68', skipOffstage: false),
             findsOneWidget,
           );
+          final reason = find.text(_longReason, skipOffstage: false);
+          expect(reason, findsOneWidget);
+          expect(tester.widget<Text>(reason).data, _longReason);
+          expect(tester.widget<Text>(reason).style?.color, isNotNull);
+          final continuar = tester.widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Continuar'),
+          );
           expect(
-            find.text('Produto indisponível.', skipOffstage: false),
-            findsOneWidget,
+            continuar.style?.minimumSize?.resolve({})?.height,
+            greaterThanOrEqualTo(48),
           );
           expect(find.text('Continuar'), findsOneWidget);
           expect(
