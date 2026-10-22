@@ -227,11 +227,13 @@ class _CartPageState extends State<CartPage> {
       return;
     }
     if (result.status == CartRequestStatus.success) {
+      if (removing) {
+        await _syncAfterDelete(generation);
+        return;
+      }
       setState(() {
         _clearOperation();
-        if (removing) {
-          _dropItem(item.id);
-        } else if (result.cart != null) {
+        if (result.cart != null) {
           _replaceCart(result.cart!, generation);
         } else {
           _errorItemId = item.id;
@@ -353,15 +355,56 @@ class _CartPageState extends State<CartPage> {
     _status = CartRequestStatus.success;
   }
 
-  void _dropItem(String itemId) {
-    final cart = _cart;
-    if (cart == null) return;
-    _images.remove(itemId);
-    _cart = CustomerCart(
-      id: cart.id,
-      items: List.unmodifiable(cart.items.where((line) => line.id != itemId)),
-    );
-    _status = CartRequestStatus.success;
+  Future<void> _syncAfterDelete(int generation) async {
+    final result = await _readCart(generation);
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    setState(() {
+      _clearOperation();
+      if (result.status == CartRequestStatus.forbidden) {
+        _status = CartRequestStatus.forbidden;
+        _cart = null;
+        _images.clear();
+        return;
+      }
+      if (result.status == CartRequestStatus.success && result.cart != null) {
+        _replaceCart(result.cart!, generation);
+        return;
+      }
+      _status = CartRequestStatus.unavailable;
+      _cart = null;
+      _images.clear();
+    });
+  }
+
+  Future<CartResult> _readCart(int generation) async {
+    await widget.session.refreshIfNeeded();
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return const CartResult(CartRequestStatus.unauthorized);
+    }
+    var token = widget.session.accessToken;
+    var result = token == null
+        ? const CartResult(CartRequestStatus.unauthorized)
+        : await widget.cartApi.fetchCart(accessToken: token);
+    if (result.status == CartRequestStatus.unauthorized &&
+        token != null &&
+        mounted &&
+        generation == _generation &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (token != null &&
+          mounted &&
+          generation == _generation &&
+          widget.session.isAuthenticated) {
+        result = await widget.cartApi.fetchCart(accessToken: token);
+      }
+    }
+    return result;
   }
 
   @override
@@ -424,6 +467,10 @@ class _CartPageState extends State<CartPage> {
           ),
           const SizedBox(height: AppTokens.spacing12),
         ],
+        Text('Subtotal: ${_formatPrice(cart.subtotal)}'),
+        const SizedBox(height: AppTokens.spacing12),
+        Text('Total: ${_formatPrice(cart.total)}'),
+        const SizedBox(height: AppTokens.spacing16),
         const _ContinueButton(),
       ],
     );
@@ -587,6 +634,18 @@ class _CartLine extends StatelessWidget {
             const SizedBox(height: AppTokens.spacing12),
             Text(option.name, style: Theme.of(context).textTheme.bodyLarge),
           ],
+          if (item.unitPrice != null) ...[
+            const SizedBox(height: AppTokens.spacing12),
+            Text('Preço unitário: ${_formatPrice(item.unitPrice!)}'),
+          ],
+          if (item.subtotal != null) ...[
+            const SizedBox(height: AppTokens.spacing12),
+            Text('Subtotal do item: ${_formatPrice(item.subtotal!)}'),
+          ],
+          if (item.reason != null) ...[
+            const SizedBox(height: AppTokens.spacing12),
+            Text(item.reason!, style: const TextStyle(color: AppTokens.danger)),
+          ],
           const SizedBox(height: AppTokens.spacing12),
           Wrap(
             spacing: AppTokens.spacing12,
@@ -710,6 +769,15 @@ class _CartImageState extends State<_CartImage> {
       },
     );
   }
+}
+
+String _formatPrice(String decimal) {
+  final parts = decimal.split('.');
+  final whole = parts.first.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => '.',
+  );
+  return 'R\$ $whole,${parts[1]}';
 }
 
 class _ImageFallback extends StatelessWidget {

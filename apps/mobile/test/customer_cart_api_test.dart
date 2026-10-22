@@ -25,6 +25,10 @@ Map<String, Object?> _item({
   String? id,
   List<Map<String, String>> personalizations = const [],
   int quantity = 1,
+  Object? unitPrice = '10.00',
+  Object? subtotal = '10.00',
+  bool available = true,
+  Object? reason,
 }) => {
   'id': id ?? _itemId,
   'produtoId': _productId,
@@ -32,13 +36,24 @@ Map<String, Object?> _item({
   'imagemDisponivel': false,
   'quantidade': quantity,
   'personalizacoes': personalizations,
+  'precoUnitario': unitPrice,
+  'subtotal': subtotal,
+  'disponivel': available,
+  'motivo': reason,
 };
+
+Map<String, Object?> _body({
+  Object? id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  List<Map<String, Object?>> items = const [],
+  String subtotal = '0.00',
+  String total = '0.00',
+}) => {'id': id, 'itens': items, 'subtotal': subtotal, 'total': total};
 
 void main() {
   test(
-    'interpreta carrinho vazio, itens e personalizações sem preço',
+    'interpreta o contrato do GET com preço, subtotal, total e linha indisponível',
     () async {
-      var body = jsonEncode({'id': null, 'itens': <Object>[]});
+      var body = jsonEncode(_body(id: null, subtotal: '0.00', total: '0.00'));
       final server = await _server((request) async {
         expect(request.method, 'GET');
         expect(request.uri.path, '/carrinho');
@@ -59,28 +74,33 @@ void main() {
       expect(missing.status, CartRequestStatus.success);
       expect(missing.cart?.id, isNull);
       expect(missing.cart?.items, isEmpty);
+      expect(missing.cart?.subtotal, '0.00');
+      expect(missing.cart?.total, '0.00');
 
-      body = jsonEncode({
-        'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-        'itens': <Object>[],
-      });
+      body = jsonEncode(_body());
       final empty = await api.fetchCart(accessToken: 'secret-session-value');
       expect(empty.cart?.id, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc');
       expect(empty.cart?.items, isEmpty);
+      expect(empty.cart?.total, '0.00');
 
-      body = jsonEncode({
-        'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-        'itens': [
-          _item(
-            personalizations: [
-              {'id': _optionId, 'nome': 'Aroma'},
-            ],
-          ),
-          _item(id: _secondItemId, quantity: 2),
-        ],
-      });
+      body = jsonEncode(
+        _body(
+          subtotal: '30.00',
+          total: '30.00',
+          items: [
+            _item(
+              personalizations: [
+                {'id': _optionId, 'nome': 'Aroma'},
+              ],
+            ),
+            _item(id: _secondItemId, quantity: 2, subtotal: '20.00'),
+          ],
+        ),
+      );
       final loaded = await api.fetchCart(accessToken: 'secret-session-value');
       expect(loaded.status, CartRequestStatus.success);
+      expect(loaded.cart?.subtotal, '30.00');
+      expect(loaded.cart?.total, '30.00');
       expect(loaded.cart?.items, hasLength(2));
       expect(loaded.cart?.items.first.productId, _productId);
       expect(loaded.cart?.items.first.name, 'Cupcake de festa');
@@ -88,16 +108,86 @@ void main() {
       expect(loaded.cart?.items.first.imageAvailable, isFalse);
       expect(loaded.cart?.items.first.personalizations.single.name, 'Aroma');
       expect(loaded.cart?.items.first.personalizations.single.id, _optionId);
+      expect(loaded.cart?.items.first.unitPrice, '10.00');
+      expect(loaded.cart?.items.first.subtotal, '10.00');
+      expect(loaded.cart?.items.first.available, isTrue);
+      expect(loaded.cart?.items.first.reason, isNull);
       expect(loaded.cart?.items.last.personalizations, isEmpty);
       expect(loaded.cart?.items.last.quantity, 2);
+      expect(loaded.cart?.items.last.subtotal, '20.00');
       expect(loaded.cart?.items.first.id, isNot(loaded.cart?.items.last.id));
 
-      body = jsonEncode({
-        'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-        'itens': [
-          {..._item(), 'precoAtual': '10.00'},
-        ],
-      });
+      body = jsonEncode(
+        _body(
+          items: [
+            _item(
+              unitPrice: null,
+              subtotal: null,
+              available: false,
+              reason: 'Produto indisponível.',
+            ),
+          ],
+        ),
+      );
+      final unavailable = await api.fetchCart(
+        accessToken: 'secret-session-value',
+      );
+      expect(unavailable.status, CartRequestStatus.success);
+      expect(unavailable.cart?.items.single.available, isFalse);
+      expect(unavailable.cart?.items.single.unitPrice, isNull);
+      expect(unavailable.cart?.items.single.subtotal, isNull);
+      expect(unavailable.cart?.items.single.reason, 'Produto indisponível.');
+
+      body = jsonEncode(
+        _body(
+          subtotal: '10.00',
+          total: '10.00',
+          items: [
+            _item(
+              available: false,
+              reason: 'Quantidade superior à disponibilidade.',
+            ),
+          ],
+        ),
+      );
+      final short = await api.fetchCart(accessToken: 'secret-session-value');
+      expect(short.status, CartRequestStatus.success);
+      expect(short.cart?.items.single.available, isFalse);
+      expect(short.cart?.items.single.unitPrice, '10.00');
+      expect(short.cart?.items.single.subtotal, '10.00');
+      expect(
+        short.cart?.items.single.reason,
+        'Quantidade superior à disponibilidade.',
+      );
+
+      body = jsonEncode(
+        _body(
+          subtotal: '10.00',
+          total: '10.00',
+          items: [
+            _item(
+              available: true,
+              unitPrice: null,
+              subtotal: null,
+              reason: null,
+            ),
+          ],
+        ),
+      );
+      expect(
+        (await api.fetchCart(accessToken: 'secret-session-value')).status,
+        CartRequestStatus.unavailable,
+      );
+
+      body = jsonEncode(
+        _body(
+          subtotal: '10.00',
+          total: '10.00',
+          items: [
+            {..._item(), 'precoAtual': '10.00'},
+          ],
+        ),
+      );
       expect(
         (await api.fetchCart(accessToken: 'secret-session-value')).status,
         CartRequestStatus.unavailable,
@@ -184,10 +274,13 @@ void main() {
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.json
         ..write(
-          jsonEncode({
-            'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-            'itens': [_item(quantity: 4)],
-          }),
+          jsonEncode(
+            _body(
+              subtotal: '40.00',
+              total: '40.00',
+              items: [_item(quantity: 4, subtotal: '40.00')],
+            ),
+          ),
         );
       await request.response.close();
     });
@@ -202,18 +295,23 @@ void main() {
     expect(body, '{"quantidade":4}');
     expect(updated.status, CartRequestStatus.success);
     expect(updated.cart?.items.single.quantity, 4);
+    expect(updated.cart?.total, '40.00');
+    expect(updated.cart?.items.single.subtotal, '40.00');
 
     final priced = await _server((request) async {
       await request.drain<void>();
       request.response
         ..statusCode = HttpStatus.ok
         ..write(
-          jsonEncode({
-            'id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-            'itens': [
-              {..._item(), 'precoAtual': '10.00'},
-            ],
-          }),
+          jsonEncode(
+            _body(
+              subtotal: '10.00',
+              total: '10.00',
+              items: [
+                {..._item(), 'precoAtual': '10.00'},
+              ],
+            ),
+          ),
         );
       await request.response.close();
     });

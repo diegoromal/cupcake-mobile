@@ -188,14 +188,16 @@ npx --no-install ts-node test/d32-catalogo-postgres.ts
 
 O harness cria IDs próprios e os remove no `finally`.
 
-## Carrinho — D35
+## Carrinho — D35 e D37
 
 A vitrine autenticada mostra a ação `Carrinho` e abre a tela com
 `Navigator.push`. A tela consulta `GET /carrinho` com Bearer. A resposta tem
-`id` e `itens`; cada item traz `id`, `produtoId`, `nome`, `imagemDisponivel`,
-`quantidade` e `personalizacoes` (`id`, `nome`). Sem carrinho, `id` é `null` e
-`itens` é `[]`. Carrinho existente sem itens também é estado vazio, não erro.
-O GET não cria carrinho.
+`id`, `itens`, `subtotal` e `total`. Cada item traz `id`, `produtoId`, `nome`,
+`imagemDisponivel`, `quantidade`, `personalizacoes` (`id`, `nome`),
+`precoUnitario`, `subtotal`, `disponivel` e `motivo`. Preços são strings com
+duas casas ou `null`. Sem carrinho, `id` é `null`, `itens` é `[]` e os totais
+são `0.00`. Carrinho existente sem itens também é estado vazio, não erro.
+O GET não cria carrinho e não grava preço, estoque nem reserva.
 
 A contagem é o número de linhas, não a soma das quantidades. A imagem reutiliza
 `GET /catalogo/produtos/:id/imagem` e o fallback do detalhe; falha de imagem
@@ -208,6 +210,12 @@ desabilitado. Diminuir, aumentar e remover ficam visíveis. Diminuir envia a
 quantidade absoluta já reduzida em `PATCH /carrinho/itens/:itemId` e fica
 inerte na quantidade 1. Aumentar envia a quantidade absoluta já somada e fica
 inerte em 2147483647. A lixeira envia `DELETE /carrinho/itens/:itemId` e remove
-somente a linha selecionada. Não há diálogo nem aviso temporário. Durante a
-operação, diminuir, aumentar e remover ficam desabilitados. Preço, frete e
-total ficam para D37.
+somente a linha selecionada. O `DELETE` responde 204; a tela consulta o GET
+de novo antes de mostrar a lista e os totais. Se esse GET falhar, a tela mostra
+erro com nova tentativa e não calcula total local. Não há diálogo nem aviso
+temporário. Durante a operação, diminuir, aumentar e remover ficam
+desabilitados. A linha indisponível permanece, com o `motivo` em texto.
+`precoUnitario` e o subtotal da linha aparecem quando a API os envia. O resumo
+mostra `subtotal` e `total` somente com itens. Carrinho vazio não mostra
+resumo. O app não soma nem multiplica preço. Frete, modalidade, endereço,
+cupom e desconto ficam fora desta tela. `Continuar` permanece desabilitado.

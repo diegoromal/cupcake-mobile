@@ -14,6 +14,50 @@ const p2002 = new Prisma.PrismaClientKnownRequestError('P2002', {
   code: 'P2002', clientVersion: '7.10.0',
 });
 
+function linhaLida(input: {
+  id?: string;
+  quantidade?: number;
+  ativo?: boolean;
+  preco?: string;
+  imagem?: string | null;
+  estoque?: { quantidadeFisica: number; quantidadeReservada: number } | null;
+  opcoes?: Array<{
+    id: string;
+    nome: string;
+    ajuste?: string | null;
+    disponivel?: boolean;
+    vinculado?: boolean;
+  }>;
+} = {}) {
+  const opcoes = input.opcoes ?? [];
+  const estoque = input.estoque === undefined
+    ? { quantidadeFisica: 10, quantidadeReservada: 0 }
+    : input.estoque;
+  return {
+    id: input.id ?? itemId,
+    produtoId,
+    quantidade: input.quantidade ?? 1,
+    produto: {
+      nome: 'Cupcake de festa',
+      imagem: input.imagem ?? null,
+      ativo: input.ativo ?? true,
+      precoAtual: new Prisma.Decimal(input.preco ?? '10.00'),
+      estoque,
+      personalizacoes: opcoes
+        .filter((opcao) => opcao.vinculado !== false)
+        .map((opcao) => ({ personalizacaoId: opcao.id })),
+    },
+    personalizacoes: opcoes.map((opcao) => ({
+      personalizacao: {
+        id: opcao.id,
+        nome: opcao.nome,
+        disponibilidade: opcao.disponivel ?? true,
+        ajusteValor: opcao.ajuste == null ? null : new Prisma.Decimal(opcao.ajuste),
+      },
+    })),
+  };
+}
+
 describe('CarrinhoService', () => {
   const produtoFind = jest.fn();
   const estoqueFind = jest.fn();
@@ -329,28 +373,28 @@ describe('CarrinhoService', () => {
     carrinhoFind.mockResolvedValue({
       id: cartId,
       itens: [
-        {
-          id: secondItemId, produtoId, quantidade: 4,
-          produto: { nome: 'Cupcake de festa', imagem: 'fora-do-padrao', precoAtual: '8.00', ativo: false },
-          personalizacoes: [],
-        },
-        {
-          id: itemId, produtoId, quantidade: 2,
-          produto: { nome: 'Cupcake de festa', imagem: managed, precoAtual: '9.90', ativo: false },
-          personalizacoes: [
-            { personalizacao: { id: optionB, nome: 'Creme' } },
-            { personalizacao: { id: optionA, nome: 'Creme' } },
-            { personalizacao: { id: aroma, nome: 'Aroma' } },
+        linhaLida({
+          id: secondItemId, quantidade: 4, preco: '8.00', imagem: 'fora-do-padrao',
+        }),
+        linhaLida({
+          id: itemId, quantidade: 2, preco: '9.90', imagem: managed,
+          opcoes: [
+            { id: optionB, nome: 'Creme' },
+            { id: optionA, nome: 'Creme' },
+            { id: aroma, nome: 'Aroma' },
           ],
-        },
+        }),
       ],
     });
     const result = await service.obter(userId);
     expect(result).toEqual({
       id: cartId,
+      subtotal: '51.80',
+      total: '51.80',
       itens: [
         {
           id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: true, quantidade: 2,
+          precoUnitario: '9.90', subtotal: '19.80', disponivel: true, motivo: null,
           personalizacoes: [
             { id: aroma, nome: 'Aroma' },
             { id: optionA, nome: 'Creme' },
@@ -359,24 +403,38 @@ describe('CarrinhoService', () => {
         },
         {
           id: secondItemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 4,
+          precoUnitario: '8.00', subtotal: '32.00', disponivel: true, motivo: null,
           personalizacoes: [],
         },
       ],
     });
     expect(result.itens[0].id).not.toBe(result.itens[1].id);
-    expect(JSON.stringify(result)).not.toMatch(/preco|subtotal|frete|desconto|estoque|modalidade/i);
+    expect(JSON.stringify(result)).not.toMatch(
+      /precoAtual|ajusteValor|quantidadeFisica|quantidadeReservada|frete|desconto|modalidade/i,
+    );
     const query = carrinhoFind.mock.calls[0][0];
     expect(query.where).toEqual({ usuarioId: userId });
+    expect(carrinhoFind).toHaveBeenCalledTimes(1);
     expect(query.select.itens.orderBy).toEqual({ id: 'asc' });
     expect(query.select.itens.select.personalizacoes.orderBy).toEqual([
       { personalizacao: { nome: 'asc' } },
       { personalizacaoId: 'asc' },
     ]);
-    expect(query.select.itens.select.produto.select).toEqual({ nome: true, imagem: true });
-    expect(JSON.stringify(query)).not.toMatch(/preco|estoque|reserva/i);
+    expect(query.select.itens.select.personalizacoes.select.personalizacao.select).toEqual({
+      id: true, nome: true, disponibilidade: true, ajusteValor: true,
+    });
+    expect(query.select.itens.select.produto.select).toEqual({
+      nome: true,
+      imagem: true,
+      ativo: true,
+      precoAtual: true,
+      estoque: { select: { quantidadeFisica: true, quantidadeReservada: true } },
+      personalizacoes: { select: { personalizacaoId: true } },
+    });
     expect(carrinhoCreate).not.toHaveBeenCalled();
     expect(itemCreate).not.toHaveBeenCalled();
     expect(itemUpdate).not.toHaveBeenCalled();
+    expect(itemUpdateMany).not.toHaveBeenCalled();
     expect(itemFindMany).not.toHaveBeenCalled();
     expect(estoqueFind).not.toHaveBeenCalled();
     expect(estoqueUpdate).not.toHaveBeenCalled();
@@ -384,10 +442,145 @@ describe('CarrinhoService', () => {
     expect(reservaUpdate).not.toHaveBeenCalled();
   });
 
+  it('soma ajustes vigentes, trata nulo como zero e mantém duas casas', async () => {
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [linhaLida({
+        quantidade: 2,
+        preco: '10.00',
+        opcoes: [
+          { id: optionB, nome: 'B', ajuste: '-0.20' },
+          { id: optionA, nome: 'A', ajuste: '0.10' },
+          { id: '33333333-3333-4333-8333-333333333333', nome: 'C', ajuste: null },
+        ],
+      })],
+    });
+    await expect(service.obter(userId)).resolves.toMatchObject({
+      subtotal: '19.80',
+      total: '19.80',
+      itens: [{ precoUnitario: '9.90', subtotal: '19.80', disponivel: true, motivo: null }],
+    });
+  });
+
+  it('aceita preço unitário zero', async () => {
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [linhaLida({
+        preco: '10.00',
+        opcoes: [{ id: optionA, nome: 'A', ajuste: '-10.00' }],
+      })],
+    });
+    await expect(service.obter(userId)).resolves.toMatchObject({
+      subtotal: '0.00',
+      total: '0.00',
+      itens: [{ precoUnitario: '0.00', subtotal: '0.00', disponivel: true, motivo: null }],
+    });
+  });
+
+  it('anula o preço quando o unitário fica negativo e deixa a linha fora do total', async () => {
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [
+        linhaLida({
+          preco: '10.00',
+          opcoes: [{ id: optionA, nome: 'A', ajuste: '-10.01' }],
+        }),
+        linhaLida({ id: secondItemId, preco: '1.50', quantidade: 2 }),
+      ],
+    });
+    const result = await service.obter(userId);
+    expect(result.itens[0]).toMatchObject({
+      precoUnitario: null, subtotal: null, disponivel: false,
+      motivo: 'Preço unitário negativo para a seleção.',
+    });
+    expect(result.subtotal).toBe('3.00');
+    expect(result.total).toBe('3.00');
+  });
+
+  it('classifica produto inativo, opção indisponível e vínculo removido sem apagar a linha', async () => {
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [
+        linhaLida({ id: itemId, ativo: false, quantidade: 2 }),
+        linhaLida({
+          id: secondItemId,
+          opcoes: [{ id: optionA, nome: 'A', ajuste: '-99.00', disponivel: false }],
+        }),
+        linhaLida({
+          id: '33333333-3333-4333-8333-333333333333',
+          opcoes: [{ id: optionB, nome: 'B', vinculado: false }],
+        }),
+      ],
+    });
+    const result = await service.obter(userId);
+    const motivo = Object.fromEntries(result.itens.map((item) => [item.id, item.motivo]));
+    expect(motivo).toEqual({
+      [itemId]: 'Produto indisponível.',
+      [secondItemId]: 'Personalização indisponível.',
+      '33333333-3333-4333-8333-333333333333': 'Personalização indisponível.',
+    });
+    expect(result.itens.every((item) => item.precoUnitario === null && item.subtotal === null)).toBe(true);
+    expect(result.itens.every((item) => item.disponivel === false)).toBe(true);
+    expect(result.subtotal).toBe('0.00');
+    expect(result.total).toBe('0.00');
+    expect(itemDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it('compara cada linha com o saldo e não soma quantidades do mesmo produto', async () => {
+    const saldo = { quantidadeFisica: 5, quantidadeReservada: 1 };
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [
+        linhaLida({ id: itemId, quantidade: 4, estoque: saldo }),
+        linhaLida({ id: secondItemId, quantidade: 4, estoque: saldo }),
+      ],
+    });
+    const igual = await service.obter(userId);
+    expect(igual.itens.every((item) => item.disponivel && item.motivo === null)).toBe(true);
+    expect(igual.subtotal).toBe('80.00');
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [
+        linhaLida({ id: itemId, quantidade: 5, estoque: saldo }),
+        linhaLida({ id: secondItemId, quantidade: 1, estoque: saldo, preco: '2.50' }),
+      ],
+    });
+    const acima = await service.obter(userId);
+    expect(acima.itens[0]).toMatchObject({
+      precoUnitario: '10.00', subtotal: '50.00', disponivel: false,
+      motivo: 'Quantidade superior à disponibilidade.',
+    });
+    expect(acima.itens[1]).toMatchObject({
+      precoUnitario: '2.50', subtotal: '2.50', disponivel: true, motivo: null,
+    });
+    expect(acima.total).toBe('52.50');
+    carrinhoFind.mockResolvedValue({
+      id: cartId,
+      itens: [linhaLida({ quantidade: 1, estoque: null, preco: '4.00' })],
+    });
+    await expect(service.obter(userId)).resolves.toMatchObject({
+      subtotal: '4.00',
+      total: '4.00',
+      itens: [{
+        precoUnitario: '4.00', subtotal: '4.00', disponivel: false,
+        motivo: 'Quantidade superior à disponibilidade.',
+      }],
+    });
+    expect(estoqueUpdate).not.toHaveBeenCalled();
+    expect(reservaCreate).not.toHaveBeenCalled();
+    expect(reservaUpdate).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(itemUpdateMany).not.toHaveBeenCalled();
+  });
+
   it('devolve carrinho inexistente e carrinho sem itens sem criar registro', async () => {
-    await expect(service.obter(userId)).resolves.toEqual({ id: null, itens: [] });
+    await expect(service.obter(userId)).resolves.toEqual({
+      id: null, itens: [], subtotal: '0.00', total: '0.00',
+    });
     carrinhoFind.mockResolvedValue({ id: cartId, itens: [] });
-    await expect(service.obter(userId)).resolves.toEqual({ id: cartId, itens: [] });
+    await expect(service.obter(userId)).resolves.toEqual({
+      id: cartId, itens: [], subtotal: '0.00', total: '0.00',
+    });
     expect(carrinhoCreate).not.toHaveBeenCalled();
     expect(itemCreate).not.toHaveBeenCalled();
     expect(estoqueUpdate).not.toHaveBeenCalled();
@@ -407,11 +600,11 @@ describe('CarrinhoService', () => {
   const ownedItem = { id: itemId, produtoId, quantidade: 2 };
   const cartRead = {
     id: cartId,
-    itens: [{
-      id: itemId, produtoId, quantidade: 2,
-      produto: { nome: 'Cupcake de festa', imagem: null, precoAtual: '9.90' },
-      personalizacoes: [{ personalizacao: { id: optionA, nome: 'Aroma' } }],
-    }],
+    itens: [linhaLida({
+      quantidade: 2,
+      preco: '9.90',
+      opcoes: [{ id: optionA, nome: 'Aroma' }],
+    })],
   };
 
   it('altera só a quantidade do item do usuário e devolve a leitura do GET', async () => {
@@ -419,11 +612,17 @@ describe('CarrinhoService', () => {
     itemUpdateMany.mockResolvedValue({ count: 1 });
     carrinhoFind.mockResolvedValue(cartRead);
     const result = await service.alterarQuantidade(userId, itemId, 2);
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       id: cartId,
-      itens: [{ id: itemId, quantidade: 2, personalizacoes: [{ id: optionA, nome: 'Aroma' }] }],
+      subtotal: '19.80',
+      total: '19.80',
+      itens: [{
+        id: itemId, produtoId, nome: 'Cupcake de festa', imagemDisponivel: false, quantidade: 2,
+        precoUnitario: '9.90', subtotal: '19.80', disponivel: true, motivo: null,
+        personalizacoes: [{ id: optionA, nome: 'Aroma' }],
+      }],
     });
-    expect(JSON.stringify(result)).not.toMatch(/preco|subtotal|frete|desconto/i);
+    expect(JSON.stringify(result)).not.toMatch(/frete|desconto|precoAtual|quantidadeFisica/i);
     expect(itemFindFirst).toHaveBeenCalledWith({
       where: { id: itemId, carrinho: { usuarioId: userId } },
       select: { id: true, produtoId: true, quantidade: true },

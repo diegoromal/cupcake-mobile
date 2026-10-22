@@ -171,6 +171,10 @@ CartItem _line({
   int quantity = 1,
   bool imageAvailable = false,
   List<CartPersonalization> personalizations = const [],
+  String? unitPrice = '10.00',
+  String? subtotal = '10.00',
+  bool available = true,
+  String? reason,
 }) => CartItem(
   id: id,
   productId: _productId,
@@ -178,13 +182,24 @@ CartItem _line({
   imageAvailable: imageAvailable,
   quantity: quantity,
   personalizations: personalizations,
+  unitPrice: unitPrice,
+  subtotal: subtotal,
+  available: available,
+  reason: reason,
 );
 
-CartResult _cart(List<CartItem> items, {String? id}) => CartResult(
+CartResult _cart(
+  List<CartItem> items, {
+  String? id,
+  String subtotal = '10.00',
+  String total = '10.00',
+}) => CartResult(
   CartRequestStatus.success,
   cart: CustomerCart(
     id: id ?? 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
     items: items,
+    subtotal: items.isEmpty ? '0.00' : subtotal,
+    total: items.isEmpty ? '0.00' : total,
   ),
 );
 
@@ -308,17 +323,30 @@ void main() {
       final catalog = _CatalogApi();
       final cartApi = _CartApi([
         Future.value(
-          _cart([
-            _line(
-              id: _itemId,
-              name: _longName,
-              quantity: 3,
-              personalizations: const [
-                CartPersonalization(id: _optionId, name: _longOption),
-              ],
-            ),
-            _line(id: _secondItemId, quantity: 4),
-          ]),
+          _cart(
+            [
+              _line(
+                id: _itemId,
+                name: _longName,
+                quantity: 3,
+                unitPrice: '10.50',
+                subtotal: '31.50',
+                personalizations: const [
+                  CartPersonalization(id: _optionId, name: _longOption),
+                ],
+              ),
+              _line(
+                id: _secondItemId,
+                quantity: 4,
+                unitPrice: '8.00',
+                subtotal: '32.00',
+                available: false,
+                reason: 'Quantidade superior à disponibilidade.',
+              ),
+            ],
+            subtotal: '63.50',
+            total: '63.50',
+          ),
         ),
       ]);
       await tester.pumpWidget(
@@ -330,16 +358,21 @@ void main() {
       expect(find.text(_longName), findsOneWidget);
       expect(find.text(_longOption), findsOneWidget);
       expect(find.text('Cupcake de festa'), findsOneWidget);
+      expect(
+        find.text('Quantidade superior à disponibilidade.'),
+        findsOneWidget,
+      );
+      expect(find.text('Preço unitário: R\$ 10,50'), findsOneWidget);
+      expect(find.text('Subtotal do item: R\$ 31,50'), findsOneWidget);
+      expect(find.text('Preço unitário: R\$ 8,00'), findsOneWidget);
+      expect(find.text('Subtotal do item: R\$ 32,00'), findsOneWidget);
+      expect(find.textContaining('Frete'), findsNothing);
       expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
       expect(find.bySemanticsLabel('Quantidade 4'), findsOneWidget);
       expect(
         find.bySemanticsLabel('Imagem do produto indisponível'),
         findsNWidgets(2),
       );
-      expect(find.textContaining('R\$'), findsNothing);
-      expect(find.textContaining('Subtotal'), findsNothing);
-      expect(find.textContaining('Frete'), findsNothing);
-      expect(find.textContaining('Total'), findsNothing);
       final name = tester.widget<Text>(find.text(_longName));
       final option = tester.widget<Text>(find.text(_longOption));
       expect(name.maxLines, isNull);
@@ -360,6 +393,14 @@ void main() {
         scrollable: find.byType(Scrollable),
       );
       expect(
+        find.text('Subtotal: R\$ 63,50', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Total: R\$ 63,50', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
         tester
             .widget<FilledButton>(
               find.widgetWithText(FilledButton, 'Continuar'),
@@ -375,8 +416,9 @@ void main() {
       expect(cartApi.calls, 1);
       expect(cartApi.mutations, isEmpty);
       expect(catalog.imageCalls, 0);
+      expect(find.byType(CartPage), findsOneWidget);
       expect(
-        find.text('ITENS SELECIONADOS (2)', skipOffstage: false),
+        find.text('Total: R\$ 63,50', skipOffstage: false),
         findsOneWidget,
       );
     },
@@ -598,10 +640,11 @@ void main() {
       expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
       expect(find.text('Aroma'), findsOneWidget);
       expect(catalog.imageCalls, 1);
-      expect(find.textContaining('R\$'), findsNothing);
-      expect(find.textContaining('Subtotal'), findsNothing);
+      expect(find.text('Preço unitário: R\$ 10,00'), findsOneWidget);
+      expect(find.text('Subtotal do item: R\$ 10,00'), findsOneWidget);
+      expect(find.text('Subtotal: R\$ 10,00'), findsOneWidget);
+      expect(find.text('Total: R\$ 10,00'), findsOneWidget);
       expect(find.textContaining('Frete'), findsNothing);
-      expect(find.textContaining('Total'), findsNothing);
       expect(find.byType(SnackBar), findsNothing);
       expect(find.byType(AlertDialog), findsNothing);
       expect(
@@ -638,7 +681,7 @@ void main() {
     expect(buttons[3].onPressed, isNotNull);
     expect(buttons[4].onPressed, isNull);
     await tester.tap(find.byIcon(Icons.remove).first);
-    await tester.tap(find.byIcon(Icons.add).at(1));
+    await tapVisible(tester, find.byIcon(Icons.add).at(1));
     await tester.pump();
     expect(cartApi.mutations, isEmpty);
     expect(find.text('Mínimo'), findsOneWidget);
@@ -653,16 +696,48 @@ void main() {
     addTearDown(session.dispose);
     final cartApi = _CartApi([
       Future.value(
-        _cart([
-          _line(
-            id: _itemId,
-            name: 'Linha A',
-            personalizations: const [
-              CartPersonalization(id: _optionId, name: 'Aroma'),
-            ],
+        _cart(
+          [
+            _line(
+              id: _itemId,
+              name: 'Linha A',
+              personalizations: const [
+                CartPersonalization(id: _optionId, name: 'Aroma'),
+              ],
+            ),
+            _line(id: _secondItemId, name: 'Linha B'),
+          ],
+          subtotal: '20.00',
+          total: '20.00',
+        ),
+      ),
+      Future.value(
+        _cart(
+          [
+            _line(
+              id: _itemId,
+              name: 'Linha A',
+              unitPrice: '7.50',
+              subtotal: '7.50',
+              personalizations: const [
+                CartPersonalization(id: _optionId, name: 'Aroma'),
+              ],
+            ),
+          ],
+          subtotal: '7.50',
+          total: '7.50',
+        ),
+      ),
+      Future.value(
+        const CartResult(
+          CartRequestStatus.success,
+          cart: CustomerCart(
+            id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+            items: [],
+            subtotal: '0.00',
+            total: '0.00',
           ),
-          _line(id: _secondItemId, name: 'Linha B'),
-        ]),
+        ),
       ),
     ]);
     cartApi.onMutation = (_) async =>
@@ -672,9 +747,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(cartApi.mutations.single.method, 'DELETE');
     expect(cartApi.mutations.single.itemId, _secondItemId);
+    expect(cartApi.calls, 2);
     expect(find.text('Linha A'), findsOneWidget);
     expect(find.text('Aroma'), findsOneWidget);
     expect(find.text('Linha B'), findsNothing);
+    expect(find.text('Total: R\$ 7,50'), findsOneWidget);
     expect(find.text('ITENS SELECIONADOS (1)'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
     expect(find.byType(AlertDialog), findsNothing);
@@ -682,6 +759,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
     expect(find.text('Linha A'), findsNothing);
+    expect(find.textContaining('R\$'), findsNothing);
     expect(find.byType(CartPage), findsOneWidget);
     expect(find.byType(StorefrontPage), findsNothing);
     expect(find.text('Continuar comprando'), findsOneWidget);
@@ -691,7 +769,38 @@ void main() {
           .onPressed,
       isNull,
     );
-    expect(cartApi.calls, 1);
+    expect(cartApi.calls, 3);
+  });
+
+  testWidgets('DELETE com GET seguinte falho não inventa total', (
+    tester,
+  ) async {
+    final auth = _AuthApi();
+    final session = await _session(auth);
+    addTearDown(session.dispose);
+    final cartApi = _CartApi([
+      Future.value(
+        _cart(
+          [_line(id: _itemId, name: 'Linha A', unitPrice: '12.00')],
+          subtotal: '12.00',
+          total: '12.00',
+        ),
+      ),
+      Future.value(const CartResult(CartRequestStatus.unavailable)),
+    ]);
+    cartApi.onMutation = (_) async =>
+        const CartResult(CartRequestStatus.success);
+    await pumpCart(tester, cartApi: cartApi, session: session);
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(cartApi.calls, 2);
+    expect(
+      find.text('Não foi possível carregar o carrinho. Tente novamente.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('R\$'), findsNothing);
+    expect(find.text('Linha A'), findsNothing);
+    expect(find.text('Tentar novamente'), findsOneWidget);
   });
 
   testWidgets('operação pendente bloqueia segundo toque e mantém a lista', (
@@ -733,6 +842,8 @@ void main() {
     }
     await tester.tap(find.byIcon(Icons.add).first);
     await tester.tap(find.byIcon(Icons.remove).first);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -180));
+    await tester.pump();
     await tester.tap(find.byIcon(Icons.delete_outline).at(1));
     await tester.pump();
     expect(cartApi.mutations, hasLength(1));
@@ -777,7 +888,7 @@ void main() {
       find.text('Não foi possível carregar o carrinho. Tente novamente.'),
       findsNothing,
     );
-    await tester.tap(find.byIcon(Icons.delete_outline).at(1));
+    await tapVisible(tester, find.byIcon(Icons.delete_outline).at(1));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 1));
     expect(cartApi.mutations, hasLength(2));
@@ -904,17 +1015,30 @@ void main() {
           addTearDown(session.dispose);
           final cartApi = _CartApi([
             Future.value(
-              _cart([
-                _line(
-                  id: _itemId,
-                  name: _longName,
-                  quantity: 3,
-                  personalizations: const [
-                    CartPersonalization(id: _optionId, name: _longOption),
-                  ],
-                ),
-                _line(id: _secondItemId, quantity: 4),
-              ]),
+              _cart(
+                [
+                  _line(
+                    id: _itemId,
+                    name: _longName,
+                    quantity: 3,
+                    unitPrice: '1234.56',
+                    subtotal: '3703.68',
+                    personalizations: const [
+                      CartPersonalization(id: _optionId, name: _longOption),
+                    ],
+                  ),
+                  _line(
+                    id: _secondItemId,
+                    quantity: 4,
+                    unitPrice: null,
+                    subtotal: null,
+                    available: false,
+                    reason: 'Produto indisponível.',
+                  ),
+                ],
+                subtotal: '3703.68',
+                total: '3703.68',
+              ),
             ),
           ]);
           await tester.pumpWidget(
@@ -947,15 +1071,22 @@ void main() {
           await reveal(tester, unavailable);
           expect(unavailable.hitTestable(), findsOneWidget);
           expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
-          expect(find.textContaining('R\$'), findsNothing);
-          expect(find.textContaining('Subtotal'), findsNothing);
+          expect(find.text('Preço unitário: R\$ 1.234,56'), findsOneWidget);
+          expect(find.text('Subtotal do item: R\$ 3.703,68'), findsOneWidget);
           expect(find.textContaining('Frete'), findsNothing);
-          expect(find.textContaining('Total'), findsNothing);
           expect(tester.takeException(), isNull);
           await tester.scrollUntilVisible(
             find.text('Continuar'),
             400,
             scrollable: find.byType(Scrollable),
+          );
+          expect(
+            find.text('Total: R\$ 3.703,68', skipOffstage: false),
+            findsOneWidget,
+          );
+          expect(
+            find.text('Produto indisponível.', skipOffstage: false),
+            findsOneWidget,
           );
           expect(find.text('Continuar'), findsOneWidget);
           expect(
