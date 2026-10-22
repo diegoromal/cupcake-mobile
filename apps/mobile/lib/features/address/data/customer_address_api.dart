@@ -14,6 +14,60 @@ enum AddressStatus {
   unavailable,
   indeterminate,
   notConfigured,
+  configurationUnavailable,
+  networkError,
+  invalidResponse,
+}
+
+enum CoverageSituation { attended, outsideCoverage, locationUnavailable }
+
+class CoverageFreight {
+  const CoverageFreight(this.situation, this.freight);
+  final CoverageSituation situation;
+  final String? freight;
+
+  static CoverageFreight? parse(Object? data) {
+    if (data is! Map<String, dynamic> ||
+        data.length != 4 ||
+        !data.keys.toSet().containsAll({
+          'situacao',
+          'distanciaKm',
+          'raioMaximoKm',
+          'frete',
+        })) {
+      return null;
+    }
+    final situation = data['situacao'];
+    final distance = data['distanciaKm'];
+    final radius = data['raioMaximoKm'];
+    final freight = data['frete'];
+    final threeDecimals = RegExp(r'^\d+\.\d{3}$');
+    final twoDecimals = RegExp(r'^\d+\.\d{2}$');
+    if (situation == 'ATENDIDO' &&
+        distance is String &&
+        threeDecimals.hasMatch(distance) &&
+        radius is String &&
+        threeDecimals.hasMatch(radius) &&
+        freight is String &&
+        twoDecimals.hasMatch(freight)) {
+      return CoverageFreight(CoverageSituation.attended, freight);
+    }
+    if (situation == 'FORA_DA_COBERTURA' &&
+        distance is String &&
+        threeDecimals.hasMatch(distance) &&
+        radius is String &&
+        threeDecimals.hasMatch(radius) &&
+        freight == null) {
+      return const CoverageFreight(CoverageSituation.outsideCoverage, null);
+    }
+    if (situation == 'LOCALIZACAO_INDISPONIVEL' &&
+        distance == null &&
+        radius == null &&
+        freight == null) {
+      return const CoverageFreight(CoverageSituation.locationUnavailable, null);
+    }
+    return null;
+  }
 }
 
 class CustomerAddress {
@@ -167,12 +221,36 @@ class CustomerAddressApi {
     return const AddressResult(AddressStatus.success);
   }
 
+  Future<AddressResult<CoverageFreight>> coverageFreight(
+    String token,
+    String id,
+  ) async {
+    final response = await _call(
+      _config.coverageFreightUri(id),
+      token,
+      'GET',
+      networkStatus: AddressStatus.networkError,
+      invalidResponseStatus: AddressStatus.invalidResponse,
+      serverUnavailableStatus: AddressStatus.configurationUnavailable,
+    );
+    if (response.status != AddressStatus.success) {
+      return AddressResult(response.status);
+    }
+    final value = CoverageFreight.parse(response.value);
+    return value == null
+        ? const AddressResult(AddressStatus.invalidResponse)
+        : AddressResult(AddressStatus.success, value: value);
+  }
+
   Future<AddressResult<Object?>> _call(
     Uri? uri,
     String token,
     String method, {
     Map<String, Object?>? body,
     int successCode = 200,
+    AddressStatus networkStatus = AddressStatus.unavailable,
+    AddressStatus invalidResponseStatus = AddressStatus.unavailable,
+    AddressStatus serverUnavailableStatus = AddressStatus.unavailable,
   }) async {
     if (uri == null) return const AddressResult(AddressStatus.notConfigured);
     final client = _clientFactory();
@@ -196,16 +274,19 @@ class CustomerAddressApi {
       }
       if (code == 404) return const AddressResult(AddressStatus.notFound);
       if (code == 409) return const AddressResult(AddressStatus.ambiguous);
+      if (code == 503) return AddressResult(serverUnavailableStatus);
       if (code != successCode) {
-        return const AddressResult(AddressStatus.unavailable);
+        return AddressResult(invalidResponseStatus);
       }
       final text = await utf8.decoder.bind(response.timeout(timeout)).join();
       return AddressResult(AddressStatus.success, value: jsonDecode(text));
+    } on FormatException {
+      return AddressResult(invalidResponseStatus);
     } on Object {
       return AddressResult(
         method == 'POST' && (code == null || code == successCode)
             ? AddressStatus.indeterminate
-            : AddressStatus.unavailable,
+            : networkStatus,
       );
     } finally {
       client.close(force: true);

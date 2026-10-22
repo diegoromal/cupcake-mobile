@@ -655,7 +655,7 @@ void main() {
               find.widgetWithText(FilledButton, 'Continuar'),
             )
             .onPressed,
-        isNull,
+        isNotNull,
       );
     },
   );

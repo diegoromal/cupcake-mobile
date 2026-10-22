@@ -51,6 +51,11 @@ class ApiConfig {
     return _validBaseUri?.resolve('/enderecos/$id/geocodificacao');
   }
 
+  Uri? coverageFreightUri(String id) {
+    if (!_itemIdPattern.hasMatch(id)) return null;
+    return _validBaseUri?.resolve('/enderecos/$id/cobertura-frete');
+  }
+
   Uri? cartItemUri(String itemId) {
     if (!_itemIdPattern.hasMatch(itemId)) return null;
     return _validBaseUri?.resolve('/carrinho/itens/$itemId');
