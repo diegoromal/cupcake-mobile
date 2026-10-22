@@ -15,7 +15,7 @@
 - [x] Fase 2 --- Catálogo
 - [x] Fase 3 --- Aplicativo Flutter
 - [x] Fase 4 --- Carrinho
-- [ ] Fase 5 --- Endereço, cobertura e frete
+- [x] Fase 5 --- Endereço, cobertura e frete
 - [ ] Fase 6 --- Pedido e reserva de estoque
 - [ ] Fase 7 --- Pagamento
 - [ ] Fase 8 --- Operação da loja
@@ -111,19 +111,19 @@ produtos.
 
 ## 📍 FASE 5 --- Endereço, cobertura e frete
 
-- [ ] **D39 --- Cadastro de endereço**
-- [ ] **D40 --- Configuração administrativa da loja**
-  - [ ] Localização da loja
-  - [ ] Raio máximo
-  - [ ] Taxa base
-  - [ ] Valor por km
-- [ ] **D41 --- Integrar geocodificação**
-- [ ] **D42 --- Calcular distância loja → cliente**
-- [ ] **D43 --- Validar raio máximo**
-- [ ] **D44 --- Calcular frete:**
+- [x] **D39 --- Cadastro de endereço**
+- [x] **D40 --- Configuração administrativa da loja**
+  - [x] Localização da loja
+  - [x] Raio máximo
+  - [x] Taxa base
+  - [x] Valor por km
+- [x] **D41 --- Integrar geocodificação**
+- [x] **D42 --- Calcular distância loja → cliente**
+- [x] **D43 --- Validar raio máximo**
+- [x] **D44 --- Calcular frete:**
       `taxa base + (distância em km × valor por km)`
-- [ ] **D45 --- Fluxo retirada × entrega no Flutter**
-- [ ] **D46 --- Testes de cobertura e frete**
+- [x] **D45 --- Fluxo retirada × entrega no Flutter**
+- [x] **D46 --- Testes de cobertura e frete**
 
 **Marco 6:** sistema identifica cobertura e calcula o frete.
 
