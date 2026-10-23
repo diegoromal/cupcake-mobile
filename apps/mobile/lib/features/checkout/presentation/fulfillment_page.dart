@@ -6,13 +6,21 @@ import '../../../core/design/app_tokens.dart';
 import '../../address/data/customer_address_api.dart';
 import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
+import '../data/customer_order_api.dart';
+import 'order_review_page.dart';
 
 enum FulfillmentMode { delivery, pickup }
 
 class FulfillmentPage extends StatefulWidget {
-  const FulfillmentPage({super.key, required this.session, this.addressApi});
+  const FulfillmentPage({
+    super.key,
+    required this.session,
+    this.addressApi,
+    this.orderApi,
+  });
   final CustomerSession session;
   final CustomerAddressApi? addressApi;
+  final CustomerOrderApi? orderApi;
 
   @override
   State<FulfillmentPage> createState() => _FulfillmentPageState();
@@ -338,6 +346,27 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
     return 'R\$ $whole,${parts[1]}';
   }
 
+  bool get _canContinue =>
+      _mode == FulfillmentMode.pickup ||
+      (_mode == FulfillmentMode.delivery &&
+          _selectedId != null &&
+          _coverageStatus == AddressStatus.success &&
+          _coverage?.situation == CoverageSituation.attended);
+
+  void _continue() {
+    if (!_canContinue) return;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => OrderReviewPage(
+          session: widget.session,
+          mode: _mode == FulfillmentMode.delivery ? 'ENTREGA' : 'RETIRADA',
+          addressId: _mode == FulfillmentMode.delivery ? _selectedId : null,
+          orderApi: widget.orderApi,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Forma de recebimento')),
@@ -378,7 +407,10 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
                   _notice('Retirada selecionada. Frete: R\$ 0,00'),
                 if (_mode == FulfillmentMode.delivery) _delivery(),
                 const SizedBox(height: AppTokens.spacing24),
-                const FilledButton(onPressed: null, child: Text('Continuar')),
+                FilledButton(
+                  onPressed: _canContinue ? _continue : null,
+                  child: const Text('Continuar'),
+                ),
               ],
             ),
           ),

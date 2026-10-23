@@ -17,9 +17,22 @@ import { PedidosService } from './pedidos.service';
 export class PedidosController {
   constructor(private readonly pedidos: PedidosService) {}
 
+  @Post('revisao')
+  revisar(@Req() request: AuthenticatedRequest, @Body() body: CriarPedidoDto) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    if (body.modalidade === ModalidadeRecebimento.RETIRADA && body.enderecoId !== undefined) {
+      throw new BadRequestException('Retirada não aceita endereço.');
+    }
+    if (body.modalidade === ModalidadeRecebimento.ENTREGA && !body.enderecoId) {
+      throw new BadRequestException('Endereço obrigatório para entrega.');
+    }
+    return this.pedidos.revisar(request.user.id, body);
+  }
+
   @Post()
   criar(@Req() request: AuthenticatedRequest, @Body() body: CriarPedidoDto) {
     if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    if (!body.revisaoId) throw new BadRequestException('Referência da revisão obrigatória.');
     if (body.modalidade === ModalidadeRecebimento.RETIRADA && body.enderecoId !== undefined) {
       throw new BadRequestException('Retirada não aceita endereço.');
     }

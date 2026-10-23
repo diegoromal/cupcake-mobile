@@ -23,6 +23,19 @@ enum SignInOutcome {
   stale,
 }
 
+class PendingOrderConfirmation {
+  const PendingOrderConfirmation({
+    required this.attemptId,
+    required this.mode,
+    required this.addressId,
+    required this.review,
+  });
+  final String attemptId;
+  final String mode;
+  final String? addressId;
+  final Map<String, dynamic> review;
+}
+
 class CustomerSession extends ChangeNotifier {
   CustomerSession({
     required this.authApi,
@@ -45,6 +58,16 @@ class CustomerSession extends ChangeNotifier {
   bool _refreshUnavailable = false;
   bool _foreground = true;
   bool _disposed = false;
+  PendingOrderConfirmation? _pendingOrderConfirmation;
+  PendingOrderConfirmation? get pendingOrderConfirmation =>
+      _pendingOrderConfirmation;
+  void rememberOrderConfirmation(PendingOrderConfirmation confirmation) {
+    _pendingOrderConfirmation ??= confirmation;
+  }
+
+  void clearOrderConfirmation() {
+    _pendingOrderConfirmation = null;
+  }
 
   CustomerSessionState get state => _state;
   bool get sessionExpired => _sessionExpired;
@@ -269,6 +292,7 @@ class CustomerSession extends ChangeNotifier {
   Future<void> retryRestoration() => restore();
 
   Future<bool> signOut() async {
+    clearOrderConfirmation();
     final generation = ++_generation;
     _sessionExpired = false;
     _refreshUnavailable = false;
@@ -305,6 +329,7 @@ class CustomerSession extends ChangeNotifier {
   }
 
   Future<void> _endSession(int generation) async {
+    clearOrderConfirmation();
     _tokens = null;
     _sessionExpired = true;
     _refreshUnavailable = false;

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { classificar, leituraDoCarrinho } from '../carrinho/carrinho.service';
 import { calcularCoberturaFrete } from '../enderecos/cobertura-frete.service';
@@ -13,7 +13,50 @@ const limiteMonetario = new Prisma.Decimal('9999999999.99');
 export class PedidosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async revisar(usuarioId: string, input: CriarPedidoDto) {
+    return this.processar(usuarioId, input, false);
+  }
+
   async criar(usuarioId: string, input: CriarPedidoDto) {
+    if (input.tentativaId && !input.revisaoId) {
+      throw new BadRequestException('Referência da revisão obrigatória.');
+    }
+    const prefixo = input.tentativaId ? `PED-${input.tentativaId}` : null;
+    const identificador = prefixo
+      ? `${prefixo}-${createHash('sha256').update(JSON.stringify({
+          modalidade: input.modalidade, enderecoId: input.enderecoId ?? null,
+          revisaoId: input.revisaoId,
+        })).digest('hex')}` : `PED-${randomUUID()}`;
+    if (input.tentativaId) {
+      const anterior = await this.prisma.pedido.findFirst({
+        where: { identificadorNegocio: { startsWith: prefixo! } },
+        include: { enderecoEntregaSnapshot: true, itens: { include: { personalizacoes: true } } },
+      });
+      if (anterior) return this.repeticao(anterior, usuarioId, identificador);
+    }
+    try {
+      return await this.processar(usuarioId, input, true, identificador);
+    } catch (error) {
+      if (input.tentativaId && error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const anterior = await this.prisma.pedido.findFirst({
+          where: { identificadorNegocio: { startsWith: prefixo! } },
+          include: { enderecoEntregaSnapshot: true, itens: { include: { personalizacoes: true } } },
+        });
+        if (anterior) return this.repeticao(anterior, usuarioId, identificador);
+      }
+      throw error;
+    }
+  }
+
+  private repeticao(pedido: Parameters<PedidosService['apresentar']>[0], usuarioId: string, identificador: string) {
+    if (pedido.clienteUsuarioId !== usuarioId || pedido.identificadorNegocio !== identificador) {
+      throw new ConflictException('Tentativa de confirmação inválida.');
+    }
+    return this.apresentar(pedido);
+  }
+
+  private async processar(usuarioId: string, input: CriarPedidoDto, persistir: boolean,
+    identificador?: string) {
     if (input.modalidade === ModalidadeRecebimento.RETIRADA && input.enderecoId !== undefined) {
       throw new BadRequestException('Retirada não aceita endereço.');
     }
@@ -22,6 +65,41 @@ export class PedidosService {
     }
 
     return this.prisma.$transaction(async (db) => {
+      if (persistir && input.tentativaId) {
+        await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`PED-${input.tentativaId}`}, 0))::text AS locked`;
+        const anterior = await db.pedido.findFirst({
+          where: { identificadorNegocio: { startsWith: `PED-${input.tentativaId}` } },
+          include: { enderecoEntregaSnapshot: true, itens: { include: { personalizacoes: true } } },
+        });
+        if (anterior) return this.repeticao(anterior, usuarioId, identificador!);
+      }
+      if (persistir) {
+        // O pai impede novos itens; as linhas filhas impedem alterações e remoções durante a confirmação.
+        const [carrinhoBloqueado] = await db.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM "Carrinho" WHERE "usuarioId" = ${usuarioId}::uuid FOR UPDATE`;
+        if (!carrinhoBloqueado) throw new NotFoundException('Carrinho não encontrado.');
+        const itensBloqueados = await db.$queryRaw<Array<{ id: string; produtoId: string }>>`
+          SELECT id, "produtoId" FROM "ItemCarrinho" WHERE "carrinhoId" = ${carrinhoBloqueado.id}::uuid
+          ORDER BY id FOR UPDATE`;
+        if (!itensBloqueados.length) throw new ConflictException('Carrinho vazio.');
+        for (const produtoId of [...new Set(itensBloqueados.map((item) => item.produtoId))].sort()) {
+          await db.$queryRaw`SELECT id FROM "Produto" WHERE id = ${produtoId}::uuid FOR UPDATE`;
+        }
+        const selecoes = await db.$queryRaw<Array<{ itemCarrinhoId: string; personalizacaoId: string }>>`
+          SELECT "itemCarrinhoId", "personalizacaoId" FROM "ItemCarrinhoPersonalizacao"
+          WHERE "itemCarrinhoId" IN (SELECT id FROM "ItemCarrinho"
+            WHERE "carrinhoId" = ${carrinhoBloqueado.id}::uuid)
+          ORDER BY "itemCarrinhoId", "personalizacaoId" FOR UPDATE`;
+        const produtoPorItem = new Map(itensBloqueados.map((item) => [item.id, item.produtoId]));
+        for (const { produtoId, personalizacaoId } of selecoes.map((selecao) => ({
+          produtoId: produtoPorItem.get(selecao.itemCarrinhoId)!,
+          personalizacaoId: selecao.personalizacaoId,
+        })).sort((a, b) => a.produtoId.localeCompare(b.produtoId) ||
+          a.personalizacaoId.localeCompare(b.personalizacaoId))) {
+          await db.$queryRaw`SELECT "produtoId" FROM "ProdutoPersonalizacao"
+            WHERE "produtoId" = ${produtoId}::uuid AND "personalizacaoId" = ${personalizacaoId}::uuid FOR UPDATE`;
+        }
+      }
       const carrinho = await db.carrinho.findUnique({
         where: { usuarioId }, select: leituraDoCarrinho,
       });
@@ -31,7 +109,7 @@ export class PedidosService {
       const linhas = carrinho.itens.map((item) => ({ persistido: item, calculado: classificar(item) }));
       if (linhas.some(({ persistido, calculado }) =>
           !Number.isInteger(persistido.quantidade) || persistido.quantidade < 1 ||
-          !calculado.item.disponivel || calculado.item.precoUnitario === null ||
+          calculado.item.precoUnitario === null ||
           calculado.valor === null || !calculado.valor.isFinite() ||
           calculado.valor.greaterThan(limiteMonetario) ||
           new Prisma.Decimal(calculado.item.precoUnitario).greaterThan(limiteMonetario))) {
@@ -46,16 +124,21 @@ export class PedidosService {
       let freteAplicado = new Prisma.Decimal(0);
       let endereco: Awaited<ReturnType<typeof db.endereco.findFirst>> = null;
       if (input.modalidade === ModalidadeRecebimento.ENTREGA) {
+        if (persistir) {
+          const [enderecoBloqueado] = await db.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM "Endereco" WHERE id = ${input.enderecoId}::uuid
+            AND "usuarioId" = ${usuarioId}::uuid FOR UPDATE`;
+          if (!enderecoBloqueado) throw new NotFoundException('Endereço não encontrado.');
+        }
         endereco = await db.endereco.findFirst({
           where: { id: input.enderecoId, usuarioId },
         });
         if (!endereco) throw new NotFoundException('Endereço não encontrado.');
-        const configuracao = await db.configuracaoLojaEntrega.findFirst({
-          select: {
+        const configuracaoSelect = {
             latitudeLoja: true, longitudeLoja: true, raioMaximoAtendimento: true,
             taxaBase: true, valorPorQuilometro: true,
-          },
-        });
+        } as const;
+        const configuracao = await db.configuracaoLojaEntrega.findFirst({ select: configuracaoSelect });
         const cobertura = calcularCoberturaFrete(endereco, configuracao);
         if (cobertura.situacao !== 'ATENDIDO' || cobertura.frete === null) {
           throw new ConflictException('Endereço indisponível para entrega.');
@@ -67,26 +150,73 @@ export class PedidosService {
         throw new ConflictException('Total do pedido inválido.');
       }
 
-      const demanda = new Map<string, { quantidade: number; fisica: number; reservada: number }>();
+      const demanda = new Map<string, number>();
       for (const { persistido } of linhas) {
-        const estoque = persistido.produto.estoque;
-        if (!estoque) throw new ConflictException('Estoque indisponível.');
-        const anterior = demanda.get(persistido.produtoId);
-        demanda.set(persistido.produtoId, {
-          quantidade: (anterior?.quantidade ?? 0) + persistido.quantidade,
-          fisica: estoque.quantidadeFisica,
-          reservada: estoque.quantidadeReservada,
-        });
+        if (!persistido.produto.estoque) throw new ConflictException('Estoque indisponível.');
+        demanda.set(persistido.produtoId,
+          (demanda.get(persistido.produtoId) ?? 0) + persistido.quantidade);
       }
-      for (const { quantidade, fisica, reservada } of demanda.values()) {
-        if (quantidade > fisica - reservada) {
+      const produtos = [...demanda.keys()].sort();
+      const itensRevisao = linhas.map(({ persistido, calculado }) => ({
+        produtoId: persistido.produtoId,
+        nome: persistido.produto.nome,
+        quantidade: persistido.quantidade,
+        precoAplicado: calculado.item.precoUnitario!,
+        subtotalAplicado: calculado.valor!.toFixed(2),
+        personalizacoes: persistido.personalizacoes.map(({ personalizacao }) => ({
+          identificacaoPersonalizacaoAplicada: personalizacao.id,
+          nomeAplicado: personalizacao.nome,
+          ajusteValorAplicado: personalizacao.ajusteValor?.toFixed(2) ?? null,
+        })),
+      }));
+      const enderecoRevisao = endereco && {
+        rua: endereco.rua, numero: endereco.numero, bairro: endereco.bairro,
+        cidade: endereco.cidade, cep: endereco.cep,
+        complemento: endereco.complemento, referencia: endereco.referencia,
+      };
+      const revisao = {
+        modalidade: input.modalidade, enderecoId: input.enderecoId ?? null,
+        enderecoEntregaSnapshot: enderecoRevisao,
+        itens: itensRevisao,
+        valorItens: valorItens.toFixed(2), freteAplicado: freteAplicado.toFixed(2),
+        total: total.toFixed(2),
+      };
+      const saldos: Array<{ produtoId: string; disponivel: number }> = [];
+      if (!persistir) {
+        for (const produtoId of produtos) {
+          const saldo = linhas.find(({ persistido }) => persistido.produtoId === produtoId)!
+            .persistido.produto.estoque!;
+          const disponivel = saldo.quantidadeFisica - saldo.quantidadeReservada;
+          if (demanda.get(produtoId)! > disponivel) {
+            throw new ConflictException('Estoque indisponível.');
+          }
+          saldos.push({ produtoId, disponivel });
+        }
+        return { ...revisao, revisaoId: this.assinarRevisao(usuarioId, revisao, saldos) };
+      }
+      // Uma linha por vez, sempre em ordem, evita inversão de locks entre pedidos.
+      for (const produtoId of produtos) {
+        const [linha] = await db.$queryRaw<Array<{ produtoId: string }>>`
+          SELECT "produtoId" FROM "Estoque" WHERE "produtoId" = ${produtoId}::uuid FOR UPDATE`;
+        if (!linha) throw new ConflictException('Estoque indisponível.');
+      }
+      // Todas as leituras definitivas ocorrem depois da aquisição dos locks.
+      for (const produtoId of produtos) {
+        const saldo = await db.estoque.findUnique({
+          where: { produtoId }, select: { quantidadeFisica: true, quantidadeReservada: true },
+        });
+        if (!saldo || demanda.get(produtoId)! > saldo.quantidadeFisica - saldo.quantidadeReservada) {
           throw new ConflictException('Estoque indisponível.');
         }
+        saldos.push({ produtoId, disponivel: saldo.quantidadeFisica - saldo.quantidadeReservada });
+      }
+      if (input.revisaoId && input.revisaoId !== this.assinarRevisao(usuarioId, revisao, saldos)) {
+        throw new ConflictException('Revisão desatualizada. Atualize os valores.');
       }
 
       const pedido = await db.pedido.create({
         data: {
-          identificadorNegocio: `PED-${randomUUID()}`,
+          identificadorNegocio: identificador!,
           clienteUsuarioId: usuarioId,
           modalidade: input.modalidade,
           valorItens,
@@ -114,7 +244,8 @@ export class PedidosService {
           itens: { include: { personalizacoes: true } },
         },
       });
-      for (const [produtoId, { quantidade }] of demanda) {
+      for (const produtoId of produtos) {
+        const quantidade = demanda.get(produtoId)!;
         await db.estoque.update({ where: { produtoId }, data: {
           quantidadeReservada: { increment: quantidade },
         } });
@@ -129,7 +260,32 @@ export class PedidosService {
           momentoExpiracaoValidade,
         } });
       }
-      return {
+      return this.apresentar(pedido);
+    });
+  }
+
+  private assinarRevisao(usuarioId: string, revisao: object, saldos: Array<{ produtoId: string; disponivel: number }>) {
+    return createHash('sha256').update(JSON.stringify({ usuarioId, revisao, saldos })).digest('hex');
+  }
+
+  private apresentar(pedido: {
+    id: string; identificadorNegocio: string; clienteUsuarioId: string;
+    modalidade: ModalidadeRecebimento; statusAtual: string;
+    valorItens: Prisma.Decimal; freteAplicado: Prisma.Decimal; total: Prisma.Decimal;
+    enderecoEntregaSnapshot: {
+      rua: string; numero: string; bairro: string; cidade: string; cep: string;
+      complemento: string | null; referencia: string | null;
+    } | null;
+    itens: Array<{
+      produtoId: string; quantidade: number; precoAplicado: Prisma.Decimal;
+      subtotalAplicado: Prisma.Decimal;
+      personalizacoes: Array<{
+        identificacaoPersonalizacaoAplicada: string; nomeAplicado: string;
+        ajusteValorAplicado: Prisma.Decimal | null;
+      }>;
+    }>;
+  }) {
+    return {
         id: pedido.id,
         identificadorNegocio: pedido.identificadorNegocio,
         modalidade: pedido.modalidade,
@@ -158,6 +314,5 @@ export class PedidosService {
           })),
         })),
       };
-    });
   }
 }
