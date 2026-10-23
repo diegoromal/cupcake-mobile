@@ -8,6 +8,7 @@ import '../../auth/session/customer_session.dart';
 import '../../address/data/customer_address_api.dart';
 import '../../catalog/data/customer_catalog_api.dart';
 import '../../checkout/presentation/fulfillment_page.dart';
+import '../../checkout/data/customer_order_api.dart';
 import '../data/customer_cart_api.dart';
 
 class CartPage extends StatefulWidget {
@@ -17,12 +18,14 @@ class CartPage extends StatefulWidget {
     required this.cartApi,
     required this.catalogApi,
     this.addressApi,
+    this.orderApi,
   });
 
   final CustomerSession session;
   final CustomerCartApi cartApi;
   final CustomerCatalogApi catalogApi;
   final CustomerAddressApi? addressApi;
+  final CustomerOrderApi? orderApi;
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -189,6 +192,7 @@ class _CartPageState extends State<CartPage> {
         builder: (_) => FulfillmentPage(
           session: widget.session,
           addressApi: widget.addressApi,
+          orderApi: widget.orderApi,
         ),
       ),
     );

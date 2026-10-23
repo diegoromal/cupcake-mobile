@@ -9,6 +9,8 @@ import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
 import 'package:cupcake_mobile/features/cart/presentation/cart_page.dart';
 import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
 import 'package:cupcake_mobile/features/checkout/presentation/fulfillment_page.dart';
+import 'package:cupcake_mobile/features/checkout/data/customer_order_api.dart';
+import 'package:cupcake_mobile/features/checkout/presentation/order_review_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -112,11 +114,78 @@ class FakeCartApi extends CustomerCartApi {
 
 class FakeCatalogApi extends CustomerCatalogApi {}
 
+class FakeOrderApi extends CustomerOrderApi {
+  int reviews = 0, confirmations = 0;
+  bool timeoutFirst = false;
+  final attemptIds = <String>[];
+  String? selectedMode, selectedAddress;
+  @override
+  Future<OrderResult> review(
+    String token,
+    String mode,
+    String? addressId,
+  ) async {
+    reviews++;
+    selectedMode = mode;
+    selectedAddress = addressId;
+    return OrderResult(
+      OrderStatus.success,
+      value: {
+        'revisaoId': 'a' * 64,
+        'modalidade': mode,
+        'enderecoId': addressId,
+        'enderecoEntregaSnapshot': mode == 'ENTREGA'
+            ? {
+                'rua': 'Rua das Flores',
+                'numero': '123',
+                'bairro': 'Centro',
+                'cidade': 'São Paulo',
+                'cep': '01001000',
+              }
+            : null,
+        'itens': [
+          {
+            'produtoId': id2,
+            'nome': 'Cupcake',
+            'quantidade': 1,
+            'precoAplicado': '10.00',
+            'subtotalAplicado': '10.00',
+            'personalizacoes': [],
+          },
+        ],
+        'valorItens': '10.00',
+        'freteAplicado': mode == 'ENTREGA' ? '12.34' : '0.00',
+        'total': mode == 'ENTREGA' ? '22.34' : '10.00',
+      },
+    );
+  }
+
+  @override
+  Future<OrderResult> confirm(
+    String token,
+    String mode,
+    String? addressId,
+    String attemptId,
+    String reviewId,
+  ) async {
+    confirmations++;
+    attemptIds.add(attemptId);
+    if (timeoutFirst && confirmations == 1) {
+      return const OrderResult(OrderStatus.timeout);
+    }
+    return const OrderResult(
+      OrderStatus.success,
+      value: {'id': id, 'identificadorNegocio': 'PED-1', 'total': '10.00'},
+    );
+  }
+}
+
 Widget app(
   CustomerSession session,
   FakeAddressApi api, {
   bool cart = false,
   CustomerCart? contents,
+  CustomerOrderApi? orderApi,
 }) => MaterialApp(
   theme: AppTheme.light,
   home: cart
@@ -125,8 +194,9 @@ Widget app(
           cartApi: FakeCartApi(contents!),
           catalogApi: FakeCatalogApi(),
           addressApi: api,
+          orderApi: orderApi,
         )
-      : FulfillmentPage(session: session, addressApi: api),
+      : FulfillmentPage(session: session, addressApi: api, orderApi: orderApi),
 );
 
 Future<void> choose(WidgetTester tester, String label) async {
@@ -239,7 +309,7 @@ void main() {
               find.widgetWithText(FilledButton, 'Continuar'),
             )
             .onPressed,
-        isNull,
+        isNotNull,
       );
       expect(
         tester.getSize(find.widgetWithText(FilledButton, 'Continuar')).height,
@@ -524,4 +594,115 @@ void main() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
+
+  for (final previousMode in ['Delivery', 'Retirada']) {
+    testWidgets(
+      'Fulfillment preserva nova escolha após timeout em $previousMode',
+      (tester) async {
+        final userSession = await session(FakeAuth());
+        addTearDown(userSession.dispose);
+        final orderApi = FakeOrderApi()..timeoutFirst = true;
+        await tester.pumpWidget(
+          app(userSession, FakeAddressApi(), orderApi: orderApi),
+        );
+        await choose(tester, previousMode);
+        if (previousMode == 'Delivery') {
+          await choose(tester, 'Rua das Flores, 123');
+        }
+        await choose(tester, 'Continuar');
+        await choose(tester, 'Confirmar pedido');
+        final oldAttempt = userSession.pendingOrderConfirmation!.attemptId;
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        final nextMode = previousMode == 'Delivery' ? 'Retirada' : 'Delivery';
+        await choose(tester, nextMode);
+        if (nextMode == 'Delivery') {
+          await choose(tester, 'Rua das Flores, 123');
+        }
+        await choose(tester, 'Continuar');
+        expect(find.text('Confirmação anterior pendente'), findsOneWidget);
+        expect(userSession.pendingOrderConfirmation!.attemptId, oldAttempt);
+        expect(orderApi.reviews, 1);
+        expect(orderApi.confirmations, 1);
+        await choose(tester, 'Resolver confirmação anterior');
+        expect(orderApi.attemptIds, [oldAttempt, oldAttempt]);
+        await choose(tester, 'Voltar à forma de recebimento');
+        expect(find.byType(FulfillmentPage), findsOneWidget);
+        expect(
+          find.text('Retirada selecionada. Frete: R\$ 0,00'),
+          nextMode == 'Retirada' ? findsOneWidget : findsNothing,
+        );
+        await choose(tester, 'Continuar');
+        expect(orderApi.reviews, 2);
+        expect(
+          orderApi.selectedMode,
+          nextMode == 'Delivery' ? 'ENTREGA' : 'RETIRADA',
+        );
+        await choose(tester, 'Confirmar pedido');
+        expect(orderApi.attemptIds.last, isNot(oldAttempt));
+      },
+    );
+  }
+
+  for (final mode in ['Retirada', 'Delivery']) {
+    testWidgets(
+      'Carrinho → Fulfillment → Revisão → Confirmar: $mode',
+      (tester) async {
+        final userSession = await session(FakeAuth());
+        addTearDown(userSession.dispose);
+        final orderApi = FakeOrderApi();
+        final cart = CustomerCart(
+          id: id,
+          items: [
+            CartItem(
+              id: id,
+              productId: id2,
+              name: 'Cupcake',
+              imageAvailable: false,
+              quantity: 1,
+              personalizations: const [],
+              unitPrice: '10.00',
+              subtotal: '10.00',
+              available: true,
+              reason: null,
+            ),
+          ],
+          subtotal: '10.00',
+          total: '10.00',
+        );
+        await tester.pumpWidget(
+          app(
+            userSession,
+            FakeAddressApi(),
+            cart: true,
+            contents: cart,
+            orderApi: orderApi,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await choose(tester, 'Continuar');
+        expect(find.byType(FulfillmentPage), findsOneWidget);
+        await choose(tester, mode);
+        if (mode == 'Delivery') await choose(tester, 'Rua das Flores, 123');
+        await choose(tester, 'Continuar');
+        expect(find.byType(OrderReviewPage), findsOneWidget);
+        expect(orderApi.confirmations, 0);
+        expect(
+          orderApi.selectedMode,
+          mode == 'Delivery' ? 'ENTREGA' : 'RETIRADA',
+        );
+        expect(orderApi.selectedAddress, mode == 'Delivery' ? id : null);
+        await choose(tester, 'Confirmar pedido');
+        expect(orderApi.reviews, 1);
+        expect(orderApi.confirmations, 1);
+        expect(find.textContaining(id), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(find.byType(FulfillmentPage), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(find.byType(CartPage), findsOneWidget);
+      },
+    );
+  }
 }

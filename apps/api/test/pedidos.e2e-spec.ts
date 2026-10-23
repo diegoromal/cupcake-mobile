@@ -9,10 +9,12 @@ import { PrismaService } from '../src/prisma/prisma.service';
 
 const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const enderecoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const revisaoId = 'a'.repeat(64);
 
 describe('POST /pedidos', () => {
   let app: INestApplication;
   const criar = jest.fn();
+  const revisar = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
@@ -23,7 +25,7 @@ describe('POST /pedidos', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
-      .overrideProvider(PedidosService).useValue({ criar }).compile();
+      .overrideProvider(PedidosService).useValue({ criar, revisar }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -36,6 +38,9 @@ describe('POST /pedidos', () => {
       itens: [{ produtoId: 'produto', quantidade: 1, precoAplicado: '10.30',
         subtotalAplicado: '10.30', personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: '0.20' }] }],
     });
+    revisar.mockResolvedValue({ modalidade: 'RETIRADA', valorItens: '10.30',
+      freteAplicado: '0.00', total: '10.30', revisaoId: 'a'.repeat(64),
+      itens: [{ nome: 'Cupcake', quantidade: 1, personalizacoes: [] }] });
   });
 
   it('exige sessão e perfil cliente', async () => {
@@ -50,8 +55,8 @@ describe('POST /pedidos', () => {
   it('aceita retirada sem endereço e usa exclusivamente o usuário do token', async () => {
     const cliente = await token(PerfilUsuario.CLIENTE);
     const response = await request(app.getHttpServer()).post('/pedidos')
-      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA' }).expect(201);
-    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'RETIRADA' });
+      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA', revisaoId }).expect(201);
+    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'RETIRADA', revisaoId });
     expect(response.body).toMatchObject({ freteAplicado: '0.00', total: '10.30',
       enderecoEntregaSnapshot: null,
       itens: [expect.objectContaining({ personalizacoes: [expect.objectContaining({ nomeAplicado: 'Cobertura' })] })] });
@@ -61,8 +66,9 @@ describe('POST /pedidos', () => {
     const cliente = await token(PerfilUsuario.CLIENTE);
     const post = (body: object) => request(app.getHttpServer()).post('/pedidos')
       .set('Authorization', `Bearer ${cliente}`).send(body);
-    await post({ modalidade: 'ENTREGA', enderecoId }).expect(201);
-    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'ENTREGA', enderecoId });
+    await post({ modalidade: 'ENTREGA', enderecoId, revisaoId }).expect(201);
+    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'ENTREGA', enderecoId, revisaoId });
+    await post({ modalidade: 'RETIRADA' }).expect(400);
     for (const body of [
       { modalidade: 'ENTREGA' }, { modalidade: 'RETIRADA', enderecoId },
       { modalidade: 'DESCONHECIDA' }, { modalidade: 'RETIRADA', total: '0.01' },
@@ -80,7 +86,7 @@ describe('POST /pedidos', () => {
   it('propaga 404, 409 e 503 sem expor detalhes internos', async () => {
     const cliente = await token(PerfilUsuario.CLIENTE);
     const post = () => request(app.getHttpServer()).post('/pedidos')
-      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA' });
+      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA', revisaoId });
     criar.mockRejectedValueOnce(new NotFoundException('Endereço não encontrado.'));
     await post().expect(404);
     criar.mockRejectedValueOnce(new ConflictException('Carrinho contém item indisponível ou inválido.'));
@@ -94,8 +100,41 @@ describe('POST /pedidos', () => {
     const cliente = await token(PerfilUsuario.CLIENTE);
     criar.mockRejectedValueOnce(new ConflictException('Estoque indisponível.'));
     const response = await request(app.getHttpServer()).post('/pedidos')
-      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA' }).expect(409);
-    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'RETIRADA' });
+      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA', revisaoId }).expect(409);
+    expect(criar).toHaveBeenCalledWith(userId, { modalidade: 'RETIRADA', revisaoId });
     expect(JSON.stringify(response.body)).not.toMatch(/quantidadeReservada|quantidadeFisica/);
+  });
+
+  it('POST /pedidos/revisao exige cliente e não chama criação', async () => {
+    await request(app.getHttpServer()).post('/pedidos/revisao').send({ modalidade: 'RETIRADA' }).expect(401);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).post('/pedidos/revisao')
+      .set('Authorization', `Bearer ${admin}`).send({ modalidade: 'RETIRADA' }).expect(403);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    const result = await request(app.getHttpServer()).post('/pedidos/revisao')
+      .set('Authorization', `Bearer ${cliente}`).send({ modalidade: 'RETIRADA' }).expect(201);
+    expect(result.body).toMatchObject({ total: '10.30', revisaoId: 'a'.repeat(64) });
+    expect(revisar).toHaveBeenCalledWith(userId, { modalidade: 'RETIRADA' });
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it('POST /pedidos/revisao valida modalidade, endereço e propaga 404/409/503', async () => {
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    const post = (body: object) => request(app.getHttpServer()).post('/pedidos/revisao')
+      .set('Authorization', `Bearer ${cliente}`).send(body);
+    await post({ modalidade: 'ENTREGA', enderecoId }).expect(201);
+    expect(revisar).toHaveBeenCalledWith(userId, { modalidade: 'ENTREGA', enderecoId });
+    await post({ modalidade: 'ENTREGA' }).expect(400);
+    await post({ modalidade: 'RETIRADA', enderecoId }).expect(400);
+    await post({ modalidade: 'RETIRADA', total: '0.01' }).expect(400);
+    revisar.mockRejectedValueOnce(new NotFoundException('Endereço não encontrado.'));
+    await post({ modalidade: 'ENTREGA', enderecoId }).expect(404);
+    revisar.mockRejectedValueOnce(new ConflictException('Estoque indisponível.'));
+    await post({ modalidade: 'RETIRADA' }).expect(409);
+    revisar.mockRejectedValueOnce(new ServiceUnavailableException('Entrega indisponível.'));
+    await post({ modalidade: 'ENTREGA', enderecoId }).expect(503);
+    expect(criar).not.toHaveBeenCalled();
   });
 });

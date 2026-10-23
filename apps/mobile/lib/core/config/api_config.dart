@@ -44,6 +44,10 @@ class ApiConfig {
 
   Uri? get cartUri => _validBaseUri?.resolve('/carrinho');
 
+  Uri? get orderReviewUri => _validBaseUri?.resolve('/pedidos/revisao');
+
+  Uri? get ordersUri => _validBaseUri?.resolve('/pedidos');
+
   Uri? get addressesUri => _validBaseUri?.resolve('/enderecos');
   Uri? cepUri(String cep) => _validBaseUri?.resolve('/enderecos/cep/$cep');
   Uri? geocodingUri(String id) {

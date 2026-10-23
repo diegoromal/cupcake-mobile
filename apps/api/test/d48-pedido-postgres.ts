@@ -114,11 +114,15 @@ async function main() {
     )}`;
     const post = (body: object) => request(http).post('/pedidos')
       .set('Authorization', authorization).send(body);
+    const review = (body: object) => request(http).post('/pedidos/revisao')
+      .set('Authorization', authorization).send(body);
 
-    await post({ modalidade: 'ENTREGA', enderecoId: otherAddressId }).expect(404); checks++;
+    await post({ modalidade: 'ENTREGA', enderecoId: otherAddressId, revisaoId: '0'.repeat(64) }).expect(404); checks++;
     assert.equal(await prisma.pedido.count({ where: { clienteUsuarioId: userId } }), 0); checks++;
     await prisma.produto.update({ where: { id: productIds[0] }, data: { precoAtual: '12.34' } });
-    const created = await post({ modalidade: 'ENTREGA', enderecoId: addressId }).expect(201); checks++;
+    const deliveryReview = await review({ modalidade: 'ENTREGA', enderecoId: addressId }).expect(201);
+    const created = await post({ modalidade: 'ENTREGA', enderecoId: addressId,
+      revisaoId: deliveryReview.body.revisaoId }).expect(201); checks++;
     orderIds.push(created.body.id as string);
     assert.deepEqual([created.body.modalidade, created.body.valorItens,
       created.body.freteAplicado, created.body.total], ['ENTREGA', '111.57', '2.05', '113.62']); checks++;
@@ -153,7 +157,8 @@ async function main() {
       ?.personalizacoes[0].nomeAplicado, 'D48 cobertura'); checks++;
     assert.equal(historical.total.toFixed(2), '113.62'); checks++;
 
-    const pickup = await post({ modalidade: 'RETIRADA' }).expect(201); checks++;
+    const pickupReview = await review({ modalidade: 'RETIRADA' }).expect(201);
+    const pickup = await post({ modalidade: 'RETIRADA', revisaoId: pickupReview.body.revisaoId }).expect(201); checks++;
     orderIds.push(pickup.body.id as string);
     const pickupPersisted = await prisma.pedido.findUniqueOrThrow({
       where: { id: pickup.body.id as string }, include: { enderecoEntregaSnapshot: true, itens: true },
@@ -174,7 +179,9 @@ async function main() {
     });
     await prisma.$executeRawUnsafe(`ALTER TABLE "ItemPedidoPersonalizacaoSnapshot"
       ADD CONSTRAINT "d48_snapshot_failure" CHECK ("nomeAplicado" <> 'Cobertura alterada') NOT VALID`);
-    await post({ modalidade: 'ENTREGA', enderecoId: addressId }).expect(500); checks++;
+    const rollbackReview = await review({ modalidade: 'ENTREGA', enderecoId: addressId }).expect(201);
+    await post({ modalidade: 'ENTREGA', enderecoId: addressId,
+      revisaoId: rollbackReview.body.revisaoId }).expect(500); checks++;
     assert.equal(await prisma.pedido.count({ where: { clienteUsuarioId: userId } }), orderCount); checks++;
     assert.equal(await prisma.itemPedido.count({ where: { pedido: { clienteUsuarioId: userId } } }), itemCount); checks++;
     assert.equal(await prisma.itemPedidoPersonalizacaoSnapshot.count({
