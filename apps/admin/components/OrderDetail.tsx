@@ -7,6 +7,8 @@ import { formatCurrency, formatDate, statusLabel } from '@/lib/order-display';
 export default function OrderDetail({ id }: { id: string }) {
   const [order, setOrder] = useState<PedidoDetalheAdministrativo | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'denied' | 'error'>('loading');
+  const [starting, setStarting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const load = useCallback(async () => {
     setState('loading'); setOrder(null);
     try {
@@ -19,13 +21,35 @@ export default function OrderDetail({ id }: { id: string }) {
   }, [id]);
   useEffect(() => { void load(); }, [load]);
 
+  async function startProduction() {
+    setStarting(true);
+    setActionError(null);
+    try {
+      const updated = await adminApi<PedidoDetalheAdministrativo>(
+        `/api/admin/pedidos/${id}/iniciar-producao`, {
+          method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}',
+        },
+      );
+      setOrder(updated);
+    } catch (cause) {
+      if (cause instanceof AdminApiError && cause.status === 409) {
+        setActionError('O pedido foi atualizado por outro administrador. Confira o status atual.');
+        await load();
+        return;
+      }
+      setActionError(cause instanceof AdminApiError ? cause.message : 'Falha ao iniciar a produção.');
+    } finally {
+      setStarting(false);
+    }
+  }
+
   if (state === 'loading') return <section role="status">Carregando pedido...</section>;
   if (state === 'missing') return <section className="card" role="alert">Pedido não encontrado.</section>;
   if (state === 'denied') return <section className="card" role="alert">
     Acesso negado. Apenas administradores podem consultar pedidos.
   </section>;
   if (state === 'error' || !order) return <section className="card error" role="alert">
-    Falha ao carregar pedido. <button type="button" onClick={load}>Tentar novamente</button>
+    {actionError ?? 'Falha ao carregar pedido.'} <button type="button" onClick={load}>Tentar novamente</button>
   </section>;
 
   return <section className="order-detail">
@@ -34,6 +58,10 @@ export default function OrderDetail({ id }: { id: string }) {
       <p><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span>
         {' · '}{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</p>
       <p>Pagamento confirmado: {formatDate(order.confirmacaoPagamento)}</p>
+      {order.statusAtual === 'PAGO' && <button type="button" onClick={startProduction} disabled={starting}>
+        {starting ? 'Iniciando produção...' : 'Iniciar produção'}
+      </button>}
+      {actionError && <p className="error" role="alert">{actionError}</p>}
     </div>
     <div className="order-detail-grid">
       <section className="card order-items" aria-labelledby="order-items-heading">

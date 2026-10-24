@@ -13,6 +13,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:d57:postgres": "ts-node test/d57-cartao-postgres.ts",
     "test:d61:postgres": "ts-node test/d61-pagamento-estoque-postgres.ts",
+    "test:d66:postgres": "ts-node test/d66-fluxo-producao-postgres.ts",
     "test:catalogo:postgres": "ts-node test/d29-catalogo-postgres.ts",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",

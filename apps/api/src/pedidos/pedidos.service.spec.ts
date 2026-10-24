@@ -54,6 +54,54 @@ describe('PedidosService', () => {
   const service = new PedidosService({ $transaction: transaction,
     pedido: { findFirst: findOrder } } as never);
 
+  describe('iniciarProducao', () => {
+    const agora = new Date('2026-10-24T12:00:00.000Z');
+
+    it('valida PAGO, altera o pedido e registra o administrador no histórico', async () => {
+      const queryRaw = jest.fn()
+        .mockResolvedValueOnce([{ statusAtual: 'PAGO', modalidade: 'ENTREGA' }])
+        .mockResolvedValueOnce([{ agora }]);
+      const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      const create = jest.fn().mockResolvedValue({});
+      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
+      }));
+      const detalhe = jest.fn().mockResolvedValue({
+        id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: agora,
+        cliente: { nome: 'Ana' }, modalidade: 'ENTREGA', statusAtual: 'EM_PREPARO',
+        valorItens: dinheiro('10.00'), freteAplicado: dinheiro('2.00'), total: dinheiro('12.00'),
+        enderecoEntregaSnapshot: null, pagamentos: [], historicosStatus: [], itens: [],
+      });
+      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detalhe } } as never);
+
+      await expect(adminService.iniciarProducao(usuarioId, enderecoId)).resolves.toMatchObject({
+        id: usuarioId, statusAtual: 'EM_PREPARO',
+      });
+      expect(queryRaw).toHaveBeenCalledTimes(2);
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: usuarioId, statusAtual: 'PAGO' }, data: { statusAtual: 'EM_PREPARO' },
+      });
+      expect(create).toHaveBeenCalledWith({ data: {
+        pedidoId: usuarioId, statusRegistrado: 'EM_PREPARO', dataHora: agora,
+        responsavelUsuarioId: enderecoId,
+      } });
+    });
+
+    it('rejeita status diferente de PAGO sem alterar nem registrar histórico', async () => {
+      const queryRaw = jest.fn().mockResolvedValue([{ statusAtual: 'EM_PREPARO', modalidade: 'RETIRADA' }]);
+      const updateMany = jest.fn();
+      const create = jest.fn();
+      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
+      }));
+      const adminService = new PedidosService({ $transaction: tx } as never);
+
+      await expect(adminService.iniciarProducao(usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+    });
+  });
+
   it('lista somente campos operacionais e ordena pela confirmação do pagamento', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const adminService = new PedidosService({ pedido: { findMany } } as never);

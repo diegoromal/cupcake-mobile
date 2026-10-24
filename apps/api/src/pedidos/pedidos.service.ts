@@ -6,6 +6,7 @@ import { Prisma } from '../generated/prisma/client';
 import { ModalidadeRecebimento, StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { CriarPedidoDto } from './dto/criar-pedido.dto';
+import { TransicaoPedidoInvalidaError, validarTransicaoPedido } from './maquina-estados-pedido';
 
 const limiteMonetario = new Prisma.Decimal('9999999999.99');
 
@@ -92,6 +93,39 @@ export class PedidosService {
         })),
       })),
     };
+  }
+
+  async iniciarProducao(id: string, responsavelUsuarioId: string) {
+    await this.prisma.$transaction(async (db) => {
+      const [pedido] = await db.$queryRaw<Array<{
+        statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
+      }>>`SELECT "statusAtual", modalidade FROM "Pedido" WHERE id = ${id}::uuid FOR UPDATE`;
+      if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+
+      try {
+        validarTransicaoPedido(pedido.statusAtual, StatusPedido.EM_PREPARO, pedido.modalidade);
+      } catch (error) {
+        if (error instanceof TransicaoPedidoInvalidaError) {
+          throw new ConflictException('Pedido não pode iniciar a produção neste status.');
+        }
+        throw error;
+      }
+
+      const [{ agora }] = await db.$queryRaw<Array<{ agora: Date }>>`
+        SELECT clock_timestamp() AS agora`;
+      const atualizado = await db.pedido.updateMany({
+        where: { id, statusAtual: pedido.statusAtual },
+        data: { statusAtual: StatusPedido.EM_PREPARO },
+      });
+      if (atualizado.count !== 1) {
+        throw new ConflictException('Pedido alterado durante o início da produção.');
+      }
+      await db.historicoStatusPedido.create({ data: {
+        pedidoId: id, statusRegistrado: StatusPedido.EM_PREPARO, dataHora: agora,
+        responsavelUsuarioId,
+      } });
+    });
+    return this.detalharParaAdministracao(id);
   }
 
   async revisar(usuarioId: string, input: CriarPedidoDto) {

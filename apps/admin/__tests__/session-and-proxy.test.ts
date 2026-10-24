@@ -24,6 +24,9 @@ test('allowlist explícita por método e rota',()=>{
  expect(allowed('GET',['pedidos'])).toBe(true);for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos'])).toBe(false);
  expect(allowed('GET',['pedidos',id])).toBe(true);
  for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos',id])).toBe(false);
+ expect(allowed('PATCH',['pedidos',id,'iniciar-producao'])).toBe(true);
+ expect(allowed('POST',['pedidos',id,'iniciar-producao'])).toBe(false);
+ expect(allowed('PATCH',['pedidos','invalido','iniciar-producao'])).toBe(false);
  expect(allowed('GET',['pedidos','invalido'])).toBe(false);
  expect(allowed('GET',['pedidos',id,'historico'])).toBe(false);
  expect(allowed('GET',['configuracao-loja-entrega'])).toBe(true);expect(allowed('PUT',['configuracao-loja-entrega'])).toBe(true);expect(allowed('POST',['configuracao-loja-entrega'])).toBe(false);
