@@ -99,8 +99,47 @@ test('detalhe apresenta campos persistidos, personalização, endereço e valore
   expect(screen.getByText('Pix')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Histórico de alterações' })).toBeInTheDocument();
   expect(screen.getAllByText('Pago')).toHaveLength(2);
+  expect(screen.getByRole('button', { name: 'Iniciar produção' })).toBeInTheDocument();
   expect(mockApi).toHaveBeenCalledWith('/api/admin/pedidos/order-1');
-  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+});
+
+test('inicia produção apenas para pedido pago e atualiza o detalhe após sucesso', async () => {
+  const updated = { ...detail, statusAtual: 'EM_PREPARO', historicoStatus: [
+    ...detail.historicoStatus,
+    { id: 'history-2', status: 'EM_PREPARO', dataHora: '2026-10-20T12:02:00.000Z', responsavel: 'Admin' },
+  ] };
+  mockApi.mockResolvedValueOnce(detail).mockResolvedValueOnce(updated);
+  render(<OrderDetail id="order-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Iniciar produção' }));
+  expect((await screen.findAllByText('Em preparo')).length).toBeGreaterThan(0);
+  expect(screen.queryByRole('button', { name: 'Iniciar produção' })).not.toBeInTheDocument();
+  expect(mockApi).toHaveBeenNthCalledWith(2, '/api/admin/pedidos/order-1/iniciar-producao', {
+    method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}',
+  });
+});
+
+test('recarrega o pedido após conflito e remove a ação quando outro administrador iniciou a produção', async () => {
+  const updated = { ...detail, statusAtual: 'EM_PREPARO' };
+  mockApi.mockResolvedValueOnce(detail)
+    .mockRejectedValueOnce(new AdminApiError(409, 'Pedido não pode iniciar a produção neste status.'))
+    .mockResolvedValueOnce(updated);
+  render(<OrderDetail id="order-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Iniciar produção' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('O pedido foi atualizado por outro administrador.');
+  expect((await screen.findAllByText('Em preparo')).length).toBeGreaterThan(0);
+  expect(screen.queryByRole('button', { name: 'Iniciar produção' })).not.toBeInTheDocument();
+  expect(mockApi).toHaveBeenNthCalledWith(3, '/api/admin/pedidos/order-1');
+});
+
+test('não mantém ação stale se recarga após conflito falhar', async () => {
+  mockApi.mockResolvedValueOnce(detail)
+    .mockRejectedValueOnce(new AdminApiError(409, 'Conflito.'))
+    .mockRejectedValueOnce(new Error('rede indisponível'));
+  render(<OrderDetail id="order-1" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Iniciar produção' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('O pedido foi atualizado por outro administrador.');
+  expect(screen.queryByRole('button', { name: 'Iniciar produção' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
 });
 
 test('retirada omite endereço e detalhe distingue 404, acesso negado e erro recuperável', async () => {

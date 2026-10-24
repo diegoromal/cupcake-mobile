@@ -17,6 +17,7 @@ describe('POST /pedidos', () => {
   const revisar = jest.fn();
   const listarParaAdministracao = jest.fn();
   const detalharParaAdministracao = jest.fn();
+  const iniciarProducao = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
@@ -28,7 +29,7 @@ describe('POST /pedidos', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
       .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao,
-        detalharParaAdministracao }).compile();
+        detalharParaAdministracao, iniciarProducao }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -46,6 +47,7 @@ describe('POST /pedidos', () => {
       itens: [{ nome: 'Cupcake', quantidade: 1, personalizacoes: [] }] });
     listarParaAdministracao.mockResolvedValue([]);
     detalharParaAdministracao.mockResolvedValue({ id: userId, identificadorNegocio: 'PED-123' });
+    iniciarProducao.mockResolvedValue({ id: userId, statusAtual: 'EM_PREPARO' });
   });
 
   it('GET /admin/pedidos exige ADMIN e retorna a listagem autorizada', async () => {
@@ -78,6 +80,24 @@ describe('POST /pedidos', () => {
     detalharParaAdministracao.mockRejectedValueOnce(new NotFoundException('Pedido não encontrado.'));
     await request(app.getHttpServer()).get(path)
       .set('Authorization', `Bearer ${admin}`).expect(404);
+  });
+
+  it('PATCH /admin/pedidos/:id/iniciar-producao exige ADMIN e usa o ator autenticado', async () => {
+    const path = `/admin/pedidos/${enderecoId}/iniciar-producao`;
+    await request(app.getHttpServer()).patch(path).send({}).expect(401);
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${cliente}`)
+      .send({}).expect(403);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).patch('/admin/pedidos/invalido/iniciar-producao')
+      .set('Authorization', `Bearer ${admin}`).send({}).expect(400);
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+      .send({}).expect(200).expect({ id: userId, statusAtual: 'EM_PREPARO' });
+    expect(iniciarProducao).toHaveBeenCalledWith(enderecoId, userId);
+    iniciarProducao.mockRejectedValueOnce(new ConflictException('Pedido não pode iniciar a produção neste status.'));
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+      .send({}).expect(409);
   });
 
   it('exige sessão e perfil cliente', async () => {
