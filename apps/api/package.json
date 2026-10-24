@@ -15,6 +15,7 @@
     "test:d61:postgres": "ts-node test/d61-pagamento-estoque-postgres.ts",
     "test:d66:postgres": "ts-node test/d66-fluxo-producao-postgres.ts",
     "test:d67:postgres": "ts-node test/d67-fluxo-retirada-postgres.ts",
+    "test:d68:postgres": "ts-node test/d68-cancelamento-postgres.ts",
     "test:catalogo:postgres": "ts-node test/d29-catalogo-postgres.ts",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",

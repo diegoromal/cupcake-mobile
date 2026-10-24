@@ -102,6 +102,134 @@ describe('PedidosService', () => {
     });
   });
 
+  describe('cancelarComoCliente', () => {
+    const agora = new Date('2026-10-24T12:00:00.000Z');
+    const reservas = [
+      { id: '11111111-1111-4111-8111-111111111111', produtoId, quantidade: 2, estado: 'CONVERTIDA_EM_VENDA' },
+      { id: '22222222-2222-4222-8222-222222222222', produtoId, quantidade: 1, estado: 'CONVERTIDA_EM_VENDA' },
+      { id: '33333333-3333-4333-8333-333333333333', produtoId: outroProdutoId, quantidade: 3,
+        estado: 'CONVERTIDA_EM_VENDA' },
+    ];
+    const setup = (results: unknown[]) => {
+      const queryRaw = jest.fn().mockImplementation(async () => results.shift() ?? []);
+      const updatePedido = jest.fn().mockResolvedValue({ count: 1 });
+      const updateEstoque = jest.fn().mockResolvedValue({ count: 1 });
+      const updateReserva = jest.fn().mockResolvedValue({ count: 1 });
+      const createHistory = jest.fn().mockResolvedValue({});
+      const createMovement = jest.fn().mockResolvedValue({});
+      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw,
+        pedido: { updateMany: updatePedido },
+        estoque: { updateMany: updateEstoque },
+        reservaEstoque: { updateMany: updateReserva },
+        historicoStatusPedido: { create: createHistory },
+        movimentacaoEstoque: { create: createMovement },
+      }));
+      return {
+        service: new PedidosService({ $transaction: tx } as never),
+        queryRaw, updatePedido, updateEstoque, updateReserva, createHistory, createMovement,
+      };
+    };
+
+    it('cancela somente pedido PAGO do cliente e registra o ator no histórico', async () => {
+      const { service, queryRaw, updatePedido, updateEstoque, updateReserva,
+        createHistory, createMovement } = setup([
+        [{ statusAtual: 'PAGO' }],
+        reservas.map(({ id, produtoId: itemProdutoId, estado }) => ({ id, produtoId: itemProdutoId, estado })),
+        [{ produtoId }], [{ produtoId: outroProdutoId }], reservas, [{ agora }],
+      ]);
+
+      await expect(service.cancelarComoCliente(usuarioId, enderecoId)).resolves.toEqual({
+        id: usuarioId, statusAtual: 'CANCELADO',
+      });
+      expect(queryRaw.mock.calls[0][0].join('')).toContain('"clienteUsuarioId" = ');
+      expect(queryRaw.mock.calls[0].slice(1)).toEqual([usuarioId, enderecoId]);
+      const produtoIdsOrdenados = [produtoId, outroProdutoId].sort();
+      expect(queryRaw.mock.calls[2].slice(1)).toEqual([produtoIdsOrdenados[0]]);
+      expect(queryRaw.mock.calls[3].slice(1)).toEqual([produtoIdsOrdenados[1]]);
+      expect(updateEstoque).toHaveBeenNthCalledWith(1, {
+        where: { produtoId: produtoIdsOrdenados[0], quantidadeFisica: { lte: 2_147_483_644 } },
+        data: { quantidadeFisica: { increment: 3 } },
+      });
+      expect(updateEstoque).toHaveBeenNthCalledWith(2, {
+        where: { produtoId: produtoIdsOrdenados[1], quantidadeFisica: { lte: 2_147_483_644 } },
+        data: { quantidadeFisica: { increment: 3 } },
+      });
+      expect(updateReserva).toHaveBeenCalledTimes(3);
+      expect(updateReserva).toHaveBeenNthCalledWith(1, { where: {
+        id: reservas[0].id, pedidoId: usuarioId, estado: 'CONVERTIDA_EM_VENDA',
+      }, data: { estado: 'DEVOLVIDA_POR_CANCELAMENTO' } });
+      expect(createMovement).toHaveBeenNthCalledWith(1, { data: {
+        produtoId, pedidoId: usuarioId, quantidade: 2,
+        motivoOrigem: 'CANCELAMENTO_PEDIDO', data: agora,
+      } });
+      expect(createMovement).toHaveBeenNthCalledWith(3, { data: {
+        produtoId: outroProdutoId, pedidoId: usuarioId, quantidade: 3,
+        motivoOrigem: 'CANCELAMENTO_PEDIDO', data: agora,
+      } });
+      expect(updatePedido).toHaveBeenCalledWith({ where: {
+        id: usuarioId, clienteUsuarioId: enderecoId, statusAtual: 'PAGO',
+      }, data: { statusAtual: 'CANCELADO' } });
+      expect(createHistory).toHaveBeenCalledWith({ data: {
+        pedidoId: usuarioId, statusRegistrado: 'CANCELADO', dataHora: agora,
+        responsavelUsuarioId: enderecoId,
+      } });
+    });
+
+    it('não revela pedido ausente ou de outro cliente e não escreve', async () => {
+      const { service, updatePedido, updateEstoque, updateReserva, createHistory, createMovement } = setup([[]]);
+
+      await expect(service.cancelarComoCliente(usuarioId, enderecoId)).rejects.toBeInstanceOf(NotFoundException);
+      expect(updatePedido).not.toHaveBeenCalled();
+      expect(updateEstoque).not.toHaveBeenCalled();
+      expect(updateReserva).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+      expect(createMovement).not.toHaveBeenCalled();
+    });
+
+    it('rejeita status inelegível sem alterar pedido ou histórico', async () => {
+      const { service, updatePedido, updateEstoque, updateReserva, createHistory, createMovement } = setup([
+        [{ statusAtual: 'EM_PREPARO' }],
+      ]);
+
+      await expect(service.cancelarComoCliente(usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
+      expect(updatePedido).not.toHaveBeenCalled();
+      expect(updateEstoque).not.toHaveBeenCalled();
+      expect(updateReserva).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+      expect(createMovement).not.toHaveBeenCalled();
+    });
+
+    it('recusa pedido PAGO sem reserva convertida e não altera saldos', async () => {
+      const { service, updatePedido, updateEstoque, updateReserva, createHistory, createMovement } = setup([
+        [{ statusAtual: 'PAGO' }], [],
+      ]);
+
+      await expect(service.cancelarComoCliente(usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
+      expect(updatePedido).not.toHaveBeenCalled();
+      expect(updateEstoque).not.toHaveBeenCalled();
+      expect(updateReserva).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+      expect(createMovement).not.toHaveBeenCalled();
+    });
+
+    it('recusa reservas em estados mistos antes de qualquer escrita', async () => {
+      const { service, updatePedido, updateEstoque, updateReserva, createHistory, createMovement } = setup([
+        [{ statusAtual: 'PAGO' }], [
+          { id: reservas[0].id, produtoId, estado: 'CONVERTIDA_EM_VENDA' },
+          { id: reservas[1].id, produtoId, estado: 'DEVOLVIDA_POR_CANCELAMENTO' },
+        ],
+      ]);
+
+      await expect(service.cancelarComoCliente(usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
+      expect(updatePedido).not.toHaveBeenCalled();
+      expect(updateEstoque).not.toHaveBeenCalled();
+      expect(updateReserva).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+      expect(createMovement).not.toHaveBeenCalled();
+    });
+  });
+
   describe('transições de retirada', () => {
     it.each([
       ['marcarProntoParaRetirada', 'EM_PREPARO', 'PRONTO_PARA_RETIRADA'],

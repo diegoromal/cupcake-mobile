@@ -101,6 +101,104 @@ export class PedidosService {
     );
   }
 
+  async cancelarComoCliente(id: string, clienteUsuarioId: string) {
+    await this.prisma.$transaction(async (db) => {
+      const [pedido] = await db.$queryRaw<Array<{ statusAtual: StatusPedido }>>`
+        SELECT "statusAtual" FROM "Pedido"
+        WHERE id = ${id}::uuid AND "clienteUsuarioId" = ${clienteUsuarioId}::uuid
+        FOR UPDATE`;
+      if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+
+      try {
+        validarTransicaoPedido(pedido.statusAtual, StatusPedido.CANCELADO);
+      } catch (error) {
+        if (error instanceof TransicaoPedidoInvalidaError) {
+          throw new ConflictException('Pedido não pode ser cancelado neste status.');
+        }
+        throw error;
+      }
+
+      const candidatas = await db.$queryRaw<Array<{
+        id: string; produtoId: string; estado: string;
+      }>>`
+        SELECT id, "produtoId", estado::text AS estado FROM "ReservaEstoque"
+        WHERE "pedidoId" = ${id}::uuid
+        ORDER BY "produtoId", id`;
+      if (!candidatas.length) {
+        throw new ConflictException('Pedido pago sem reserva convertida para devolução.');
+      }
+      if (candidatas.some((reserva) => reserva.estado !== 'CONVERTIDA_EM_VENDA')) {
+        throw new ConflictException('Pedido pago possui reserva em estado incompatível.');
+      }
+
+      for (const produtoId of [...new Set(candidatas.map((reserva) => reserva.produtoId))].sort()) {
+        const [estoque] = await db.$queryRaw<Array<{ produtoId: string }>>`
+          SELECT "produtoId" FROM "Estoque" WHERE "produtoId" = ${produtoId}::uuid FOR UPDATE`;
+        if (!estoque) throw new ConflictException('Estoque indisponível para devolver o pedido.');
+      }
+
+      const reservas = await db.$queryRaw<Array<{
+        id: string; produtoId: string; quantidade: number; estado: string;
+      }>>`
+        SELECT id, "produtoId", quantidade, estado::text AS estado FROM "ReservaEstoque"
+        WHERE "pedidoId" = ${id}::uuid
+        ORDER BY "produtoId", id FOR UPDATE`;
+      if (reservas.length !== candidatas.length || reservas.some((reserva, index) =>
+        reserva.id !== candidatas[index].id || reserva.produtoId !== candidatas[index].produtoId ||
+        reserva.estado !== candidatas[index].estado || reserva.estado !== 'CONVERTIDA_EM_VENDA' ||
+        !Number.isSafeInteger(reserva.quantidade) || reserva.quantidade <= 0)) {
+        throw new ConflictException('Reservas alteradas durante o cancelamento.');
+      }
+
+      const totais = new Map<string, number>();
+      for (const reserva of reservas) {
+        totais.set(reserva.produtoId, (totais.get(reserva.produtoId) ?? 0) + reserva.quantidade);
+      }
+      if ([...totais.values()].some((quantidade) => !Number.isSafeInteger(quantidade))) {
+        throw new ConflictException('Quantidade de estoque inválida para devolução.');
+      }
+      const [{ agora }] = await db.$queryRaw<Array<{ agora: Date }>>`
+        SELECT clock_timestamp() AS agora`;
+      for (const produtoId of [...totais.keys()].sort()) {
+        const quantidade = totais.get(produtoId)!;
+        const atualizado = await db.estoque.updateMany({
+          where: { produtoId, quantidadeFisica: { lte: 2_147_483_647 - quantidade } },
+          data: { quantidadeFisica: { increment: quantidade } },
+        });
+        if (atualizado.count !== 1) {
+          throw new ConflictException('Saldo de estoque inconsistente para devolução.');
+        }
+      }
+
+      for (const reserva of reservas) {
+        const devolvida = await db.reservaEstoque.updateMany({
+          where: { id: reserva.id, pedidoId: id, estado: 'CONVERTIDA_EM_VENDA' },
+          data: { estado: 'DEVOLVIDA_POR_CANCELAMENTO' },
+        });
+        if (devolvida.count !== 1) {
+          throw new ConflictException('Reserva alterada durante o cancelamento.');
+        }
+        await db.movimentacaoEstoque.create({ data: {
+          produtoId: reserva.produtoId, pedidoId: id, quantidade: reserva.quantidade,
+          motivoOrigem: 'CANCELAMENTO_PEDIDO', data: agora,
+        } });
+      }
+
+      const atualizado = await db.pedido.updateMany({
+        where: { id, clienteUsuarioId, statusAtual: pedido.statusAtual },
+        data: { statusAtual: StatusPedido.CANCELADO },
+      });
+      if (atualizado.count !== 1) {
+        throw new ConflictException('Pedido alterado durante o cancelamento.');
+      }
+      await db.historicoStatusPedido.create({ data: {
+        pedidoId: id, statusRegistrado: StatusPedido.CANCELADO, dataHora: agora,
+        responsavelUsuarioId: clienteUsuarioId,
+      } });
+    });
+    return { id, statusAtual: StatusPedido.CANCELADO };
+  }
+
   async marcarProntoParaRetirada(id: string, responsavelUsuarioId: string) {
     return this.transicionarPorAdministracao(
       id, responsavelUsuarioId, StatusPedido.PRONTO_PARA_RETIRADA,
