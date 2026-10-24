@@ -51,6 +51,15 @@ export default function OrderDetail({ id }: { id: string }) {
         </li>)}</ul>
       </section>
       <div className="order-detail-side">
+        <section className="card" aria-labelledby="order-history-heading">
+          <h2 id="order-history-heading">Histórico de alterações</h2>
+          {order.historicoStatus.length === 0 ? <p>Nenhuma alteração registrada.</p> :
+            <ol>{order.historicoStatus.map((entry) => <li key={entry.id}>
+              <strong>{statusLabel[entry.status]}</strong>
+              <p>{formatDate(entry.dataHora)}</p>
+              {entry.responsavel && <p>Responsável: {entry.responsavel}</p>}
+            </li>)}</ol>}
+        </section>
         <section className="card" aria-labelledby="order-customer-heading">
           <h2 id="order-customer-heading">Cliente</h2>
           <p>{order.cliente.nome}</p>

@@ -7,7 +7,8 @@ describe('ExpiracaoPedidosService', () => {
   const findMany = jest.fn();
   const findUnique = jest.fn();
   const updateMany = jest.fn();
-  const db = { pedido: { findUnique, updateMany } };
+  const createHistory = jest.fn();
+  const db = { pedido: { findUnique, updateMany }, historicoStatusPedido: { create: createHistory } };
   const transaction = jest.fn(async (callback: (tx: typeof db) => Promise<number>) => callback(db));
   const clock = jest.fn();
   const service = new ExpiracaoPedidosService({ pedido: { findMany }, $transaction: transaction,
@@ -18,6 +19,7 @@ describe('ExpiracaoPedidosService', () => {
     findMany.mockResolvedValue([{ id }]);
     findUnique.mockResolvedValue({ data: new Date('2026-10-22T11:45:00.000Z'), statusAtual: 'PENDENTE_PAGAMENTO' });
     updateMany.mockResolvedValue({ count: 1 });
+    createHistory.mockResolvedValue({});
   });
 
   it('usa fronteira inclusiva, revalida dentro da transação e troca uma vez', async () => {
@@ -27,6 +29,9 @@ describe('ExpiracaoPedidosService', () => {
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(updateMany).toHaveBeenCalledWith({ where: { id, statusAtual: 'PENDENTE_PAGAMENTO',
       data: { lte: new Date('2026-10-22T11:45:00.000Z') } }, data: { statusAtual: 'EXPIRADO' } });
+    expect(createHistory).toHaveBeenCalledWith({ data: {
+      pedidoId: id, statusRegistrado: 'EXPIRADO', dataHora: now,
+    } });
     findUnique.mockResolvedValue({ data: new Date('2026-10-22T11:45:00.000Z'), statusAtual: 'EXPIRADO' });
     expect(await service.executar()).toBe(0);
     expect(updateMany).toHaveBeenCalledTimes(1);
@@ -42,13 +47,14 @@ describe('ExpiracaoPedidosService', () => {
       expect(await service.executar()).toBe(0);
     }
     expect(updateMany).not.toHaveBeenCalled();
+    expect(createHistory).not.toHaveBeenCalled();
   });
 
   it('propaga falha, libera execução e não altera reservas ou estoque', async () => {
     updateMany.mockRejectedValueOnce(new Error('falha de banco'));
     await expect(service.executar()).rejects.toThrow('falha de banco');
     expect(await service.executar()).toBe(1);
-    expect(Object.keys(db)).toEqual(['pedido']);
+    expect(Object.keys(db)).toEqual(['pedido', 'historicoStatusPedido']);
   });
   it('usa o mesmo instante do PostgreSQL mesmo com relógio da API adiantado', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2027-01-01T00:00:00Z'));

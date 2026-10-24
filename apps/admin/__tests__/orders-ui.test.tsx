@@ -82,6 +82,7 @@ const detail = {
   valorItens: '70.00', freteAplicado: '8.50', total: '78.50', formaPagamento: 'PIX',
   enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
     cep: '80000000', complemento: 'Apto 2', referencia: null },
+  historicoStatus: [{ id: 'history-1', status: 'PAGO', dataHora: '2026-10-20T12:01:00.000Z', responsavel: null }],
   itens: [{ id: 'item-1', nome: 'Cupcake', quantidade: 2, precoAplicado: '35.00',
     subtotalAplicado: '70.00', personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: '2.00' }] }],
 } as const;
@@ -96,6 +97,8 @@ test('detalhe apresenta campos persistidos, personalização, endereço e valore
   expect(screen.getByText(/Rua A, 7/)).toBeInTheDocument();
   expect(screen.getByText('R$ 78,50')).toBeInTheDocument();
   expect(screen.getByText('Pix')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Histórico de alterações' })).toBeInTheDocument();
+  expect(screen.getAllByText('Pago')).toHaveLength(2);
   expect(mockApi).toHaveBeenCalledWith('/api/admin/pedidos/order-1');
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
 });

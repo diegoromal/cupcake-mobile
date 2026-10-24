@@ -126,6 +126,9 @@ async function main() {
     orderIds.push(created.body.id as string);
     assert.deepEqual([created.body.modalidade, created.body.valorItens,
       created.body.freteAplicado, created.body.total], ['ENTREGA', '111.57', '2.05', '113.62']); checks++;
+    assert.deepEqual(await prisma.historicoStatusPedido.findMany({
+      where: { pedidoId: created.body.id }, select: { statusRegistrado: true, dataHora: true },
+    }).then((rows) => rows.map(({ statusRegistrado }) => statusRegistrado)), ['PENDENTE_PAGAMENTO']); checks++;
     const delivery = await prisma.pedido.findUniqueOrThrow({
       where: { id: created.body.id as string },
       include: { itens: { include: { personalizacoes: true } }, enderecoEntregaSnapshot: true },
@@ -200,6 +203,7 @@ async function main() {
       await prisma.itemPedidoPersonalizacaoSnapshot.deleteMany({
         where: { itemPedido: { pedidoId: { in: orderIds } } },
       });
+      await prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: orderIds } } });
       await prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: orderIds } } });
       await prisma.itemPedido.deleteMany({ where: { pedidoId: { in: orderIds } } });
       await prisma.enderecoEntregaSnapshot.deleteMany({ where: { pedidoId: { in: orderIds } } });

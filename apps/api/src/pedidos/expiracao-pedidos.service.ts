@@ -52,6 +52,11 @@ export class ExpiracaoPedidosService implements OnModuleInit, OnModuleDestroy {
             where: { id, statusAtual: StatusPedido.PENDENTE_PAGAMENTO, data: { lte: limite } },
             data: { statusAtual: StatusPedido.EXPIRADO },
           });
+          if (resultado.count === 1) {
+            await db.historicoStatusPedido.create({ data: {
+              pedidoId: id, statusRegistrado: StatusPedido.EXPIRADO, dataHora: agora,
+            } });
+          }
           return resultado.count;
         });
         expirados += alterados;

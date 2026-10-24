@@ -30,6 +30,7 @@ describe('PedidosService', () => {
   const findAddress = jest.fn();
   const findConfig = jest.fn();
   const createOrder = jest.fn();
+  const createHistory = jest.fn();
   const stockWrite = jest.fn();
   const reservationWrite = jest.fn();
   const lockStock = jest.fn();
@@ -45,7 +46,8 @@ describe('PedidosService', () => {
     $queryRaw: lockStock, $executeRaw: executeRaw,
     carrinho: { findUnique: findCart }, endereco: { findFirst: findAddress },
     configuracaoLojaEntrega: { findFirst: findConfig },
-    pedido: { create: createOrder, findFirst: findOrder }, estoque: { update: stockWrite, findUnique: readStock },
+    pedido: { create: createOrder, findFirst: findOrder },
+    historicoStatusPedido: { create: createHistory }, estoque: { update: stockWrite, findUnique: readStock },
     reservaEstoque: { create: reservationWrite },
   };
   const transaction = jest.fn(async (callback: (client: typeof db) => Promise<unknown>) => callback(db));
@@ -81,6 +83,8 @@ describe('PedidosService', () => {
         subtotalAplicado: dinheiro('10.10'), produto: { nome: 'Cupcake' },
         personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: dinheiro('0.20') }] }],
       pagamentos: [{ forma: 'PIX' }], credencialSenha: 'não expor',
+      historicosStatus: [{ id: 'history-1', statusRegistrado: 'PAGO',
+        dataHora: new Date('2026-10-24T12:01:00Z'), responsavel: null }],
     });
     const adminService = new PedidosService({ pedido: { findUnique } } as never);
     await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toEqual({
@@ -89,14 +93,16 @@ describe('PedidosService', () => {
       valorItens: '10.10', freteAplicado: '2.05', total: '99.99', formaPagamento: 'PIX',
       enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
         cep: '80000000', complemento: null, referencia: 'Portão azul' },
+      historicoStatus: [{ id: 'history-1', status: 'PAGO',
+        dataHora: new Date('2026-10-24T12:01:00Z'), responsavel: null }],
       itens: [{ id: produtoId, nome: 'Cupcake', quantidade: 2, precoAplicado: '5.05',
         subtotalAplicado: '10.10', personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: '0.20' }] }],
     });
     const query = findUnique.mock.calls[0][0];
     expect(query.where).toEqual({ id: usuarioId });
     expect(Object.keys(query.select).sort()).toEqual([
-      'cliente', 'confirmacaoPagamento', 'enderecoEntregaSnapshot', 'freteAplicado', 'id',
-      'identificadorNegocio', 'itens', 'modalidade', 'pagamentos', 'statusAtual', 'total', 'valorItens',
+      'cliente', 'confirmacaoPagamento', 'enderecoEntregaSnapshot', 'freteAplicado', 'historicosStatus',
+      'id', 'identificadorNegocio', 'itens', 'modalidade', 'pagamentos', 'statusAtual', 'total', 'valorItens',
     ]);
     expect(query.select.pagamentos).toMatchObject({ where: { resultado: 'APROVADO' }, take: 1,
       select: { forma: true } });
@@ -115,7 +121,7 @@ describe('PedidosService', () => {
       id: usuarioId, identificadorNegocio: 'PED-456', confirmacaoPagamento: null,
       cliente: { nome: 'Ana' }, modalidade: 'RETIRADA', statusAtual: 'PENDENTE_PAGAMENTO',
       valorItens: dinheiro('10.10'), freteAplicado: dinheiro('0.00'), total: dinheiro('10.10'),
-      enderecoEntregaSnapshot: { rua: 'Endereço indevido' }, itens: [], pagamentos: [],
+      enderecoEntregaSnapshot: { rua: 'Endereço indevido' }, itens: [], pagamentos: [], historicosStatus: [],
     });
     const adminService = new PedidosService({ pedido: { findUnique } } as never);
     await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toMatchObject({
@@ -152,6 +158,7 @@ describe('PedidosService', () => {
     }));
     stockWrite.mockResolvedValue({});
     reservationWrite.mockResolvedValue({});
+    createHistory.mockResolvedValue({});
     findOrder.mockResolvedValue(null);
     lockStock.mockImplementation(async (query: TemplateStringsArray, value: string) => {
       const sql = query.join('?');
@@ -198,6 +205,10 @@ describe('PedidosService', () => {
     ]));
     expect(findConfig).not.toHaveBeenCalled();
     expect(stockWrite).toHaveBeenCalledTimes(2);
+    expect(createHistory).toHaveBeenCalledWith({ data: {
+      pedidoId: 'order', statusRegistrado: 'PENDENTE_PAGAMENTO',
+      dataHora: new Date('2026-10-22T12:00:00.000Z'),
+    } });
     expect(stockWrite).toHaveBeenCalledWith({ where: { produtoId },
       data: { quantidadeReservada: { increment: 2 } } });
     expect(stockWrite).toHaveBeenCalledWith({ where: { produtoId: outroProdutoId },
