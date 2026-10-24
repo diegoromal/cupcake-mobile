@@ -38,7 +38,7 @@ describe('espera e consulta Pix', () => {
     });
     concluir('APROVADO');
     await jest.advanceTimersByTimeAsync(0);
-    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
   });
 
   it('GET pendente não inicia trabalho nem escreve', async () => {
@@ -75,13 +75,16 @@ describe('espera e consulta Pix', () => {
       ...cartao, resultado: 'APROVADO', dataTransacao: new Date('2026-10-23T12:00:00Z'),
     });
     simulador.simular.mockResolvedValue('APROVADO');
+    prisma.$transaction.mockResolvedValueOnce({ pagamento: cartao, criado: true })
+      .mockResolvedValueOnce({ ...cartao, resultado: 'APROVADO',
+        dataTransacao: new Date('2026-10-23T12:00:00Z') });
 
     await expect(service.iniciarCartao(usuarioId, pedidoId, id)).resolves.toEqual({
       criado: true,
       pagamento: { tentativaId: id, pedidoId, forma: 'CARTAO', resultado: 'APROVADO',
         valorAplicavel: '12.34', dataTransacao: '2026-10-23T12:00:00.000Z' },
     });
-    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     expect(simulador.simular).toHaveBeenCalledWith(id);
   });
 

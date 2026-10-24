@@ -105,14 +105,94 @@ export class PagamentosService {
 
   private async concluir(usuarioId: string, pagamento: Pagamento) {
     const resultado = await this.simulador.simular(pagamento.id);
-    await this.prisma.$executeRaw`
-      UPDATE "Pagamento" AS p
-      SET resultado = ${resultado}::"ResultadoPagamento", "dataTransacao" = clock_timestamp()
-      FROM "Pedido" AS pedido
-      WHERE p.id = ${pagamento.id}::uuid AND p."pedidoId" = ${pagamento.pedidoId}::uuid
-        AND p.forma = ${pagamento.forma}::"FormaPagamento" AND p.resultado = 'PENDENTE'
-        AND pedido.id = p."pedidoId" AND pedido."clienteUsuarioId" = ${usuarioId}::uuid`;
-    return this.buscar(usuarioId, pagamento.pedidoId, pagamento.id, pagamento.forma);
+    return this.prisma.$transaction(async (db) => {
+      const [pedido] = await db.$queryRaw<Array<{ id: string; statusAtual: string; data: Date }>>`
+        SELECT id, "statusAtual", data FROM "Pedido"
+        WHERE id = ${pagamento.pedidoId}::uuid AND "clienteUsuarioId" = ${usuarioId}::uuid
+        FOR UPDATE`;
+      if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+
+      const atual = await db.pagamento.findUnique({ where: { id: pagamento.id } });
+      if (!atual || atual.pedidoId !== pagamento.pedidoId || atual.forma !== pagamento.forma) {
+        throw new NotFoundException('Tentativa não encontrada.');
+      }
+      if (atual.resultado !== 'PENDENTE') return atual;
+
+      if (resultado === 'RECUSADO') {
+        await db.$executeRaw`
+          UPDATE "Pagamento" SET resultado = 'RECUSADO', "dataTransacao" = clock_timestamp()
+          WHERE id = ${pagamento.id}::uuid AND resultado = 'PENDENTE'`;
+        return db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } });
+      }
+
+      if (pedido.statusAtual !== 'PENDENTE_PAGAMENTO') {
+        throw new ConflictException('Pedido não elegível para aprovação do pagamento.');
+      }
+      const candidatas = await db.$queryRaw<Array<{ id: string; produtoId: string }>>`
+        SELECT id, "produtoId" FROM "ReservaEstoque"
+        WHERE "pedidoId" = ${pagamento.pedidoId}::uuid AND estado = 'ATIVA'::"EstadoReserva"
+        ORDER BY "produtoId", id`;
+      if (!candidatas.length) throw new ConflictException('Pedido sem reserva ativa de estoque.');
+
+      for (const produtoId of [...new Set(candidatas.map((r) => r.produtoId))].sort()) {
+        const [estoque] = await db.$queryRaw<Array<{ produtoId: string }>>`
+          SELECT "produtoId" FROM "Estoque" WHERE "produtoId" = ${produtoId}::uuid FOR UPDATE`;
+        if (!estoque) throw new ConflictException('Estoque indisponível para concluir a venda.');
+      }
+
+      const [{ agora }] = await db.$queryRaw<Array<{ agora: Date }>>`
+        SELECT clock_timestamp() AS agora`;
+      if (pedido.data.getTime() + prazoPedidoMs <= agora.getTime()) {
+        throw new ConflictException('Reserva de estoque expirada.');
+      }
+      const reservas = await db.$queryRaw<Array<{
+        id: string; produtoId: string; quantidade: number; momentoExpiracaoValidade: Date;
+      }>>`
+        SELECT id, "produtoId", quantidade, "momentoExpiracaoValidade" FROM "ReservaEstoque"
+        WHERE "pedidoId" = ${pagamento.pedidoId}::uuid AND estado = 'ATIVA'::"EstadoReserva"
+        ORDER BY "produtoId", id FOR UPDATE`;
+      if (!reservas.length) throw new ConflictException('Pedido sem reserva ativa de estoque.');
+      if (reservas.some((reserva) => reserva.momentoExpiracaoValidade <= agora)) {
+        throw new ConflictException('Reserva de estoque expirada.');
+      }
+
+      const totais = new Map<string, number>();
+      for (const reserva of reservas) {
+        totais.set(reserva.produtoId, (totais.get(reserva.produtoId) ?? 0) + reserva.quantidade);
+      }
+      for (const [produtoId, quantidade] of [...totais].sort(([a], [b]) => a.localeCompare(b))) {
+        const atualizado = await db.estoque.updateMany({
+          where: { produtoId, quantidadeFisica: { gte: quantidade }, quantidadeReservada: { gte: quantidade } },
+          data: { quantidadeFisica: { decrement: quantidade }, quantidadeReservada: { decrement: quantidade } },
+        });
+        if (atualizado.count !== 1) throw new ConflictException('Saldo de estoque inconsistente.');
+      }
+
+      for (const reserva of reservas) {
+        const convertida = await db.reservaEstoque.updateMany({
+          where: { id: reserva.id, estado: 'ATIVA' }, data: { estado: 'CONVERTIDA_EM_VENDA' },
+        });
+        if (convertida.count !== 1) throw new ConflictException('Reserva de estoque alterada durante a venda.');
+        await db.movimentacaoEstoque.create({ data: {
+          produtoId: reserva.produtoId, pedidoId: pagamento.pedidoId,
+          quantidade: -reserva.quantidade, motivoOrigem: 'VENDA_PEDIDO', data: agora,
+        } });
+      }
+
+      const pagamentoAlterado = await db.$executeRaw`
+        UPDATE "Pagamento" SET resultado = 'APROVADO', "dataTransacao" = ${agora}
+        WHERE id = ${pagamento.id}::uuid AND resultado = 'PENDENTE'`;
+      if (pagamentoAlterado !== 1) throw new ConflictException('Tentativa alterada durante a aprovação.');
+      const alterado = await db.pedido.updateMany({
+        where: { id: pagamento.pedidoId, statusAtual: 'PENDENTE_PAGAMENTO' },
+        data: { statusAtual: 'PAGO', confirmacaoPagamento: agora },
+      });
+      if (alterado.count !== 1) throw new ConflictException('Pedido alterado durante a aprovação.');
+      await db.historicoStatusPedido.create({ data: {
+        pedidoId: pagamento.pedidoId, statusRegistrado: 'PAGO', dataHora: agora,
+      } });
+      return db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } });
+    }, { timeout: 30_000 });
   }
 
   private async buscar(usuarioId: string, pedidoId: string, tentativaId: string, forma: FormaPagamento) {
