@@ -2,7 +2,7 @@ import { GatewayTimeoutException, Logger } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PagamentosService } from './pagamentos.service';
-import { PixSimuladorService } from './pix-simulador.service';
+import { PagamentoSimuladorService } from './pagamento-simulador.service';
 
 describe('espera e consulta Pix', () => {
   const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -20,7 +20,7 @@ describe('espera e consulta Pix', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       pagamento: { findFirst: jest.fn().mockResolvedValue(pendente) } };
     simulador = { simular: jest.fn() };
-    service = new PagamentosService(prisma as unknown as PrismaService, simulador as PixSimuladorService);
+    service = new PagamentosService(prisma as unknown as PrismaService, simulador as PagamentoSimuladorService);
   });
   afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
 
@@ -66,5 +66,35 @@ describe('espera e consulta Pix', () => {
     await expect(service.iniciarPix(usuarioId, pedidoId, id)).rejects.toThrow('falha de teste');
     expect(prisma.$executeRaw).not.toHaveBeenCalled();
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('simula cartão e expõe somente os campos persistidos da tentativa', async () => {
+    const cartao = { ...pendente, forma: 'CARTAO' };
+    prisma.$transaction.mockResolvedValue({ pagamento: cartao, criado: true });
+    prisma.pagamento.findFirst.mockResolvedValue({
+      ...cartao, resultado: 'APROVADO', dataTransacao: new Date('2026-10-23T12:00:00Z'),
+    });
+    simulador.simular.mockResolvedValue('APROVADO');
+
+    await expect(service.iniciarCartao(usuarioId, pedidoId, id)).resolves.toEqual({
+      criado: true,
+      pagamento: { tentativaId: id, pedidoId, forma: 'CARTAO', resultado: 'APROVADO',
+        valorAplicavel: '12.34', dataTransacao: '2026-10-23T12:00:00.000Z' },
+    });
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(simulador.simular).toHaveBeenCalledWith(id);
+  });
+
+  it('consulta tentativa de cartão sem iniciar nova simulação nem escrita', async () => {
+    const cartao = { ...pendente, forma: 'CARTAO' };
+    prisma.pagamento.findFirst.mockResolvedValue(cartao);
+
+    await expect(service.consultarCartao(usuarioId, pedidoId, id)).resolves.toEqual({
+      tentativaId: id, pedidoId, forma: 'CARTAO', resultado: 'PENDENTE',
+      dataTransacao: null, valorAplicavel: '12.34',
+    });
+    expect(simulador.simular).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { setTimeout } from 'node:timers/promises';
 
 @Injectable()
-export class PixSimuladorService {
+export class PagamentoSimuladorService {
   async simular(tentativaId: string): Promise<'APROVADO' | 'RECUSADO'> {
     await setTimeout(50);
     // A paridade do último dígito do UUID independe de memória, relógio e processo.

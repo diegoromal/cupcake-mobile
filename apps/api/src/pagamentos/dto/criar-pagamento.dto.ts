@@ -1,6 +1,6 @@
 import { IsUUID } from 'class-validator';
 
-export class CriarPixDto {
+export class CriarPagamentoDto {
   @IsUUID()
   tentativaId!: string;
 }

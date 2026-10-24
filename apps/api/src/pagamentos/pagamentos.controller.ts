@@ -5,10 +5,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PerfilUsuario } from '../generated/prisma/enums';
-import { CriarPixDto } from './dto/criar-pix.dto';
+import { CriarPagamentoDto } from './dto/criar-pagamento.dto';
 import { PagamentosService } from './pagamentos.service';
 
-@Controller('pedidos/:pedidoId/pagamentos/pix')
+@Controller('pedidos/:pedidoId/pagamentos')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(PerfilUsuario.CLIENTE)
 @UsePipes(new ValidationPipe({
@@ -18,21 +18,39 @@ import { PagamentosService } from './pagamentos.service';
 export class PagamentosController {
   constructor(private readonly pagamentos: PagamentosService) {}
 
-  @Post()
-  async iniciar(@Req() request: AuthenticatedRequest,
+  @Post('pix')
+  async iniciarPix(@Req() request: AuthenticatedRequest,
     @Param('pedidoId', new ParseUUIDPipe()) pedidoId: string,
-    @Body() body: CriarPixDto, @Res({ passthrough: true }) response: Response) {
+    @Body() body: CriarPagamentoDto, @Res({ passthrough: true }) response: Response) {
     if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
     const resultado = await this.pagamentos.iniciarPix(request.user.id, pedidoId, body.tentativaId);
     response.status(resultado.criado ? 201 : 200);
     return resultado.pagamento;
   }
 
-  @Get(':tentativaId')
-  consultar(@Req() request: AuthenticatedRequest,
+  @Get('pix/:tentativaId')
+  consultarPix(@Req() request: AuthenticatedRequest,
     @Param('pedidoId', new ParseUUIDPipe()) pedidoId: string,
     @Param('tentativaId', new ParseUUIDPipe()) tentativaId: string) {
     if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
     return this.pagamentos.consultarPix(request.user.id, pedidoId, tentativaId);
+  }
+
+  @Post('cartao')
+  async iniciarCartao(@Req() request: AuthenticatedRequest,
+    @Param('pedidoId', new ParseUUIDPipe()) pedidoId: string,
+    @Body() body: CriarPagamentoDto, @Res({ passthrough: true }) response: Response) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    const resultado = await this.pagamentos.iniciarCartao(request.user.id, pedidoId, body.tentativaId);
+    response.status(resultado.criado ? 201 : 200);
+    return resultado.pagamento;
+  }
+
+  @Get('cartao/:tentativaId')
+  consultarCartao(@Req() request: AuthenticatedRequest,
+    @Param('pedidoId', new ParseUUIDPipe()) pedidoId: string,
+    @Param('tentativaId', new ParseUUIDPipe()) tentativaId: string) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    return this.pagamentos.consultarCartao(request.user.id, pedidoId, tentativaId);
   }
 }
