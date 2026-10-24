@@ -20,6 +20,7 @@ describe('POST /pedidos', () => {
   const iniciarProducao = jest.fn();
   const marcarProntoParaRetirada = jest.fn();
   const confirmarRetirada = jest.fn();
+  const cancelarComoCliente = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
@@ -31,7 +32,8 @@ describe('POST /pedidos', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
       .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao,
-        detalharParaAdministracao, iniciarProducao, marcarProntoParaRetirada, confirmarRetirada }).compile();
+        detalharParaAdministracao, iniciarProducao, marcarProntoParaRetirada, confirmarRetirada,
+        cancelarComoCliente }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -52,6 +54,27 @@ describe('POST /pedidos', () => {
     iniciarProducao.mockResolvedValue({ id: userId, statusAtual: 'EM_PREPARO' });
     marcarProntoParaRetirada.mockResolvedValue({ id: userId, statusAtual: 'PRONTO_PARA_RETIRADA' });
     confirmarRetirada.mockResolvedValue({ id: userId, statusAtual: 'RETIRADO' });
+    cancelarComoCliente.mockResolvedValue({ id: userId, statusAtual: 'CANCELADO' });
+  });
+
+  it('PATCH /pedidos/:id/cancelar exige CLIENTE, valida UUID e usa o cliente autenticado', async () => {
+    const path = `/pedidos/${enderecoId}/cancelar`;
+    await request(app.getHttpServer()).patch(path).send({}).expect(401);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`).send({}).expect(403);
+
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
+    await request(app.getHttpServer()).patch('/pedidos/invalido/cancelar')
+      .set('Authorization', `Bearer ${cliente}`).send({}).expect(400);
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${cliente}`)
+      .send({}).expect(200).expect({ id: userId, statusAtual: 'CANCELADO' });
+    expect(cancelarComoCliente).toHaveBeenCalledWith(enderecoId, userId);
+
+    cancelarComoCliente.mockRejectedValueOnce(new ConflictException('Pedido não pode ser cancelado neste status.'));
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${cliente}`)
+      .send({}).expect(409);
   });
 
   it('GET /admin/pedidos exige ADMIN e retorna a listagem autorizada', async () => {
