@@ -22,6 +22,10 @@ afterEach(()=>{
 });
 test('allowlist explícita por método e rota',()=>{
  expect(allowed('GET',['pedidos'])).toBe(true);for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos'])).toBe(false);
+ expect(allowed('GET',['pedidos',id])).toBe(true);
+ for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos',id])).toBe(false);
+ expect(allowed('GET',['pedidos','invalido'])).toBe(false);
+ expect(allowed('GET',['pedidos',id,'historico'])).toBe(false);
  expect(allowed('GET',['configuracao-loja-entrega'])).toBe(true);expect(allowed('PUT',['configuracao-loja-entrega'])).toBe(true);expect(allowed('POST',['configuracao-loja-entrega'])).toBe(false);
  expect(allowed('GET',['produtos'])).toBe(true);expect(allowed('POST',['produtos'])).toBe(true);
  expect(allowed('PATCH',['produtos',id])).toBe(true);expect(allowed('POST',['produtos',id,'imagem'])).toBe(true);
@@ -38,6 +42,17 @@ test('allowlist explícita por método e rota',()=>{
  for(const resource of ['categorias','personalizacoes']) { for(const method of ['GET','PATCH','DELETE']) expect(allowed(method,[resource,id])).toBe(true); for(const method of ['PUT','POST']) expect(allowed(method,[resource,id])).toBe(false); expect(allowed('GET',[resource,id,'extra'])).toBe(false); expect(allowed('GET',[resource,'invalid'])).toBe(false); }
  expect(allowed('DELETE',['categorias'])).toBe(false);expect(allowed('PATCH',['personalizacoes'])).toBe(false);expect(allowed('GET',['produtos','..'])).toBe(false);
  expect(allowed('GET',['users'])).toBe(false);expect(allowed('GET',['produtos',id,'imagem'])).toBe(false);
+});
+test('proxy permite somente leitura do detalhe de pedido por UUID', async () => {
+ const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({identificadorNegocio:'PED-123'}));
+ const good=req(`/api/admin/pedidos/${id}`);good.cookies.set('admin_access','token');
+ const result=await proxyAdmin(good,['pedidos',id]);
+ expect(result.status).toBe(200);
+ expect(await result.json()).toEqual({identificadorNegocio:'PED-123'});
+ expect(fetchMock.mock.calls[0][0]).toBe(`http://localhost:3000/admin/pedidos/${id}`);
+ expect((await proxyAdmin(req(`/api/admin/pedidos/${id}?status=PAGO`),['pedidos',id])).status).toBe(404);
+ expect((await proxyAdmin(req(`/api/admin/pedidos/${id}`,'DELETE'),['pedidos',id])).status).toBe(404);
+ expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 test('proxy encaminha ajuste de estoque e bloqueia origem cruzada', async () => {
  const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({quantidadeDisponivel:4}));

@@ -70,6 +70,59 @@ describe('PedidosService', () => {
     });
   });
 
+  it('detalha apenas dados persistidos da tela sem recalcular valores', async () => {
+    const findUnique = jest.fn().mockResolvedValue({
+      id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
+      cliente: { nome: 'Ana' }, modalidade: 'ENTREGA', statusAtual: 'PAGO',
+      valorItens: dinheiro('10.10'), freteAplicado: dinheiro('2.05'), total: dinheiro('99.99'),
+      enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
+        cep: '80000000', complemento: null, referencia: 'Portão azul' },
+      itens: [{ id: produtoId, quantidade: 2, precoAplicado: dinheiro('5.05'),
+        subtotalAplicado: dinheiro('10.10'), produto: { nome: 'Cupcake' },
+        personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: dinheiro('0.20') }] }],
+      pagamentos: [{ forma: 'PIX' }], credencialSenha: 'não expor',
+    });
+    const adminService = new PedidosService({ pedido: { findUnique } } as never);
+    await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toEqual({
+      id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
+      cliente: { nome: 'Ana' }, modalidade: 'ENTREGA', statusAtual: 'PAGO',
+      valorItens: '10.10', freteAplicado: '2.05', total: '99.99', formaPagamento: 'PIX',
+      enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
+        cep: '80000000', complemento: null, referencia: 'Portão azul' },
+      itens: [{ id: produtoId, nome: 'Cupcake', quantidade: 2, precoAplicado: '5.05',
+        subtotalAplicado: '10.10', personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: '0.20' }] }],
+    });
+    const query = findUnique.mock.calls[0][0];
+    expect(query.where).toEqual({ id: usuarioId });
+    expect(Object.keys(query.select).sort()).toEqual([
+      'cliente', 'confirmacaoPagamento', 'enderecoEntregaSnapshot', 'freteAplicado', 'id',
+      'identificadorNegocio', 'itens', 'modalidade', 'pagamentos', 'statusAtual', 'total', 'valorItens',
+    ]);
+    expect(query.select.pagamentos).toMatchObject({ where: { resultado: 'APROVADO' }, take: 1,
+      select: { forma: true } });
+    expect(query.select.itens.select).toMatchObject({ produto: { select: { nome: true } },
+      personalizacoes: { select: { nomeAplicado: true, ajusteValorAplicado: true } } });
+  });
+
+  it('retorna 404 para pedido inexistente', async () => {
+    const findUnique = jest.fn().mockResolvedValue(null);
+    const adminService = new PedidosService({ pedido: { findUnique } } as never);
+    await expect(adminService.detalharParaAdministracao(usuarioId)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('omite endereço na retirada e não inventa pagamento aprovado', async () => {
+    const findUnique = jest.fn().mockResolvedValue({
+      id: usuarioId, identificadorNegocio: 'PED-456', confirmacaoPagamento: null,
+      cliente: { nome: 'Ana' }, modalidade: 'RETIRADA', statusAtual: 'PENDENTE_PAGAMENTO',
+      valorItens: dinheiro('10.10'), freteAplicado: dinheiro('0.00'), total: dinheiro('10.10'),
+      enderecoEntregaSnapshot: { rua: 'Endereço indevido' }, itens: [], pagamentos: [],
+    });
+    const adminService = new PedidosService({ pedido: { findUnique } } as never);
+    await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toMatchObject({
+      enderecoEntregaSnapshot: null, formaPagamento: null,
+    });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     setCart([linha()]);
