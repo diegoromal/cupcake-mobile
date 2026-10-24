@@ -62,6 +62,10 @@ export class PedidosService {
         pagamentos: { where: { resultado: 'APROVADO' },
           orderBy: [{ dataTransacao: 'desc' }, { id: 'desc' }], take: 1,
           select: { forma: true } },
+        historicosStatus: { orderBy: [{ dataHora: 'asc' }, { id: 'asc' }], select: {
+          id: true, statusRegistrado: true, dataHora: true,
+          responsavel: { select: { nome: true } },
+        } },
       },
     });
     if (!pedido) throw new NotFoundException('Pedido não encontrado.');
@@ -74,6 +78,10 @@ export class PedidosService {
       enderecoEntregaSnapshot: pedido.modalidade === ModalidadeRecebimento.ENTREGA
         ? pedido.enderecoEntregaSnapshot : null,
       formaPagamento: pedido.pagamentos[0]?.forma ?? null,
+      historicoStatus: pedido.historicosStatus.map((historico) => ({
+        id: historico.id, status: historico.statusRegistrado,
+        dataHora: historico.dataHora, responsavel: historico.responsavel?.nome ?? null,
+      })),
       itens: pedido.itens.map((item) => ({
         id: item.id, nome: item.produto.nome, quantidade: item.quantidade,
         precoAplicado: item.precoAplicado.toFixed(2),
@@ -317,6 +325,9 @@ export class PedidosService {
           itens: { include: { personalizacoes: true } },
         },
       });
+      await db.historicoStatusPedido.create({ data: {
+        pedidoId: pedido.id, statusRegistrado: pedido.statusAtual, dataHora: pedido.data,
+      } });
       for (const produtoId of produtos) {
         const quantidade = demanda.get(produtoId)!;
         await db.estoque.update({ where: { produtoId }, data: {

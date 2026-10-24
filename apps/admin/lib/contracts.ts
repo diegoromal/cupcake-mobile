@@ -23,6 +23,7 @@ export type PedidoDetalheAdministrativo = {
   valorItens: string; freteAplicado: string; total: string; formaPagamento: 'PIX' | 'CARTAO' | null;
   enderecoEntregaSnapshot: { rua: string; numero: string; bairro: string; cidade: string;
     cep: string; complemento: string | null; referencia: string | null } | null;
+  historicoStatus: Array<{ id: string; status: StatusPedido; dataHora: string; responsavel: string | null }>;
   itens: Array<{ id: string; nome: string; quantidade: number; precoAplicado: string;
     subtotalAplicado: string; personalizacoes: Array<{ nomeAplicado: string;
       ajusteValorAplicado: string | null }> }>;

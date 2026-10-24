@@ -55,6 +55,12 @@ async function main() {
     assert.equal(status(expired), 'EXPIRADO'); checks++;
     assert.equal(status(paid), 'PAGO'); checks++;
     assert.equal(status(later), 'EM_PREPARO'); checks++;
+    const history = await prisma.historicoStatusPedido.findMany({
+      where: { pedidoId: { in: ids } }, orderBy: [{ dataHora: 'asc' }, { id: 'asc' }],
+    });
+    assert.deepEqual(history.map(({ pedidoId, statusRegistrado }) => [pedidoId, statusRegistrado]), [
+      [boundary, 'EXPIRADO'], [expired, 'EXPIRADO'],
+    ]); checks++;
     assert.equal(await prisma.reservaEstoque.count({ where: { pedidoId: { in: ids }, estado: 'ATIVA' } }), 5); checks++;
     assert.equal((await prisma.estoque.findUniqueOrThrow({ where: { produtoId: product } })).quantidadeReservada, 5); checks++;
     assert.equal(await prisma.movimentacaoEstoque.count({ where: { produtoId: product } }), 0); checks++;
@@ -80,9 +86,11 @@ async function main() {
     })) });
     assert.equal(await service.executar(), 50); checks++;
     assert.equal(await prisma.pedido.count({ where: { id: { in: batchIds }, statusAtual: 'PENDENTE_PAGAMENTO' } }), 1); checks++;
+    assert.equal(await prisma.historicoStatusPedido.count({ where: { pedidoId: { in: batchIds }, statusRegistrado: 'EXPIRADO' } }), 50); checks++;
     assert.equal(await service.executar(), 1); checks++;
     assert.equal(await service.executar(), 0); checks++;
   } finally {
+    await prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: ids } } });
     await prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: ids } } });
     await prisma.pedido.deleteMany({ where: { id: { in: ids } } });
     await prisma.estoque.deleteMany({ where: { produtoId: product } });
