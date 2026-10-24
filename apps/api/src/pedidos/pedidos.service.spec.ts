@@ -52,6 +52,24 @@ describe('PedidosService', () => {
   const service = new PedidosService({ $transaction: transaction,
     pedido: { findFirst: findOrder } } as never);
 
+  it('lista somente campos operacionais e ordena pela confirmação do pagamento', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const adminService = new PedidosService({ pedido: { findMany } } as never);
+
+    await expect(adminService.listarParaAdministracao()).resolves.toEqual([]);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { statusAtual: { in: [
+        'PAGO', 'EM_PREPARO', 'SAIU_PARA_ENTREGA', 'ENTREGUE',
+        'PRONTO_PARA_RETIRADA', 'RETIRADO', 'CANCELADO',
+      ] } },
+      select: {
+        id: true, identificadorNegocio: true, confirmacaoPagamento: true,
+        cliente: { select: { nome: true } }, modalidade: true, statusAtual: true, total: true,
+      },
+      orderBy: [{ confirmacaoPagamento: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
+    });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     setCart([linha()]);

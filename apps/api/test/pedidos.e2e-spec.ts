@@ -15,6 +15,7 @@ describe('POST /pedidos', () => {
   let app: INestApplication;
   const criar = jest.fn();
   const revisar = jest.fn();
+  const listarParaAdministracao = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
@@ -25,7 +26,7 @@ describe('POST /pedidos', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
-      .overrideProvider(PedidosService).useValue({ criar, revisar }).compile();
+      .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -41,6 +42,19 @@ describe('POST /pedidos', () => {
     revisar.mockResolvedValue({ modalidade: 'RETIRADA', valorItens: '10.30',
       freteAplicado: '0.00', total: '10.30', revisaoId: 'a'.repeat(64),
       itens: [{ nome: 'Cupcake', quantidade: 1, personalizacoes: [] }] });
+    listarParaAdministracao.mockResolvedValue([]);
+  });
+
+  it('GET /admin/pedidos exige ADMIN e retorna a listagem autorizada', async () => {
+    await request(app.getHttpServer()).get('/admin/pedidos').expect(401);
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    await request(app.getHttpServer()).get('/admin/pedidos')
+      .set('Authorization', `Bearer ${cliente}`).expect(403);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).get('/admin/pedidos')
+      .set('Authorization', `Bearer ${admin}`).expect(200).expect([]);
+    expect(listarParaAdministracao).toHaveBeenCalledTimes(1);
   });
 
   it('exige sessão e perfil cliente', async () => {

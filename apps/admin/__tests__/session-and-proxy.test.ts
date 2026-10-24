@@ -21,6 +21,7 @@ afterEach(()=>{
  if(originalAppPublicUrl===undefined) delete process.env.APP_PUBLIC_URL; else process.env.APP_PUBLIC_URL=originalAppPublicUrl;
 });
 test('allowlist explícita por método e rota',()=>{
+ expect(allowed('GET',['pedidos'])).toBe(true);for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos'])).toBe(false);
  expect(allowed('GET',['configuracao-loja-entrega'])).toBe(true);expect(allowed('PUT',['configuracao-loja-entrega'])).toBe(true);expect(allowed('POST',['configuracao-loja-entrega'])).toBe(false);
  expect(allowed('GET',['produtos'])).toBe(true);expect(allowed('POST',['produtos'])).toBe(true);
  expect(allowed('PATCH',['produtos',id])).toBe(true);expect(allowed('POST',['produtos',id,'imagem'])).toBe(true);

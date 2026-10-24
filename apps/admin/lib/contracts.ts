@@ -5,3 +5,12 @@ export type ConfiguracaoLojaEntrega = { latitudeLoja: string; longitudeLoja: str
 export type Vinculo = { produtoId: string; personalizacaoId: string };
 export type Estoque = { produtoId: string; quantidadeFisica: number; quantidadeReservada: number; quantidadeDisponivel: number };
 export type MovimentacaoEstoque = { id: string; produtoId: string; pedidoId: string | null; quantidade: number; motivoOrigem: string; data: string };
+export type PedidoAdministrativo = {
+  id: string;
+  identificadorNegocio: string;
+  confirmacaoPagamento: string | null;
+  cliente: { nome: string };
+  modalidade: 'ENTREGA' | 'RETIRADA';
+  statusAtual: 'PAGO' | 'EM_PREPARO' | 'SAIU_PARA_ENTREGA' | 'ENTREGUE' | 'PRONTO_PARA_RETIRADA' | 'RETIRADO' | 'CANCELADO';
+  total: string;
+};
