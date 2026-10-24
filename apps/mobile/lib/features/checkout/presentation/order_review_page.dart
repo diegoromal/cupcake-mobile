@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
 import '../data/customer_order_api.dart';
+import 'payment_page.dart';
 
 class OrderReviewPage extends StatefulWidget {
   const OrderReviewPage({
@@ -225,6 +226,25 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
         _orderId = result.value!['id'] as String;
       }
     });
+    if (result.status == OrderStatus.success && !_resolvingPreviousIntent) {
+      final order = result.value!;
+      if (order['id'] is String &&
+          order['identificadorNegocio'] is String &&
+          order['total'] is String) {
+        unawaited(
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => PaymentPage(
+                session: widget.session,
+                orderId: order['id'] as String,
+                orderNumber: order['identificadorNegocio'] as String,
+                total: order['total'] as String,
+              ),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   String _message(OrderStatus status) => switch (status) {

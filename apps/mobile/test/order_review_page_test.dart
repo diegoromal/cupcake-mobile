@@ -266,12 +266,15 @@ void main() {
         await tester.pumpAndSettle();
         expect(api.attemptIds, [api.attemptIds.first, api.attemptIds.first]);
         expect(api.reservations, 1);
-        expect(find.textContaining(userId), findsOneWidget);
+        expect(
+          find.text('Pedido PED-${api.attemptIds.first}'),
+          findsNWidgets(2),
+        );
         expect(sessionValue.pendingOrderConfirmation, isNull);
       },
     );
   }
-  testWidgets('Retirada carrega prévia, confirma uma vez e preserva ID', (
+  testWidgets('Retirada carrega prévia e segue ao pagamento do pedido criado', (
     tester,
   ) async {
     final auth = FakeAuth(), api = FakeOrderApi();
@@ -292,7 +295,7 @@ void main() {
     expect(api.confirmTokens, isEmpty);
     await tester.tap(find.text('Confirmar pedido'));
     await tester.pumpAndSettle();
-    expect(find.textContaining(userId), findsOneWidget);
+    expect(find.text('Pedido PED-1'), findsNWidgets(2));
     expect(api.confirmTokens, hasLength(1));
     expect(api.attemptIds.single, matches(RegExp(r'^[a-f0-9-]{36}$')));
   });
@@ -341,6 +344,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(api.confirmTokens, hasLength(1));
+      expect(find.text('Pedido PED-1'), findsNWidgets(2));
     },
   );
 
