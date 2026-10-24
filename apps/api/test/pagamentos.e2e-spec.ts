@@ -10,10 +10,11 @@ const usuarioId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const pedidoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const tentativaId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const caminho = `/pedidos/${pedidoId}/pagamentos/pix`;
+const caminhoCartao = `/pedidos/${pedidoId}/pagamentos/cartao`;
 
-describe('contrato HTTP Pix', () => {
+describe('contrato HTTP de pagamento', () => {
   let app: INestApplication;
-  const iniciarPix = jest.fn(), consultarPix = jest.fn(), user = jest.fn();
+  const iniciarPix = jest.fn(), consultarPix = jest.fn(), iniciarCartao = jest.fn(), consultarCartao = jest.fn(), user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil = 'CLIENTE') => jwt.signAsync({ sub: usuarioId, perfil, type: 'access' }, {
     secret: process.env.JWT_ACCESS_SECRET, algorithm: 'HS256', expiresIn: '15m',
@@ -23,7 +24,7 @@ describe('contrato HTTP Pix', () => {
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [PagamentosModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
-      .overrideProvider(PagamentosService).useValue({ iniciarPix, consultarPix }).compile();
+      .overrideProvider(PagamentosService).useValue({ iniciarPix, consultarPix, iniciarCartao, consultarCartao }).compile();
     app = module.createNestApplication();
     await app.init();
   });
@@ -32,20 +33,28 @@ describe('contrato HTTP Pix', () => {
     user.mockResolvedValue({ id: usuarioId, perfil: 'CLIENTE' });
     iniciarPix.mockResolvedValue({ criado: true, pagamento });
     consultarPix.mockResolvedValue(pagamento);
+    iniciarCartao.mockResolvedValue({ criado: true, pagamento: { ...pagamento, forma: 'CARTAO' } });
+    consultarCartao.mockResolvedValue({ ...pagamento, forma: 'CARTAO' });
   });
   afterAll(async () => app.close());
 
   it('exige autenticação e CLIENTE em POST e GET', async () => {
     await request(app.getHttpServer()).post(caminho).send({ tentativaId }).expect(401);
     await request(app.getHttpServer()).get(`${caminho}/${tentativaId}`).expect(401);
+    await request(app.getHttpServer()).post(caminhoCartao).send({ tentativaId }).expect(401);
+    await request(app.getHttpServer()).get(`${caminhoCartao}/${tentativaId}`).expect(401);
     for (const perfil of ['ADMIN', 'ENTREGADOR']) {
       user.mockResolvedValue({ id: usuarioId, perfil });
       const auth = `Bearer ${await token(perfil)}`;
       await request(app.getHttpServer()).post(caminho).set('Authorization', auth).send({ tentativaId }).expect(403);
       await request(app.getHttpServer()).get(`${caminho}/${tentativaId}`).set('Authorization', auth).expect(403);
+      await request(app.getHttpServer()).post(caminhoCartao).set('Authorization', auth).send({ tentativaId }).expect(403);
+      await request(app.getHttpServer()).get(`${caminhoCartao}/${tentativaId}`).set('Authorization', auth).expect(403);
     }
     expect(iniciarPix).not.toHaveBeenCalled();
     expect(consultarPix).not.toHaveBeenCalled();
+    expect(iniciarCartao).not.toHaveBeenCalled();
+    expect(consultarCartao).not.toHaveBeenCalled();
   });
 
   it('rejeita body fora do contrato e UUIDs inválidos', async () => {
@@ -54,12 +63,29 @@ describe('contrato HTTP Pix', () => {
       { tentativaId, valor: '0.01' }, { tentativaId, resultado: 'APROVADO' },
       { tentativaId, resultadoPixPlanejado: 'APROVADO' }, { tentativaId, usuarioId }]) {
       await request(app.getHttpServer()).post(caminho).set('Authorization', auth).send(body).expect(400);
+      await request(app.getHttpServer()).post(caminhoCartao).set('Authorization', auth).send(body).expect(400);
     }
     await request(app.getHttpServer()).post('/pedidos/invalido/pagamentos/pix')
       .set('Authorization', auth).send({ tentativaId }).expect(400);
     await request(app.getHttpServer()).get(`${caminho}/invalido`).set('Authorization', auth).expect(400);
     expect(iniciarPix).not.toHaveBeenCalled();
     expect(consultarPix).not.toHaveBeenCalled();
+    expect(iniciarCartao).not.toHaveBeenCalled();
+  });
+
+  it('inicia e consulta cartão mantendo o contrato sem dados de cartão', async () => {
+    const auth = `Bearer ${await token()}`;
+    const response = await request(app.getHttpServer()).post(caminhoCartao).set('Authorization', auth)
+      .send({ tentativaId }).expect(201);
+    expect(response.body).toEqual({ ...pagamento, forma: 'CARTAO' });
+    expect(iniciarCartao).toHaveBeenCalledWith(usuarioId, pedidoId, tentativaId);
+    iniciarCartao.mockResolvedValueOnce({ criado: false, pagamento: response.body });
+    await request(app.getHttpServer()).post(caminhoCartao).set('Authorization', auth)
+      .send({ tentativaId }).expect(200);
+    const consulta = await request(app.getHttpServer()).get(`${caminhoCartao}/${tentativaId}`)
+      .set('Authorization', auth).expect(200);
+    expect(consulta.body.forma).toBe('CARTAO');
+    expect(consultarCartao).toHaveBeenCalledWith(usuarioId, pedidoId, tentativaId);
   });
 
   it('retorna 201 na criação, 200 na repetição, com usuário autenticado', async () => {
