@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { classificar, leituraDoCarrinho } from '../carrinho/carrinho.service';
 import { calcularCoberturaFrete } from '../enderecos/cobertura-frete.service';
 import { Prisma } from '../generated/prisma/client';
-import { ModalidadeRecebimento } from '../generated/prisma/enums';
+import { ModalidadeRecebimento, StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { CriarPedidoDto } from './dto/criar-pedido.dto';
 
@@ -12,6 +12,34 @@ const limiteMonetario = new Prisma.Decimal('9999999999.99');
 @Injectable()
 export class PedidosService {
   constructor(private readonly prisma: PrismaService) {}
+
+  listarParaAdministracao() {
+    return this.prisma.pedido.findMany({
+      where: {
+        statusAtual: {
+          in: [
+            StatusPedido.PAGO,
+            StatusPedido.EM_PREPARO,
+            StatusPedido.SAIU_PARA_ENTREGA,
+            StatusPedido.ENTREGUE,
+            StatusPedido.PRONTO_PARA_RETIRADA,
+            StatusPedido.RETIRADO,
+            StatusPedido.CANCELADO,
+          ],
+        },
+      },
+      select: {
+        id: true,
+        identificadorNegocio: true,
+        confirmacaoPagamento: true,
+        cliente: { select: { nome: true } },
+        modalidade: true,
+        statusAtual: true,
+        total: true,
+      },
+      orderBy: [{ confirmacaoPagamento: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
+    });
+  }
 
   async revisar(usuarioId: string, input: CriarPedidoDto) {
     return this.processar(usuarioId, input, false);
