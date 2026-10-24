@@ -66,7 +66,8 @@ async function main() {
       WHERE table_schema = 'public' AND table_name = 'Pagamento'`;
     equal(columns.length, 6);
     for (const column of ['id', 'pedidoId', 'forma', 'resultado', 'dataTransacao', 'valorAplicavel']) {
-      equal(columns.find((row) => row.column_name === column)?.is_nullable, 'NO');
+      equal(columns.find((row) => row.column_name === column)?.is_nullable,
+        column === 'dataTransacao' ? 'YES' : 'NO');
     }
     equal(columns.find((row) => row.column_name === 'id')?.data_type, 'uuid');
     equal(columns.find((row) => row.column_name === 'pedidoId')?.data_type, 'uuid');
@@ -87,6 +88,7 @@ async function main() {
       { type: 'FormaPagamento', label: 'CARTAO' },
       { type: 'ResultadoPagamento', label: 'APROVADO' },
       { type: 'ResultadoPagamento', label: 'RECUSADO' },
+      { type: 'ResultadoPagamento', label: 'PENDENTE' },
     ]);
     const constraints = await prisma.$queryRaw<Array<{ name: string; definition: string }>>`
       SELECT conname AS name, pg_get_constraintdef(oid) AS definition
@@ -128,7 +130,7 @@ async function main() {
     const order = await prisma.pedido.findUniqueOrThrow({ where: { id: orderId },
       include: { pagamentos: { orderBy: { dataTransacao: 'asc' } } } });
     equal(order.pagamentos.map((row) => [row.id, row.pedidoId, row.forma, row.resultado,
-      row.dataTransacao.toISOString(), row.valorAplicavel.toFixed(2)]), [
+      row.dataTransacao?.toISOString(), row.valorAplicavel.toFixed(2)]), [
       [paymentIds[0], orderId, 'PIX', 'RECUSADO', firstDate.toISOString(), '12.34'],
       [paymentIds[1], orderId, 'CARTAO', 'APROVADO', secondDate.toISOString(), '12.34'],
     ]);
