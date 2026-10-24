@@ -18,6 +18,8 @@ describe('POST /pedidos', () => {
   const listarParaAdministracao = jest.fn();
   const detalharParaAdministracao = jest.fn();
   const iniciarProducao = jest.fn();
+  const marcarProntoParaRetirada = jest.fn();
+  const confirmarRetirada = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
@@ -29,7 +31,7 @@ describe('POST /pedidos', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
       .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao,
-        detalharParaAdministracao, iniciarProducao }).compile();
+        detalharParaAdministracao, iniciarProducao, marcarProntoParaRetirada, confirmarRetirada }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -48,6 +50,8 @@ describe('POST /pedidos', () => {
     listarParaAdministracao.mockResolvedValue([]);
     detalharParaAdministracao.mockResolvedValue({ id: userId, identificadorNegocio: 'PED-123' });
     iniciarProducao.mockResolvedValue({ id: userId, statusAtual: 'EM_PREPARO' });
+    marcarProntoParaRetirada.mockResolvedValue({ id: userId, statusAtual: 'PRONTO_PARA_RETIRADA' });
+    confirmarRetirada.mockResolvedValue({ id: userId, statusAtual: 'RETIRADO' });
   });
 
   it('GET /admin/pedidos exige ADMIN e retorna a listagem autorizada', async () => {
@@ -98,6 +102,28 @@ describe('POST /pedidos', () => {
     iniciarProducao.mockRejectedValueOnce(new ConflictException('Pedido não pode iniciar a produção neste status.'));
     await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
       .send({}).expect(409);
+  });
+
+  it('PATCH de retirada exige ADMIN e registra o administrador autenticado', async () => {
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    for (const [action, method, status] of [
+      ['pronto-para-retirada', marcarProntoParaRetirada, 'PRONTO_PARA_RETIRADA'],
+      ['confirmar-retirada', confirmarRetirada, 'RETIRADO'],
+    ] as const) {
+      const path = `/admin/pedidos/${enderecoId}/${action}`;
+      await request(app.getHttpServer()).patch(path).send({}).expect(401);
+      const cliente = await token(PerfilUsuario.CLIENTE);
+      user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
+      await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${cliente}`)
+        .send({}).expect(403);
+      user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+      await request(app.getHttpServer()).patch(`/admin/pedidos/invalido/${action}`)
+        .set('Authorization', `Bearer ${admin}`).send({}).expect(400);
+      await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+        .send({}).expect(200).expect({ id: userId, statusAtual: status });
+      expect(method).toHaveBeenCalledWith(enderecoId, userId);
+    }
   });
 
   it('exige sessão e perfil cliente', async () => {

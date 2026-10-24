@@ -27,4 +27,16 @@ export class AdminPedidosController {
     if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
     return this.pedidos.iniciarProducao(id, request.user.id);
   }
+
+  @Patch(':id/pronto-para-retirada')
+  marcarProntoParaRetirada(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    return this.pedidos.marcarProntoParaRetirada(id, request.user.id);
+  }
+
+  @Patch(':id/confirmar-retirada')
+  confirmarRetirada(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    return this.pedidos.confirmarRetirada(id, request.user.id);
+  }
 }
