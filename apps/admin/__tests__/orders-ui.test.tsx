@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import OrderList from '@/components/OrderList';
-import { adminApi } from '@/lib/client/admin-api';
+import OrderDetail from '@/components/OrderDetail';
+import { AdminApiError, adminApi } from '@/lib/client/admin-api';
 
-jest.mock('@/lib/client/admin-api', () => ({ adminApi: jest.fn() }));
+jest.mock('@/lib/client/admin-api', () => ({
+  ...jest.requireActual('@/lib/client/admin-api'), adminApi: jest.fn(),
+}));
 const mockApi = adminApi as jest.Mock;
 
 const order = {
@@ -19,7 +22,7 @@ test('carrega pedidos com estado de leitura e valores do pedido', async () => {
   expect(await screen.findByText('PED-123')).toBeInTheDocument();
   expect(screen.getByText('Ana Silva')).toBeInTheDocument();
   expect(screen.getByText('Retirada')).toBeInTheDocument();
-  expect(screen.getByText('Pronto para retirada')).toBeInTheDocument();
+  expect(screen.getByRole('cell', { name: 'Pronto para retirada' })).toBeInTheDocument();
   expect(screen.getByText('R$ 42,50')).toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('1 pedido listado');
 });
@@ -37,4 +40,87 @@ test('apresenta erro e permite nova tentativa', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('API indisponível.');
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
   expect(await screen.findByText('PED-123')).toBeInTheDocument();
+});
+
+test('filtra por status válido, conta registros visíveis, limpa e abre o pedido correto', async () => {
+  const second = { ...order, id: 'order-2', identificadorNegocio: 'PED-456',
+    statusAtual: 'PAGO' as const, cliente: { nome: 'Bia' } };
+  mockApi.mockResolvedValue([order, second]);
+  render(<OrderList />);
+  expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('2 pedidos listados');
+  expect(screen.getByRole('link', { name: 'Ver detalhes do pedido PED-123' }))
+    .toHaveAttribute('href', '/pedidos/order-1');
+  fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'PAGO' } });
+  expect(screen.getByText('PED-456')).toBeInTheDocument();
+  expect(screen.queryByText('PED-123')).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('1 pedido listado');
+  fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'CANCELADO' } });
+  expect(screen.getByText('Nenhum pedido com este status.')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('0 pedidos listados');
+  fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+  expect(screen.getByText('PED-123')).toBeInTheDocument();
+  expect(screen.getByText('PED-456')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('2 pedidos listados');
+  expect(screen.getAllByRole('link', { name: /Ver detalhes do pedido/ }).map((link) =>
+    link.getAttribute('href'))).toEqual(['/pedidos/order-1', '/pedidos/order-2']);
+  expect(mockApi).toHaveBeenCalledTimes(1);
+  expect(mockApi).toHaveBeenCalledWith('/api/admin/pedidos');
+  expect(screen.queryByRole('option', { name: 'Pendente de pagamento' })).not.toBeInTheDocument();
+});
+
+test('não mostra pedidos quando o acesso administrativo é negado', async () => {
+  mockApi.mockRejectedValue(new AdminApiError(403, 'Acesso negado.'));
+  render(<OrderList />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Acesso negado.');
+  expect(screen.queryByText('PED-123')).not.toBeInTheDocument();
+});
+
+const detail = {
+  id: 'order-1', identificadorNegocio: 'PED-123', confirmacaoPagamento: '2026-10-20T12:00:00.000Z',
+  cliente: { nome: 'Ana Silva' }, modalidade: 'ENTREGA', statusAtual: 'PAGO',
+  valorItens: '70.00', freteAplicado: '8.50', total: '78.50', formaPagamento: 'PIX',
+  enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
+    cep: '80000000', complemento: 'Apto 2', referencia: null },
+  itens: [{ id: 'item-1', nome: 'Cupcake', quantidade: 2, precoAplicado: '35.00',
+    subtotalAplicado: '70.00', personalizacoes: [{ nomeAplicado: 'Cobertura', ajusteValorAplicado: '2.00' }] }],
+} as const;
+
+test('detalhe apresenta campos persistidos, personalização, endereço e valores sem recalcular', async () => {
+  mockApi.mockResolvedValue(detail);
+  render(<OrderDetail id="order-1" />);
+  expect(screen.getByRole('status')).toHaveTextContent('Carregando pedido');
+  expect(await screen.findByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
+  expect(screen.getByText('2 × Cupcake')).toBeInTheDocument();
+  expect(screen.getByText(/Cobertura/)).toBeInTheDocument();
+  expect(screen.getByText(/Rua A, 7/)).toBeInTheDocument();
+  expect(screen.getByText('R$ 78,50')).toBeInTheDocument();
+  expect(screen.getByText('Pix')).toBeInTheDocument();
+  expect(mockApi).toHaveBeenCalledWith('/api/admin/pedidos/order-1');
+  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+});
+
+test('retirada omite endereço e detalhe distingue 404, acesso negado e erro recuperável', async () => {
+  mockApi.mockResolvedValueOnce({ ...detail, modalidade: 'RETIRADA', enderecoEntregaSnapshot: null });
+  const view = render(<OrderDetail id="order-1" />);
+  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  expect(screen.queryByText('Endereço de entrega')).not.toBeInTheDocument();
+  view.unmount();
+
+  mockApi.mockRejectedValueOnce(new AdminApiError(404, 'Pedido não encontrado.'));
+  const missing = render(<OrderDetail id="order-2" />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Pedido não encontrado.');
+  missing.unmount();
+
+  mockApi.mockRejectedValueOnce(new AdminApiError(403, 'Acesso negado.'));
+  const denied = render(<OrderDetail id="order-3" />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Acesso negado.');
+  expect(screen.queryByText('Ana Silva')).not.toBeInTheDocument();
+  denied.unmount();
+
+  mockApi.mockRejectedValueOnce(new Error('rede')).mockResolvedValueOnce(detail);
+  render(<OrderDetail id="order-4" />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Falha ao carregar pedido.');
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+  expect(await screen.findByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
 });

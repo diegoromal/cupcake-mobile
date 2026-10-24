@@ -11,6 +11,19 @@ export type PedidoAdministrativo = {
   confirmacaoPagamento: string | null;
   cliente: { nome: string };
   modalidade: 'ENTREGA' | 'RETIRADA';
-  statusAtual: 'PAGO' | 'EM_PREPARO' | 'SAIU_PARA_ENTREGA' | 'ENTREGUE' | 'PRONTO_PARA_RETIRADA' | 'RETIRADO' | 'CANCELADO';
+  statusAtual: StatusFila;
   total: string;
+};
+export type StatusPedido = 'PENDENTE_PAGAMENTO' | 'PAGO' | 'EM_PREPARO' |
+  'SAIU_PARA_ENTREGA' | 'ENTREGUE' | 'PRONTO_PARA_RETIRADA' | 'RETIRADO' | 'EXPIRADO' | 'CANCELADO';
+export type StatusFila = Exclude<StatusPedido, 'PENDENTE_PAGAMENTO' | 'EXPIRADO'>;
+export type PedidoDetalheAdministrativo = {
+  id: string; identificadorNegocio: string; confirmacaoPagamento: string | null;
+  cliente: { nome: string }; modalidade: 'ENTREGA' | 'RETIRADA'; statusAtual: StatusPedido;
+  valorItens: string; freteAplicado: string; total: string; formaPagamento: 'PIX' | 'CARTAO' | null;
+  enderecoEntregaSnapshot: { rua: string; numero: string; bairro: string; cidade: string;
+    cep: string; complemento: string | null; referencia: string | null } | null;
+  itens: Array<{ id: string; nome: string; quantidade: number; precoAplicado: string;
+    subtotalAplicado: string; personalizacoes: Array<{ nomeAplicado: string;
+      ajusteValorAplicado: string | null }> }>;
 };

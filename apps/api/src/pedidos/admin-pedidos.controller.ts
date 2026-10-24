@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { PerfilUsuario } from '../generated/prisma/enums';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,5 +14,10 @@ export class AdminPedidosController {
   @Get()
   listar() {
     return this.pedidos.listarParaAdministracao();
+  }
+
+  @Get(':id')
+  detalhar(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.pedidos.detalharParaAdministracao(id);
   }
 }

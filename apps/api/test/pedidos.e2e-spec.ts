@@ -16,6 +16,7 @@ describe('POST /pedidos', () => {
   const criar = jest.fn();
   const revisar = jest.fn();
   const listarParaAdministracao = jest.fn();
+  const detalharParaAdministracao = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
   const token = (perfil: PerfilUsuario, sub = userId) => jwt.signAsync(
@@ -26,7 +27,8 @@ describe('POST /pedidos', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
-      .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao }).compile();
+      .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao,
+        detalharParaAdministracao }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -43,6 +45,7 @@ describe('POST /pedidos', () => {
       freteAplicado: '0.00', total: '10.30', revisaoId: 'a'.repeat(64),
       itens: [{ nome: 'Cupcake', quantidade: 1, personalizacoes: [] }] });
     listarParaAdministracao.mockResolvedValue([]);
+    detalharParaAdministracao.mockResolvedValue({ id: userId, identificadorNegocio: 'PED-123' });
   });
 
   it('GET /admin/pedidos exige ADMIN e retorna a listagem autorizada', async () => {
@@ -55,6 +58,26 @@ describe('POST /pedidos', () => {
     await request(app.getHttpServer()).get('/admin/pedidos')
       .set('Authorization', `Bearer ${admin}`).expect(200).expect([]);
     expect(listarParaAdministracao).toHaveBeenCalledTimes(1);
+  });
+
+  it('GET /admin/pedidos/:id exige ADMIN, valida UUID e preserva 404', async () => {
+    const path = `/admin/pedidos/${userId}`;
+    await request(app.getHttpServer()).get(path).expect(401);
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    await request(app.getHttpServer()).get(path)
+      .set('Authorization', `Bearer ${cliente}`).expect(403);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).get('/admin/pedidos/invalido')
+      .set('Authorization', `Bearer ${admin}`).expect(400);
+    await request(app.getHttpServer()).get(path)
+      .set('Authorization', `Bearer ${admin}`).expect(200)
+      .expect({ id: userId, identificadorNegocio: 'PED-123' });
+    expect(detalharParaAdministracao).toHaveBeenCalledTimes(1);
+    expect(detalharParaAdministracao).toHaveBeenCalledWith(userId);
+    detalharParaAdministracao.mockRejectedValueOnce(new NotFoundException('Pedido não encontrado.'));
+    await request(app.getHttpServer()).get(path)
+      .set('Authorization', `Bearer ${admin}`).expect(404);
   });
 
   it('exige sessão e perfil cliente', async () => {

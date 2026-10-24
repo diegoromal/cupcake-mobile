@@ -41,6 +41,51 @@ export class PedidosService {
     });
   }
 
+  async detalharParaAdministracao(id: string) {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id },
+      select: {
+        id: true, identificadorNegocio: true, confirmacaoPagamento: true,
+        cliente: { select: { nome: true } }, modalidade: true, statusAtual: true,
+        valorItens: true, freteAplicado: true, total: true,
+        enderecoEntregaSnapshot: { select: {
+          rua: true, numero: true, bairro: true, cidade: true, cep: true,
+          complemento: true, referencia: true,
+        } },
+        itens: { orderBy: { id: 'asc' }, select: {
+          id: true, quantidade: true, precoAplicado: true, subtotalAplicado: true,
+          produto: { select: { nome: true } },
+          personalizacoes: { orderBy: { id: 'asc' }, select: {
+            nomeAplicado: true, ajusteValorAplicado: true,
+          } },
+        } },
+        pagamentos: { where: { resultado: 'APROVADO' },
+          orderBy: [{ dataTransacao: 'desc' }, { id: 'desc' }], take: 1,
+          select: { forma: true } },
+      },
+    });
+    if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+    return {
+      id: pedido.id, identificadorNegocio: pedido.identificadorNegocio,
+      confirmacaoPagamento: pedido.confirmacaoPagamento,
+      cliente: pedido.cliente, modalidade: pedido.modalidade, statusAtual: pedido.statusAtual,
+      valorItens: pedido.valorItens.toFixed(2), freteAplicado: pedido.freteAplicado.toFixed(2),
+      total: pedido.total.toFixed(2),
+      enderecoEntregaSnapshot: pedido.modalidade === ModalidadeRecebimento.ENTREGA
+        ? pedido.enderecoEntregaSnapshot : null,
+      formaPagamento: pedido.pagamentos[0]?.forma ?? null,
+      itens: pedido.itens.map((item) => ({
+        id: item.id, nome: item.produto.nome, quantidade: item.quantidade,
+        precoAplicado: item.precoAplicado.toFixed(2),
+        subtotalAplicado: item.subtotalAplicado.toFixed(2),
+        personalizacoes: item.personalizacoes.map((personalizacao) => ({
+          nomeAplicado: personalizacao.nomeAplicado,
+          ajusteValorAplicado: personalizacao.ajusteValorAplicado?.toFixed(2) ?? null,
+        })),
+      })),
+    };
+  }
+
   async revisar(usuarioId: string, input: CriarPedidoDto) {
     return this.processar(usuarioId, input, false);
   }
