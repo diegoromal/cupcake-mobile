@@ -96,6 +96,27 @@ export class PedidosService {
   }
 
   async iniciarProducao(id: string, responsavelUsuarioId: string) {
+    return this.transicionarPorAdministracao(
+      id, responsavelUsuarioId, StatusPedido.EM_PREPARO, 'Pedido não pode iniciar a produção neste status.',
+    );
+  }
+
+  async marcarProntoParaRetirada(id: string, responsavelUsuarioId: string) {
+    return this.transicionarPorAdministracao(
+      id, responsavelUsuarioId, StatusPedido.PRONTO_PARA_RETIRADA,
+      'Pedido não pode ser marcado pronto para retirada neste status.',
+    );
+  }
+
+  async confirmarRetirada(id: string, responsavelUsuarioId: string) {
+    return this.transicionarPorAdministracao(
+      id, responsavelUsuarioId, StatusPedido.RETIRADO, 'Pedido não pode ser retirado neste status.',
+    );
+  }
+
+  private async transicionarPorAdministracao(
+    id: string, responsavelUsuarioId: string, proximo: StatusPedido, mensagemInvalida: string,
+  ) {
     await this.prisma.$transaction(async (db) => {
       const [pedido] = await db.$queryRaw<Array<{
         statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
@@ -103,10 +124,10 @@ export class PedidosService {
       if (!pedido) throw new NotFoundException('Pedido não encontrado.');
 
       try {
-        validarTransicaoPedido(pedido.statusAtual, StatusPedido.EM_PREPARO, pedido.modalidade);
+        validarTransicaoPedido(pedido.statusAtual, proximo, pedido.modalidade);
       } catch (error) {
         if (error instanceof TransicaoPedidoInvalidaError) {
-          throw new ConflictException('Pedido não pode iniciar a produção neste status.');
+          throw new ConflictException(mensagemInvalida);
         }
         throw error;
       }
@@ -115,13 +136,13 @@ export class PedidosService {
         SELECT clock_timestamp() AS agora`;
       const atualizado = await db.pedido.updateMany({
         where: { id, statusAtual: pedido.statusAtual },
-        data: { statusAtual: StatusPedido.EM_PREPARO },
+        data: { statusAtual: proximo },
       });
       if (atualizado.count !== 1) {
-        throw new ConflictException('Pedido alterado durante o início da produção.');
+        throw new ConflictException('Pedido alterado durante a atualização do status.');
       }
       await db.historicoStatusPedido.create({ data: {
-        pedidoId: id, statusRegistrado: StatusPedido.EM_PREPARO, dataHora: agora,
+        pedidoId: id, statusRegistrado: proximo, dataHora: agora,
         responsavelUsuarioId,
       } });
     });

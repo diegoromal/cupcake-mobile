@@ -102,6 +102,51 @@ describe('PedidosService', () => {
     });
   });
 
+  describe('transições de retirada', () => {
+    it.each([
+      ['marcarProntoParaRetirada', 'EM_PREPARO', 'PRONTO_PARA_RETIRADA'],
+      ['confirmarRetirada', 'PRONTO_PARA_RETIRADA', 'RETIRADO'],
+    ] as const)('%s grava status e responsável no histórico', async (operation, atual, proximo) => {
+      const agora = new Date('2026-10-24T12:00:00.000Z');
+      const queryRaw = jest.fn().mockResolvedValueOnce([{ statusAtual: atual, modalidade: 'RETIRADA' }])
+        .mockResolvedValueOnce([{ agora }]);
+      const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      const create = jest.fn().mockResolvedValue({});
+      const detalhe = jest.fn().mockResolvedValue({
+        id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: agora,
+        cliente: { nome: 'Ana' }, modalidade: 'RETIRADA', statusAtual: proximo,
+        valorItens: dinheiro('10.00'), freteAplicado: dinheiro('0.00'), total: dinheiro('10.00'),
+        enderecoEntregaSnapshot: null, pagamentos: [], historicosStatus: [], itens: [],
+      });
+      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
+      }));
+      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detalhe } } as never);
+
+      await expect(adminService[operation](usuarioId, enderecoId)).resolves.toMatchObject({ statusAtual: proximo });
+      expect(updateMany).toHaveBeenCalledWith({ where: { id: usuarioId, statusAtual: atual }, data: { statusAtual: proximo } });
+      expect(create).toHaveBeenCalledWith({ data: {
+        pedidoId: usuarioId, statusRegistrado: proximo, dataHora: agora, responsavelUsuarioId: enderecoId,
+      } });
+    });
+
+    it.each([
+      ['marcarProntoParaRetirada', 'ENTREGA', 'EM_PREPARO'],
+      ['confirmarRetirada', 'RETIRADA', 'EM_PREPARO'],
+    ] as const)('%s rejeita modalidade/status inválidos sem escrita', async (operation, modalidade, atual) => {
+      const queryRaw = jest.fn().mockResolvedValue([{ statusAtual: atual, modalidade }]);
+      const updateMany = jest.fn();
+      const create = jest.fn();
+      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
+      }));
+      const adminService = new PedidosService({ $transaction: tx } as never);
+      await expect(adminService[operation](usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+    });
+  });
+
   it('lista somente campos operacionais e ordena pela confirmação do pagamento', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const adminService = new PedidosService({ pedido: { findMany } } as never);
