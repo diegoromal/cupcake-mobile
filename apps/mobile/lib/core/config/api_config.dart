@@ -48,6 +48,20 @@ class ApiConfig {
 
   Uri? get ordersUri => _validBaseUri?.resolve('/pedidos');
 
+  Uri? paymentUri(String orderId, String method) {
+    if (!_itemIdPattern.hasMatch(orderId) ||
+        (method != 'pix' && method != 'cartao')) {
+      return null;
+    }
+    return _validBaseUri?.resolve('/pedidos/$orderId/pagamentos/$method');
+  }
+
+  Uri? paymentAttemptUri(String orderId, String method, String attemptId) {
+    if (!_itemIdPattern.hasMatch(attemptId)) return null;
+    final uri = paymentUri(orderId, method);
+    return uri?.resolve('${uri.path}/$attemptId');
+  }
+
   Uri? get addressesUri => _validBaseUri?.resolve('/enderecos');
   Uri? cepUri(String cep) => _validBaseUri?.resolve('/enderecos/cep/$cep');
   Uri? geocodingUri(String id) {

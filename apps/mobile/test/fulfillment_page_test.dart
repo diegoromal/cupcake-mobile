@@ -695,7 +695,10 @@ void main() {
         await choose(tester, 'Confirmar pedido');
         expect(orderApi.reviews, 1);
         expect(orderApi.confirmations, 1);
-        expect(find.textContaining(id), findsOneWidget);
+        expect(find.text('Pedido PED-1'), findsNWidgets(2));
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(find.byType(OrderReviewPage), findsOneWidget);
         await tester.pageBack();
         await tester.pumpAndSettle();
         expect(find.byType(FulfillmentPage), findsOneWidget);
