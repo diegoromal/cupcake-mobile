@@ -1,5 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransicaoPedidoInvalidaError, validarTransicaoPedido } from './maquina-estados-pedido';
 
 const validadeMs = 15 * 60 * 1000;
 const lote = 50;
@@ -39,10 +41,16 @@ export class ExpiracaoPedidosService implements OnModuleInit, OnModuleDestroy {
         const alterados = await this.prisma.$transaction(async (db) => {
           const pedido = await db.pedido.findUnique({ where: { id },
             select: { data: true, statusAtual: true } });
-          if (!pedido || pedido.statusAtual !== 'PENDENTE_PAGAMENTO' || pedido.data > limite) return 0;
+          if (!pedido || pedido.data > limite) return 0;
+          try {
+            validarTransicaoPedido(pedido.statusAtual, StatusPedido.EXPIRADO);
+          } catch (error) {
+            if (error instanceof TransicaoPedidoInvalidaError) return 0;
+            throw error;
+          }
           const resultado = await db.pedido.updateMany({
-            where: { id, statusAtual: 'PENDENTE_PAGAMENTO', data: { lte: limite } },
-            data: { statusAtual: 'EXPIRADO' },
+            where: { id, statusAtual: StatusPedido.PENDENTE_PAGAMENTO, data: { lte: limite } },
+            data: { statusAtual: StatusPedido.EXPIRADO },
           });
           return resultado.count;
         });

@@ -1,5 +1,7 @@
 import { ConflictException, GatewayTimeoutException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Pagamento, Prisma } from '../generated/prisma/client';
+import { StatusPedido } from '../generated/prisma/enums';
+import { TransicaoPedidoInvalidaError, validarTransicaoPedido } from '../pedidos/maquina-estados-pedido';
 import { PrismaService } from '../prisma/prisma.service';
 import { PagamentoSimuladorService } from './pagamento-simulador.service';
 
@@ -106,7 +108,7 @@ export class PagamentosService {
   private async concluir(usuarioId: string, pagamento: Pagamento) {
     const resultado = await this.simulador.simular(pagamento.id);
     return this.prisma.$transaction(async (db) => {
-      const [pedido] = await db.$queryRaw<Array<{ id: string; statusAtual: string; data: Date }>>`
+      const [pedido] = await db.$queryRaw<Array<{ id: string; statusAtual: StatusPedido; data: Date }>>`
         SELECT id, "statusAtual", data FROM "Pedido"
         WHERE id = ${pagamento.pedidoId}::uuid AND "clienteUsuarioId" = ${usuarioId}::uuid
         FOR UPDATE`;
@@ -125,8 +127,13 @@ export class PagamentosService {
         return db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } });
       }
 
-      if (pedido.statusAtual !== 'PENDENTE_PAGAMENTO') {
-        throw new ConflictException('Pedido não elegível para aprovação do pagamento.');
+      try {
+        validarTransicaoPedido(pedido.statusAtual, StatusPedido.PAGO);
+      } catch (error) {
+        if (error instanceof TransicaoPedidoInvalidaError) {
+          throw new ConflictException('Pedido não elegível para aprovação do pagamento.');
+        }
+        throw error;
       }
       const candidatas = await db.$queryRaw<Array<{ id: string; produtoId: string }>>`
         SELECT id, "produtoId" FROM "ReservaEstoque"
@@ -184,12 +191,12 @@ export class PagamentosService {
         WHERE id = ${pagamento.id}::uuid AND resultado = 'PENDENTE'`;
       if (pagamentoAlterado !== 1) throw new ConflictException('Tentativa alterada durante a aprovação.');
       const alterado = await db.pedido.updateMany({
-        where: { id: pagamento.pedidoId, statusAtual: 'PENDENTE_PAGAMENTO' },
-        data: { statusAtual: 'PAGO', confirmacaoPagamento: agora },
+        where: { id: pagamento.pedidoId, statusAtual: StatusPedido.PENDENTE_PAGAMENTO },
+        data: { statusAtual: StatusPedido.PAGO, confirmacaoPagamento: agora },
       });
       if (alterado.count !== 1) throw new ConflictException('Pedido alterado durante a aprovação.');
       await db.historicoStatusPedido.create({ data: {
-        pedidoId: pagamento.pedidoId, statusRegistrado: 'PAGO', dataHora: agora,
+        pedidoId: pagamento.pedidoId, statusRegistrado: StatusPedido.PAGO, dataHora: agora,
       } });
       return db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } });
     }, { timeout: 30_000 });
