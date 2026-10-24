@@ -19,7 +19,7 @@ Este dicionário descreve o projeto físico em `apps/api/prisma/schema.prisma` e
 | `ModalidadeRecebimento` | `ENTREGA`, `RETIRADA` |
 | `StatusPedido` | `PENDENTE_PAGAMENTO`, `PAGO`, `EM_PREPARO`, `SAIU_PARA_ENTREGA`, `ENTREGUE`, `PRONTO_PARA_RETIRADA`, `RETIRADO`, `EXPIRADO`, `CANCELADO` |
 | `FormaPagamento` | `PIX`, `CARTAO` |
-| `ResultadoPagamento` | `APROVADO`, `RECUSADO` |
+| `ResultadoPagamento` | `APROVADO`, `RECUSADO`, `PENDENTE` |
 | `EstadoReserva` | `ATIVA`, `CONVERTIDA_EM_VENDA`, `EXPIRADA_LIBERADA`, `DEVOLVIDA_POR_CANCELAMENTO` |
 | `ResultadoNotificacao` | `SUCESSO`, `FALHA` |
 
@@ -328,8 +328,8 @@ Tentativa de pagamento registrada para um pedido.
 | `id` | `String @db.Uuid` | `UUID` | Sim | PK | — | `uuid()` / — | Identificador da tentativa de pagamento. |
 | `pedidoId` | `String @db.Uuid` | `UUID` | Sim | FK | `Pedido.id` | — / — | Pedido ao qual a tentativa se refere. |
 | `forma` | `FormaPagamento` | `"FormaPagamento"` | Sim | — | — | — / — | Forma usada na tentativa. |
-| `resultado` | `ResultadoPagamento` | `"ResultadoPagamento"` | Sim | — | — | — / — | Resultado da tentativa. |
-| `dataTransacao` | `DateTime @db.Timestamptz(3)` | `TIMESTAMPTZ(3)` | Sim | — | — | — / — | Instante da transação. |
+| `resultado` | `ResultadoPagamento` | `"ResultadoPagamento"` | Sim | — | — | — / — | Resultado da tentativa: `PENDENTE`, `APROVADO` ou `RECUSADO`. A tentativa pendente pode transicionar para aprovada ou recusada. |
+| `dataTransacao` | `DateTime? @db.Timestamptz(3)` | `TIMESTAMPTZ(3)` | Não | — | — | — / — | Instante da transação; permanece `NULL` enquanto o resultado é `PENDENTE` e é obrigatório para `APROVADO` ou `RECUSADO`. |
 | `valorAplicavel` | `Decimal @db.Decimal(12, 2)` | `DECIMAL(12,2)` | Sim | — | — | — / — | Valor aplicável à tentativa. |
 
 **Índices declarados na migration:**
@@ -343,6 +343,7 @@ Tentativa de pagamento registrada para um pedido.
 | Nome | Expressão SQL | Finalidade |
 | --- | --- | --- |
 | `Pagamento_valor_nonnegative` | `"valorAplicavel" >= 0` | Impede valor de pagamento negativo. |
+| `Pagamento_resultado_data_check` | `("resultado"::text = 'PENDENTE' AND "dataTransacao" IS NULL) OR ("resultado"::text IN ('APROVADO', 'RECUSADO') AND "dataTransacao" IS NOT NULL)` | Exige coerência entre resultado e data da transação: `PENDENTE` sem data; `APROVADO` ou `RECUSADO` com data. |
 
 ### `HistoricoStatusPedido`
 

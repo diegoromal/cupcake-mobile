@@ -10,8 +10,9 @@ import { UsersModule } from './users/users.module';
 import { EnderecosModule } from './enderecos/enderecos.module';
 import { ConfiguracaoLojaEntregaModule } from './configuracao-loja-entrega/configuracao-loja-entrega.module';
 import { PedidosModule } from './pedidos/pedidos.module';
+import { PagamentosModule } from './pagamentos/pagamentos.module';
 
 @Module({
-  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule, PedidosModule],
+  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule, PedidosModule, PagamentosModule],
 })
 export class AppModule {}

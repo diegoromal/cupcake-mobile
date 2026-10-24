@@ -188,6 +188,8 @@ Representa uma tentativa de pagamento de um Pedido.
 - **Atributos:** forma, estado/resultado, data da transação e valor aplicável.
 - **Relacionamentos:** pertence a um Pedido; sua aprovação permite a transição
   para `PAGO`.
+- **Estado/resultado:** inicia `PENDENTE` e pode transicionar para `APROVADO` ou
+  `RECUSADO`; enquanto pendente, não possui data de transação.
 - **Fonte:** HU-08; D55–D60; `.ai/CONTEXT.md`.
 - **Observação:** Pix e cartão são as formas atuais. Boleto existia no PIT I e
   não integra o estado atual planejado.
@@ -308,8 +310,9 @@ evoluções posteriores e não estados do PIT I original.
 ### Pagamento, reserva e notificação
 
 - Formas atuais de Pagamento: `PIX` e `CARTAO`.
-- Resultado de Pagamento: aprovado ou recusado; pedido pendente admite nova
-  tentativa após recusa (HU-08).
+- Resultado de Pagamento: pendente, aprovado ou recusado; a tentativa pendente
+  pode ser aprovada ou recusada, e pedido pendente admite nova tentativa após
+  recusa (HU-08).
 - Reserva: ativa, convertida em venda, expirada/liberada e devolvida por
   cancelamento são estados conceituais necessários às regras atuais; a forma de
   persistência não é decidida aqui.
