@@ -16,8 +16,8 @@
 - [x] Fase 3 --- Aplicativo Flutter
 - [x] Fase 4 --- Carrinho
 - [x] Fase 5 --- Endereço, cobertura e frete
-- [ ] Fase 6 --- Pedido e reserva de estoque
-- [ ] Fase 7 --- Pagamento
+- [x] Fase 6 --- Pedido e reserva de estoque
+- [x] Fase 7 --- Pagamento
 - [ ] Fase 8 --- Operação da loja
 - [ ] Fase 9 --- Entregador
 - [ ] Fase 10 --- WhatsApp
@@ -130,29 +130,29 @@ produtos.
 ## 📦 FASE 6 --- Pedido e reserva de estoque
 
 - [x] **D47 --- Modelar Pedido e ItemPedido**
-- [ ] **D48 --- Criar pedido a partir do carrinho**
-- [ ] **D49 --- Reserva transacional de estoque**
-- [ ] **D50 --- Controle de disponibilidade concorrente**
-- [ ] **D51 --- Expiração automática em 15 minutos**
-- [ ] **D52 --- Liberar estoque do pedido `EXPIRADO`**
-- [ ] **D53 --- Tela de revisão e confirmação**
-- [ ] **D54 --- Testes concorrentes de estoque**
-  - [ ] Estoque 10 → cliente A reserva 6 → disponível 4
-  - [ ] Cliente B não consegue reservar outras 6 unidades
+- [x] **D48 --- Criar pedido a partir do carrinho**
+- [x] **D49 --- Reserva transacional de estoque**
+- [x] **D50 --- Controle de disponibilidade concorrente**
+- [x] **D51 --- Expiração automática em 15 minutos**
+- [x] **D52 --- Liberar estoque do pedido `EXPIRADO`**
+- [x] **D53 --- Tela de revisão e confirmação**
+- [x] **D54 --- Testes concorrentes de estoque**
+  - [x] Estoque 10 → cliente A reserva 6 → disponível 4
+  - [x] Cliente B não consegue reservar outras 6 unidades
 
-**Marco 7:** sistema impede venda acima do estoque disponível.
+**Marco 7 (concluído):** sistema impede venda acima do estoque disponível.
 
 ## 💳 FASE 7 --- Pagamento
 
-- [ ] **D55 --- Modelar pagamento**
-- [ ] **D56 --- Pix sandbox/simulado**
-- [ ] **D57 --- Cartão sandbox/simulado**
-- [ ] **D58 --- Tela de pagamento**
-- [ ] **D59 --- Processar aprovação e recusa**
-- [ ] **D60 --- Converter reserva em venda**
-- [ ] **D61 --- Testes de pagamento e estoque**
+- [x] **D55 --- Modelar pagamento**
+- [x] **D56 --- Pix sandbox/simulado**
+- [x] **D57 --- Cartão sandbox/simulado**
+- [x] **D58 --- Tela de pagamento**
+- [x] **D59 --- Processar aprovação e recusa**
+- [x] **D60 --- Converter reserva em venda**
+- [x] **D61 --- Testes de pagamento e estoque**
 
-**Marco 8:**
+**Marco 8 (concluído):**
 `VITRINE → CARRINHO → ENDEREÇO → FRETE → PEDIDO → PAGAMENTO → PAGO`.
 
 ## 🏪 FASE 8 --- Operação da loja
