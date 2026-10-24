@@ -103,6 +103,18 @@ async function main() {
     movimentos: await prisma.movimentacaoEstoque.findMany({ where: { produtoId } }),
     historicos: await prisma.historicoStatusPedido.findMany({ where: { pedidoId: id } }),
   });
+  const eqVenda = (antes: Awaited<ReturnType<typeof snapshot>>,
+    depois: Awaited<ReturnType<typeof snapshot>>, pedidoId: string) => {
+    eq(depois.pedido.statusAtual, 'PAGO', 'Pedido pago');
+    eq(depois.pedido.confirmacaoPagamento instanceof Date, true, 'Confirmação registrada');
+    eq(depois.reservas.map((r) => r.estado), ['CONVERTIDA_EM_VENDA'], 'Reserva convertida');
+    eq([depois.estoque.quantidadeFisica, depois.estoque.quantidadeReservada],
+      [antes.estoque.quantidadeFisica - 1, antes.estoque.quantidadeReservada - 1], 'Saldo baixado uma vez');
+    const movimentos = depois.movimentos.filter((m) => m.pedidoId === pedidoId);
+    eq(movimentos.map((m) => [m.quantidade, m.motivoOrigem]), [[-1, 'VENDA_PEDIDO']],
+      'Movimentação de venda registrada');
+    eq(depois.historicos.map((h) => h.statusRegistrado), ['PAGO'], 'Histórico do pedido');
+  };
   const bloqueados = async (fragmento: string, minimo: number) => {
     const rows = await prisma.$queryRaw<Array<{ pid: number; blockers: number[] }>>`
       SELECT pid, pg_blocking_pids(pid) AS blockers FROM pg_stat_activity
@@ -174,7 +186,7 @@ async function main() {
     eq(repeticao.status, 200, 'Retry final'); eq(repeticao.body, final.body, 'Final imutável e UUID normalizado');
     eq(await transicoes(id), 1, 'Uma transição persistida');
     eq((await post(pedido, tentativa())).status, 409, 'Não permite outra após aprovação');
-    eq(await snapshot(pedido), antes, 'Aprovação não altera pedido/reserva/estoque/histórico');
+    eqVenda(antes, await snapshot(pedido), pedido);
 
     eq((await get(pedido, id, outroAuth)).status, 404, 'GET sem ownership');
     eq((await post(pedido, id, outroAuth)).status, 404, 'POST sem ownership');
@@ -195,9 +207,10 @@ async function main() {
     const antesRecusa = await snapshot(recusadoPedido);
     const recusado = await post(recusadoPedido, recusadoId);
     eq(recusado.status, 201, 'Criação concluída'); eq(recusado.body.resultado, 'RECUSADO', 'Recusa determinística');
+    eq(await snapshot(recusadoPedido), antesRecusa, 'Recusa não altera estoque nem pedido');
     eq((await post(recusadoPedido, recusadoId)).body, recusado.body, 'Recusa imutável');
     eq((await post(recusadoPedido, tentativa())).body.resultado, 'APROVADO', 'Novo ID após recusa');
-    eq(await snapshot(recusadoPedido), antesRecusa, 'Recusa e nova aprovação sem efeitos comerciais');
+    eqVenda(antesRecusa, await snapshot(recusadoPedido), recusadoPedido);
 
     // Simula perda do trabalho em memória; nova aplicação não possui barreira nem job anterior.
     const restartPedido = await novoPedido(usuarios[0]), restartId = tentativa(false);
@@ -225,15 +238,15 @@ async function main() {
     await aguardar(() => simulador.entradas.get(concorrenteId) === 2, 'dois trabalhos iniciados');
     eq(await prisma.pagamento.count({ where: { pedidoId: concorrentePedido } }), 1, 'Criação concorrente idempotente');
     await blocker.query('BEGIN');
-    await blocker.query('SELECT id FROM "Pagamento" WHERE id = $1 FOR UPDATE', [concorrenteId]);
+    await blocker.query('SELECT id FROM "Pedido" WHERE id = $1 FOR UPDATE', [concorrentePedido]);
     simulador.liberar(concorrenteId);
-    await aguardar(() => bloqueados('UPDATE "Pagamento"', 2), 'duas conclusões realmente bloqueadas');
+    await aguardar(() => bloqueados('FOR UPDATE', 2), 'duas conclusões realmente bloqueadas no pedido');
     await blocker.query('COMMIT');
     const concorrentes = await Promise.all([c1, c2]);
     eq(concorrentes.map((r) => r.status).sort(), [200, 201], 'Uma criação e uma repetição');
     eq(concorrentes[0].body, concorrentes[1].body, 'Ambos observam o mesmo final/data');
     eq(await transicoes(concorrenteId), 1, 'Somente um UPDATE condicional alterou a linha');
-    eq(await snapshot(concorrentePedido), antesConcorrencia, 'Concorrência sem efeitos comerciais');
+    eqVenda(antesConcorrencia, await snapshot(concorrentePedido), concorrentePedido);
 
     // A elegibilidade precisa ser relida depois da espera pelo lock, usando relógio do banco.
     for (const alteracao of ['prazo', 'status', 'ownership']) {
@@ -259,6 +272,45 @@ async function main() {
     eq(simulador.entradas.has(expiradoId), false, 'Retry inelegível não inicia trabalho');
     await prisma.$executeRaw`UPDATE "Pedido" SET "statusAtual" = 'EXPIRADO' WHERE id = ${pedido}::uuid`;
     eq((await post(pedido, id)).body, final.body, 'Retry final independe de elegibilidade atual');
+
+    const limiteDuranteSimulacao = await novoPedido(usuarios[0]), limiteId = tentativa();
+    simulador.bloquear(limiteId);
+    eq((await post(limiteDuranteSimulacao, limiteId)).status, 504, 'Timeout enquanto simulação aguarda');
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM "Pedido" WHERE id = $1 FOR UPDATE', [limiteDuranteSimulacao]);
+    simulador.liberar(limiteId);
+    await aguardar(() => bloqueados('SELECT id, "statusAtual", data', 1), 'conclusão bloqueada no pedido');
+    await blocker.query(
+      'UPDATE "Pedido" SET data = clock_timestamp() - interval \'15 minutes\' WHERE id = $1',
+      [limiteDuranteSimulacao]);
+    await blocker.query('COMMIT');
+    await aguardar(async () => {
+      const [{ ativos }] = await prisma.$queryRaw<Array<{ ativos: bigint }>>`
+        SELECT count(*) AS ativos FROM pg_stat_activity
+        WHERE pid <> pg_backend_pid() AND application_name = ${marker} AND state = 'active'
+          AND query LIKE '%SELECT id, "statusAtual", data FROM "Pedido"%'`;
+      return ativos === 0n;
+    }, 'finalização após revalidação do prazo');
+    eq(await prisma.pagamento.findUnique({ where: { id: limiteId } }).then((p) => p?.resultado),
+      'PENDENTE', 'Prazo vencido durante simulação não aprova pagamento');
+    eq(await prisma.pedido.findUnique({ where: { id: limiteDuranteSimulacao } }).then((p) => p?.statusAtual),
+      'PENDENTE_PAGAMENTO', 'Prazo vencido não altera status automaticamente');
+    eq(await prisma.reservaEstoque.findFirst({ where: { pedidoId: limiteDuranteSimulacao } })
+      .then((r) => r?.estado), 'ATIVA', 'Prazo vencido não converte reserva');
+
+    const recuperavel = await novoPedido(usuarios[0]), recuperavelId = tentativa();
+    await prisma.estoque.update({ where: { produtoId }, data: { quantidadeFisica: 1, quantidadeReservada: 0 } });
+    const antesFalha = await snapshot(recuperavel);
+    eq((await post(recuperavel, recuperavelId)).status, 409, 'Saldo reservado inconsistente impede aprovação');
+    eq(await get(recuperavel, recuperavelId).then((r) => r.body.resultado), 'PENDENTE',
+      'Falha conserva pagamento pendente');
+    eq(await snapshot(recuperavel), antesFalha, 'Falha reverte pedido, reserva, estoque e histórico');
+    await prisma.estoque.update({ where: { produtoId }, data: { quantidadeFisica: 1, quantidadeReservada: 1 } });
+    const saldoRestaurado = { ...antesFalha, estoque: {
+      ...antesFalha.estoque, quantidadeFisica: 1, quantidadeReservada: 1,
+    } };
+    eq((await post(recuperavel, recuperavelId)).body.resultado, 'APROVADO', 'Retry conclui após corrigir saldo');
+    eqVenda(saldoRestaurado, await snapshot(recuperavel), recuperavel);
 
     for (const [resultado, data] of [['PENDENTE', new Date()], ['APROVADO', null], ['RECUSADO', null]]) {
       await assert.rejects(blocker.query(
@@ -291,6 +343,8 @@ async function main() {
       });
     }
     await cleanup('pagamentos', () => prisma.pagamento.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('movimentações', () => prisma.movimentacaoEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('históricos', () => prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('reservas', () => prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('pedidos', () => prisma.pedido.deleteMany({ where: { id: { in: pedidos } } }));
     await cleanup('estoque', () => prisma.estoque.deleteMany({ where: { produtoId } }));
@@ -300,6 +354,8 @@ async function main() {
     await cleanup('resíduos fixtures', async () => {
       eq(await prisma.pagamento.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem pagamentos residuais');
       eq(await prisma.reservaEstoque.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem reservas residuais');
+      eq(await prisma.movimentacaoEstoque.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem movimentações residuais');
+      eq(await prisma.historicoStatusPedido.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem históricos residuais');
       eq(await prisma.pedido.count({ where: { id: { in: pedidos } } }), 0, 'Sem pedidos residuais');
       eq(await prisma.estoque.count({ where: { produtoId } }), 0, 'Sem estoque residual');
       eq(await prisma.produto.count({ where: { id: produtoId } }), 0, 'Sem produto residual');

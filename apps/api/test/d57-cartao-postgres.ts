@@ -28,6 +28,7 @@ async function main() {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
   const marker = `d57_${randomUUID().replaceAll('-', '')}`;
   const usuarios: string[] = [], pedidos: string[] = [], tentativas: string[] = [];
+  const categoriaId = randomUUID(), produtoId = randomUUID();
   let app: INestApplication | undefined;
   let originalError: unknown;
   const cleanupErrors: unknown[] = [];
@@ -46,10 +47,15 @@ async function main() {
       await prisma.usuario.create({ data: { id, nome: `${marker}-${i}`, email: `${marker}-${i}@example.test`,
         telefone: '00000000000', credencialSenha: 'fixture', perfil: 'CLIENTE' } });
     }
+    await prisma.categoria.create({ data: { id: categoriaId, nome: marker } });
+    await prisma.produto.create({ data: { id: produtoId, categoriaId, nome: marker, precoAtual: '12.34' } });
+    await prisma.estoque.create({ data: { produtoId, quantidadeFisica: 10, quantidadeReservada: 3 } });
     for (const usuarioId of usuarios) {
       const id = randomUUID(); pedidos.push(id);
       await prisma.pedido.create({ data: { id, identificadorNegocio: `${marker}-${id}`,
         clienteUsuarioId: usuarioId, modalidade: 'RETIRADA', valorItens: '12.34', freteAplicado: '0.00', total: '12.34' } });
+      await prisma.reservaEstoque.create({ data: { pedidoId: id, produtoId, quantidade: 1,
+        estado: 'ATIVA', momentoExpiracaoValidade: new Date(Date.now() + 900_000) } });
     }
     const module = await Test.createTestingModule({ imports: [PagamentosModule] }).compile();
     app = module.createNestApplication();
@@ -69,7 +75,12 @@ async function main() {
       valorAplicavel: '12.34', dataTransacao: expectDate(criar.body.dataTransacao) }, 'Contrato aprovado e valor do pedido');
     eq(await prisma.pagamento.findUnique({ where: { id: tentativaAprovada } }).then((p) => p?.forma), 'CARTAO', 'Forma persistida');
     eq(await prisma.pedido.findUnique({ where: { id: pedidoId } }).then((p) => p?.statusAtual),
-      'PENDENTE_PAGAMENTO', 'D57 não altera status do pedido');
+      'PAGO', 'Pedido pago após conversão da reserva');
+    eq(await prisma.reservaEstoque.findFirst({ where: { pedidoId } }).then((r) => r?.estado),
+      'CONVERTIDA_EM_VENDA', 'Reserva convertida uma vez');
+    eq(await prisma.estoque.findUnique({ where: { produtoId } }).then((e) =>
+      [e?.quantidadeFisica, e?.quantidadeReservada]), [9, 2], 'Estoque baixado e reserva liberada');
+    eq(await prisma.movimentacaoEstoque.count({ where: { pedidoId } }), 1, 'Movimentação da venda registrada');
     const repeticao = await request(app.getHttpServer()).post(caminho)
       .set('Authorization', auth).send({ tentativaId: tentativaAprovada }).expect(200);
     eq(repeticao.body, criar.body, 'Retry idempotente');
@@ -82,6 +93,8 @@ async function main() {
     const pedidoRecusado = randomUUID(); pedidos.push(pedidoRecusado);
     await prisma.pedido.create({ data: { id: pedidoRecusado, identificadorNegocio: `${marker}-${pedidoRecusado}`,
       clienteUsuarioId: usuarios[0], modalidade: 'RETIRADA', valorItens: '12.34', freteAplicado: '0.00', total: '12.34' } });
+    await prisma.reservaEstoque.create({ data: { pedidoId: pedidoRecusado, produtoId, quantidade: 1,
+      estado: 'ATIVA', momentoExpiracaoValidade: new Date(Date.now() + 900_000) } });
     const caminhoRecusado = `/pedidos/${pedidoRecusado}/pagamentos/cartao`;
     const tentativaRecusada = randomUUID().slice(0, -1) + '1';
     tentativas.push(tentativaRecusada);
@@ -93,6 +106,8 @@ async function main() {
       .set('Authorization', auth).send({ tentativaId: retryId }).expect(201);
     eq(retry.body.resultado, 'APROVADO', 'Nova tentativa permitida após recusa');
     eq(await prisma.pagamento.count({ where: { pedidoId: pedidoRecusado } }), 2, 'Tentativas persistidas uma vez cada');
+    eq(await prisma.pedido.findUnique({ where: { id: pedidoRecusado } }).then((p) => p?.statusAtual),
+      'PAGO', 'Pedido pago na tentativa aprovada posterior');
   } catch (error) {
     originalError = error;
   } finally {
@@ -101,7 +116,13 @@ async function main() {
     };
     if (app) await cleanup('fechar app', () => app!.close());
     await cleanup('pagamentos', () => prisma.pagamento.deleteMany({ where: { id: { in: tentativas } } }));
+    await cleanup('movimentações', () => prisma.movimentacaoEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('históricos', () => prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('reservas', () => prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('pedidos', () => prisma.pedido.deleteMany({ where: { id: { in: pedidos } } }));
+    await cleanup('estoque', () => prisma.estoque.deleteMany({ where: { produtoId } }));
+    await cleanup('produto', () => prisma.produto.deleteMany({ where: { id: produtoId } }));
+    await cleanup('categoria', () => prisma.categoria.deleteMany({ where: { id: categoriaId } }));
     await cleanup('usuarios', () => prisma.usuario.deleteMany({ where: { id: { in: usuarios } } }));
     await cleanup('fixtures residuais', async () => {
       eq(await prisma.pagamento.count({ where: { id: { in: tentativas } } }), 0, 'Sem pagamentos residuais');
