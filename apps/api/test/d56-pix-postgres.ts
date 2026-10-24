@@ -10,7 +10,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Client } from 'pg';
 import request from 'supertest';
 import { PagamentosModule } from '../src/pagamentos/pagamentos.module';
-import { PixSimuladorService } from '../src/pagamentos/pix-simulador.service';
+import { PagamentoSimuladorService } from '../src/pagamentos/pagamento-simulador.service';
 import { PrismaClient } from '../src/generated/prisma/client';
 
 const raw = process.env.D56_TEST_DATABASE_URL;
@@ -28,7 +28,7 @@ process.env.DATABASE_URL = url.toString();
 process.env.JWT_ACCESS_SECRET = `d56-access-${randomUUID()}`;
 process.env.JWT_REFRESH_SECRET = `d56-refresh-${randomUUID()}`;
 
-class SimuladorControlado extends PixSimuladorService {
+class SimuladorControlado extends PagamentoSimuladorService {
   readonly entradas = new Map<string, number>();
   private readonly barreiras = new Map<string, {
     promise: Promise<void>; liberar: () => void; descartar: () => void;
@@ -80,7 +80,7 @@ async function main() {
     const simulador = new SimuladorControlado();
     simuladores.push(simulador);
     const module = await Test.createTestingModule({ imports: [PagamentosModule] })
-      .overrideProvider(PixSimuladorService).useValue(simulador).compile();
+      .overrideProvider(PagamentoSimuladorService).useValue(simulador).compile();
     const app = module.createNestApplication();
     app.useLogger(false);
     apps.push(app);
