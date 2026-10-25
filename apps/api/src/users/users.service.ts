@@ -115,6 +115,14 @@ export class UsersService {
     return this.createUser(input, PerfilUsuario.ENTREGADOR);
   }
 
+  listarEntregadores() {
+    return this.prisma.usuario.findMany({
+      where: { perfil: PerfilUsuario.ENTREGADOR },
+      select: { id: true, nome: true },
+      orderBy: [{ nome: 'asc' }, { id: 'asc' }],
+    });
+  }
+
   async provisionFirstAdmin(input: FirstAdminInput): Promise<'created' | 'already-exists'> {
     const nome = input.nome?.trim();
     const email = input.email?.trim().toLowerCase();

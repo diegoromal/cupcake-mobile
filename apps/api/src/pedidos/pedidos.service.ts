@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { classificar, leituraDoCarrinho } from '../carrinho/carrinho.service';
 import { calcularCoberturaFrete } from '../enderecos/cobertura-frete.service';
 import { Prisma } from '../generated/prisma/client';
-import { ModalidadeRecebimento, StatusPedido } from '../generated/prisma/enums';
+import { ModalidadeRecebimento, PerfilUsuario, StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { CriarPedidoDto } from './dto/criar-pedido.dto';
 import { TransicaoPedidoInvalidaError, validarTransicaoPedido } from './maquina-estados-pedido';
@@ -47,7 +47,8 @@ export class PedidosService {
       where: { id },
       select: {
         id: true, identificadorNegocio: true, confirmacaoPagamento: true,
-        cliente: { select: { nome: true } }, modalidade: true, statusAtual: true,
+        cliente: { select: { nome: true } }, entregador: { select: { id: true, nome: true } },
+        modalidade: true, statusAtual: true,
         valorItens: true, freteAplicado: true, total: true,
         enderecoEntregaSnapshot: { select: {
           rua: true, numero: true, bairro: true, cidade: true, cep: true,
@@ -73,7 +74,8 @@ export class PedidosService {
     return {
       id: pedido.id, identificadorNegocio: pedido.identificadorNegocio,
       confirmacaoPagamento: pedido.confirmacaoPagamento,
-      cliente: pedido.cliente, modalidade: pedido.modalidade, statusAtual: pedido.statusAtual,
+      cliente: pedido.cliente, entregador: pedido.entregador,
+      modalidade: pedido.modalidade, statusAtual: pedido.statusAtual,
       valorItens: pedido.valorItens.toFixed(2), freteAplicado: pedido.freteAplicado.toFixed(2),
       total: pedido.total.toFixed(2),
       enderecoEntregaSnapshot: pedido.modalidade === ModalidadeRecebimento.ENTREGA
@@ -99,6 +101,40 @@ export class PedidosService {
     return this.transicionarPorAdministracao(
       id, responsavelUsuarioId, StatusPedido.EM_PREPARO, 'Pedido não pode iniciar a produção neste status.',
     );
+  }
+
+  async sairParaEntrega(id: string, entregadorUsuarioId: string, responsavelUsuarioId: string) {
+    await this.prisma.$transaction(async (db) => {
+      const [pedido] = await db.$queryRaw<Array<{
+        statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
+      }>>`SELECT "statusAtual", modalidade FROM "Pedido" WHERE id = ${id}::uuid FOR UPDATE`;
+      if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+      if (pedido.statusAtual !== StatusPedido.EM_PREPARO ||
+          pedido.modalidade !== ModalidadeRecebimento.ENTREGA) {
+        throw new ConflictException('Pedido não pode sair para entrega neste status.');
+      }
+
+      const entregadores = await db.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM "Usuario"
+        WHERE id = ${entregadorUsuarioId}::uuid AND perfil = ${PerfilUsuario.ENTREGADOR}::"PerfilUsuario"
+        FOR SHARE`;
+      if (!entregadores.length) throw new NotFoundException('Entregador não encontrado.');
+
+      const [{ agora }] = await db.$queryRaw<Array<{ agora: Date }>>`
+        SELECT clock_timestamp() AS agora`;
+      const atualizado = await db.pedido.updateMany({
+        where: { id, statusAtual: StatusPedido.EM_PREPARO, modalidade: ModalidadeRecebimento.ENTREGA },
+        data: { entregadorUsuarioId, statusAtual: StatusPedido.SAIU_PARA_ENTREGA },
+      });
+      if (atualizado.count !== 1) {
+        throw new ConflictException('Pedido alterado durante a saída para entrega.');
+      }
+      await db.historicoStatusPedido.create({ data: {
+        pedidoId: id, statusRegistrado: StatusPedido.SAIU_PARA_ENTREGA, dataHora: agora,
+        responsavelUsuarioId,
+      } });
+    });
+    return this.detalharParaAdministracao(id);
   }
 
   async cancelarComoCliente(id: string, clienteUsuarioId: string) {

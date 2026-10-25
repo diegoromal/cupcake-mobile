@@ -17,6 +17,7 @@
     "test:d67:postgres": "ts-node test/d67-fluxo-retirada-postgres.ts",
     "test:d68:postgres": "ts-node test/d68-cancelamento-postgres.ts",
     "test:d70:postgres": "ts-node test/d70-ciclo-status-postgres.ts",
+    "test:d71:postgres": "ts-node test/d71-atribuir-entregador-postgres.ts",
     "test:catalogo:postgres": "ts-node test/d29-catalogo-postgres.ts",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",

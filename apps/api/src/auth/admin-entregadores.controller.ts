@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { PerfilUsuario } from '../generated/prisma/enums';
 import { CreateEntregadorDto } from '../users/dto/create-entregador.dto';
 import { UsersService } from '../users/users.service';
@@ -11,6 +11,11 @@ import { RolesGuard } from './guards/roles.guard';
 @Roles(PerfilUsuario.ADMIN)
 export class AdminEntregadoresController {
   constructor(private readonly users: UsersService) {}
+
+  @Get()
+  listar() {
+    return this.users.listarEntregadores();
+  }
 
   @Post()
   @UsePipes(

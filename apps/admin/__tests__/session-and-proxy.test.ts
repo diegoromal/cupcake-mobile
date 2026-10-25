@@ -25,6 +25,8 @@ test('allowlist explícita por método e rota',()=>{
  expect(allowed('GET',['pedidos',id])).toBe(true);
  for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos',id])).toBe(false);
  expect(allowed('PATCH',['pedidos',id,'iniciar-producao'])).toBe(true);
+ expect(allowed('PATCH',['pedidos',id,'saiu-para-entrega'])).toBe(true);
+ expect(allowed('GET',['entregadores'])).toBe(true);
  for(const action of ['pronto-para-retirada','confirmar-retirada']) {
   expect(allowed('PATCH',['pedidos',id,action])).toBe(true);
   for(const method of ['GET','POST','PUT','DELETE']) expect(allowed(method,['pedidos',id,action])).toBe(false);

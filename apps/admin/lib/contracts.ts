@@ -19,7 +19,8 @@ export type StatusPedido = 'PENDENTE_PAGAMENTO' | 'PAGO' | 'EM_PREPARO' |
 export type StatusFila = Exclude<StatusPedido, 'PENDENTE_PAGAMENTO' | 'EXPIRADO'>;
 export type PedidoDetalheAdministrativo = {
   id: string; identificadorNegocio: string; confirmacaoPagamento: string | null;
-  cliente: { nome: string }; modalidade: 'ENTREGA' | 'RETIRADA'; statusAtual: StatusPedido;
+  cliente: { nome: string }; entregador: { id: string; nome: string } | null;
+  modalidade: 'ENTREGA' | 'RETIRADA'; statusAtual: StatusPedido;
   valorItens: string; freteAplicado: string; total: string; formaPagamento: 'PIX' | 'CARTAO' | null;
   enderecoEntregaSnapshot: { rua: string; numero: string; bairro: string; cidade: string;
     cep: string; complemento: string | null; referencia: string | null } | null;
@@ -28,3 +29,4 @@ export type PedidoDetalheAdministrativo = {
     subtotalAplicado: string; personalizacoes: Array<{ nomeAplicado: string;
       ajusteValorAplicado: string | null }> }>;
 };
+export type EntregadorAdministrativo = { id: string; nome: string };
