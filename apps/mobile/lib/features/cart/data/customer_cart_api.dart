@@ -199,6 +199,68 @@ class CustomerCartApi {
   final HttpClient Function() _clientFactory;
   final Duration timeout;
 
+  Future<CartResult> addItem({
+    required String accessToken,
+    required String productId,
+    required int quantity,
+    required List<String> personalizationIds,
+  }) async {
+    final uri = _config.cartItemsUri;
+    if (uri == null) return const CartResult(CartRequestStatus.notConfigured);
+    final client = _clientFactory();
+    try {
+      final request = await client.postUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+      request.headers.contentType = ContentType.json;
+      request.write(
+        jsonEncode({
+          'produtoId': productId,
+          'quantidade': quantity,
+          'personalizacaoIds': personalizationIds,
+        }),
+      );
+      final response = await request.close().timeout(timeout);
+      if (response.statusCode == HttpStatus.unauthorized) {
+        return const CartResult(CartRequestStatus.unauthorized);
+      }
+      if (response.statusCode == HttpStatus.forbidden) {
+        return const CartResult(CartRequestStatus.forbidden);
+      }
+      if (response.statusCode == HttpStatus.notFound) {
+        return const CartResult(CartRequestStatus.notFound);
+      }
+      if (response.statusCode == HttpStatus.conflict) {
+        return CartResult(
+          CartRequestStatus.conflict,
+          message: await _conflictMessage(response),
+        );
+      }
+      if (response.statusCode != HttpStatus.created) {
+        return const CartResult(CartRequestStatus.unavailable);
+      }
+      final created = jsonDecode(
+        await utf8.decoder.bind(response.timeout(timeout)).join(),
+      );
+      if (!_matchesCreatedItem(
+        created,
+        productId,
+        quantity,
+        personalizationIds,
+      )) {
+        return const CartResult(CartRequestStatus.unavailable);
+      }
+      return const CartResult(CartRequestStatus.success);
+    } on Object {
+      return const CartResult(CartRequestStatus.unavailable);
+    } finally {
+      client.close(force: true);
+    }
+  }
+
   Future<CartResult> fetchCart({required String accessToken}) async {
     final uri = _config.cartUri;
     if (uri == null) return const CartResult(CartRequestStatus.notConfigured);
@@ -324,6 +386,43 @@ class CustomerCartApi {
     }
     return 'Quantidade superior à disponibilidade.';
   }
+}
+
+bool _matchesCreatedItem(
+  Object? value,
+  String productId,
+  int quantity,
+  List<String> personalizationIds,
+) {
+  if (value is! Map<String, dynamic> ||
+      !_sameKeys(value, const {
+        'id',
+        'carrinhoId',
+        'produtoId',
+        'quantidade',
+        'personalizacaoIds',
+      }) ||
+      value['id'] is! String ||
+      !_uuidPattern.hasMatch(value['id'] as String) ||
+      value['carrinhoId'] is! String ||
+      !_uuidPattern.hasMatch(value['carrinhoId'] as String) ||
+      value['produtoId'] is! String ||
+      (value['produtoId'] as String).toLowerCase() != productId.toLowerCase() ||
+      value['quantidade'] != quantity ||
+      value['personalizacaoIds'] is! List) {
+    return false;
+  }
+  final ids = value['personalizacaoIds'] as List;
+  if (ids.length != personalizationIds.length ||
+      ids.any((id) => id is! String || !_uuidPattern.hasMatch(id))) {
+    return false;
+  }
+  return ids.map((id) => (id as String).toLowerCase()).toSet().length ==
+          ids.length &&
+      ids
+          .map((id) => (id as String).toLowerCase())
+          .toSet()
+          .containsAll(personalizationIds.map((id) => id.toLowerCase()));
 }
 
 bool _sameKeys(Map<String, dynamic> value, Set<String> keys) =>

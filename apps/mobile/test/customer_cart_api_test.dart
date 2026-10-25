@@ -51,6 +51,92 @@ Map<String, Object?> _body({
 
 void main() {
   test(
+    'POST envia seleção autenticada e confirma somente item criado coerente',
+    () async {
+      var status = HttpStatus.created;
+      Object body = {
+        'id': _itemId,
+        'carrinhoId': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        'produtoId': _productId,
+        'quantidade': 2,
+        'personalizacaoIds': [_optionId],
+      };
+      var calls = 0;
+      final server = await _server((request) async {
+        calls++;
+        expect(request.method, 'POST');
+        expect(request.uri.path, '/carrinho/itens');
+        expect(
+          request.headers.value(HttpHeaders.authorizationHeader),
+          'Bearer secret-session-value',
+        );
+        expect(request.headers.contentType?.mimeType, 'application/json');
+        expect(jsonDecode(await utf8.decoder.bind(request).join()), {
+          'produtoId': _productId,
+          'quantidade': 2,
+          'personalizacaoIds': [_optionId],
+        });
+        request.response
+          ..statusCode = status
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(body));
+        await request.response.close();
+      });
+      addTearDown(server.close);
+      Future<CartResult> add() => _api(server).addItem(
+        accessToken: 'secret-session-value',
+        productId: _productId,
+        quantity: 2,
+        personalizationIds: [_optionId],
+      );
+      expect((await add()).status, CartRequestStatus.success);
+      body = {...body as Map<String, Object?>, 'produtoId': _secondItemId};
+      expect((await add()).status, CartRequestStatus.unavailable);
+      body = {'id': _itemId};
+      expect((await add()).status, CartRequestStatus.unavailable);
+      status = HttpStatus.ok;
+      expect((await add()).status, CartRequestStatus.unavailable);
+      expect(calls, 4);
+    },
+  );
+
+  test('POST distingue 401, 403, 404, 409 e falha de rede', () async {
+    var status = HttpStatus.unauthorized;
+    final server = await _server((request) async {
+      await request.drain<void>();
+      request.response.statusCode = status;
+      if (status == HttpStatus.conflict) {
+        request.response.write(
+          jsonEncode({'message': 'Quantidade superior à disponibilidade.'}),
+        );
+      }
+      await request.response.close();
+    });
+    addTearDown(server.close);
+    Future<CartResult> add(CustomerCartApi api) => api.addItem(
+      accessToken: 'token',
+      productId: _productId,
+      quantity: 1,
+      personalizationIds: const [],
+    );
+    final api = _api(server);
+    expect((await add(api)).status, CartRequestStatus.unauthorized);
+    status = HttpStatus.forbidden;
+    expect((await add(api)).status, CartRequestStatus.forbidden);
+    status = HttpStatus.notFound;
+    expect((await add(api)).status, CartRequestStatus.notFound);
+    status = HttpStatus.conflict;
+    final conflict = await add(api);
+    expect(conflict.status, CartRequestStatus.conflict);
+    expect(conflict.message, 'Quantidade superior à disponibilidade.');
+    expect(
+      (await add(CustomerCartApi(config: ApiConfig(baseUrl: '')))).status,
+      CartRequestStatus.notConfigured,
+    );
+    await server.close();
+    expect((await add(api)).status, CartRequestStatus.unavailable);
+  });
+  test(
     'interpreta o contrato do GET com preço, subtotal, total e linha indisponível',
     () async {
       var body = jsonEncode(_body(id: null, subtotal: '0.00', total: '0.00'));
