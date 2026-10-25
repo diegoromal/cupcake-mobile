@@ -1,12 +1,14 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, adminApi } from '@/lib/client/admin-api';
-import type { PedidoDetalheAdministrativo } from '@/lib/contracts';
+import type { EntregadorAdministrativo, PedidoDetalheAdministrativo } from '@/lib/contracts';
 import { formatCurrency, formatDate, statusLabel } from '@/lib/order-display';
 
 const actions = {
   'iniciar-producao': { label: 'Iniciar produção', confirmation: 'Confirmar início da produção',
     target: 'EM_PREPARO' },
+  'saiu-para-entrega': { label: 'Marcar como saiu para entrega', confirmation: 'Confirmar saída para entrega',
+    target: 'SAIU_PARA_ENTREGA' },
   'pronto-para-retirada': { label: 'Marcar como pronto para retirada',
     confirmation: 'Confirmar pedido pronto para retirada', target: 'PRONTO_PARA_RETIRADA' },
   'confirmar-retirada': { label: 'Confirmar retirada',
@@ -14,8 +16,11 @@ const actions = {
 } as const;
 type Action = keyof typeof actions;
 
-function nextAction(order: PedidoDetalheAdministrativo): Action | null {
+function nextAction(order: PedidoDetalheAdministrativo, entregadores: EntregadorAdministrativo[]): Action | null {
   if (order.statusAtual === 'PAGO') return 'iniciar-producao';
+  if (order.modalidade === 'ENTREGA' && order.statusAtual === 'EM_PREPARO' && entregadores.length > 0) {
+    return 'saiu-para-entrega';
+  }
   if (order.modalidade !== 'RETIRADA') return null;
   if (order.statusAtual === 'EM_PREPARO') return 'pronto-para-retirada';
   if (order.statusAtual === 'PRONTO_PARA_RETIRADA') return 'confirmar-retirada';
@@ -24,6 +29,10 @@ function nextAction(order: PedidoDetalheAdministrativo): Action | null {
 
 export default function OrderDetail({ id }: { id: string }) {
   const [order, setOrder] = useState<PedidoDetalheAdministrativo | null>(null);
+  const [entregadores, setEntregadores] = useState<EntregadorAdministrativo[]>([]);
+  const [entregadorUsuarioId, setEntregadorUsuarioId] = useState('');
+  const [loadingEntregadores, setLoadingEntregadores] = useState(false);
+  const [entregadoresError, setEntregadoresError] = useState(false);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'denied' | 'error'>('loading');
   const [confirming, setConfirming] = useState<Action | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,16 +41,32 @@ export default function OrderDetail({ id }: { id: string }) {
   const returnFocus = useRef(false);
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
   const actionButton = useRef<HTMLButtonElement>(null);
+  const loadEntregadores = useCallback(async () => {
+    setLoadingEntregadores(true);
+    setEntregadoresError(false);
+    try {
+      setEntregadores(await adminApi<EntregadorAdministrativo[]>('/api/admin/entregadores'));
+    } catch {
+      setEntregadoresError(true);
+    } finally {
+      setLoadingEntregadores(false);
+    }
+  }, []);
   const load = useCallback(async () => {
     setState('loading'); setOrder(null); setConfirming(null); setActionError(null);
     try {
-      setOrder(await adminApi<PedidoDetalheAdministrativo>(`/api/admin/pedidos/${id}`));
+      const pedido = await adminApi<PedidoDetalheAdministrativo>(`/api/admin/pedidos/${id}`);
+      setOrder(pedido);
       setState('ready');
+      setEntregadores([]); setEntregadorUsuarioId(''); setEntregadoresError(false);
+      if (pedido.modalidade === 'ENTREGA' && pedido.statusAtual === 'EM_PREPARO') {
+        await loadEntregadores();
+      }
     } catch (cause) {
       setState(cause instanceof AdminApiError && cause.status === 404 ? 'missing'
         : cause instanceof AdminApiError && cause.status === 403 ? 'denied' : 'error');
     }
-  }, [id]);
+  }, [id, loadEntregadores]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { if (confirming) confirmationHeading.current?.focus(); }, [confirming]);
   useEffect(() => {
@@ -52,14 +77,16 @@ export default function OrderDetail({ id }: { id: string }) {
   }, [confirming]);
 
   async function submitAction(action: Action) {
-    if (inFlight.current || !order || confirming !== action || nextAction(order) !== action) return;
+    if (inFlight.current || !order || confirming !== action || nextAction(order, entregadores) !== action ||
+        (action === 'saiu-para-entrega' && !entregadorUsuarioId)) return;
     inFlight.current = true;
     setSubmitting(true);
     setActionError(null);
     try {
       await adminApi<PedidoDetalheAdministrativo>(
         `/api/admin/pedidos/${id}/${action}`, {
-          method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}',
+          method: 'PATCH', headers: { 'content-type': 'application/json' },
+          body: action === 'saiu-para-entrega' ? JSON.stringify({ entregadorUsuarioId }) : '{}',
         },
       );
       await load();
@@ -85,15 +112,34 @@ export default function OrderDetail({ id }: { id: string }) {
     {actionError ?? 'Falha ao carregar pedido.'} <button type="button" onClick={load}>Tentar novamente</button>
   </section>;
 
-  const action = nextAction(order);
+  const action = nextAction(order, entregadores);
   return <section className="order-detail">
     <div className="page-intro">
       <h1>Pedido {order.identificadorNegocio}</h1>
       <p><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span>
         {' · '}{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</p>
       <p>Pagamento confirmado: {formatDate(order.confirmacaoPagamento)}</p>
-      {action && <button ref={actionButton} type="button" disabled={submitting || confirming !== null}
+      {action && <button ref={actionButton} type="button" disabled={submitting || confirming !== null ||
+        (action === 'saiu-para-entrega' && !entregadorUsuarioId)}
         onClick={() => { setActionError(null); setConfirming(action); }}>{actions[action].label}</button>}
+      {order.modalidade === 'ENTREGA' && order.statusAtual === 'EM_PREPARO' &&
+        <label htmlFor="delivery-driver">Entregador
+          <select id="delivery-driver" value={entregadorUsuarioId}
+            onChange={(event) => setEntregadorUsuarioId(event.target.value)}
+            disabled={loadingEntregadores || submitting || confirming !== null}>
+            <option value="">Selecione um entregador</option>
+            {entregadores.map((entregador) => <option key={entregador.id} value={entregador.id}>{entregador.nome}</option>)}
+          </select>
+        </label>}
+      {loadingEntregadores && <p role="status">Carregando entregadores...</p>}
+      {entregadoresError && <div role="alert"><p>Não foi possível carregar os entregadores.</p>
+        <button type="button" onClick={loadEntregadores} disabled={loadingEntregadores}>
+          Tentar carregar novamente
+        </button>
+      </div>}
+      {!loadingEntregadores && !entregadoresError && order.modalidade === 'ENTREGA' &&
+        order.statusAtual === 'EM_PREPARO' && entregadores.length === 0 &&
+        <p>Nenhum entregador cadastrado.</p>}
       {actionError && <p className="error" role="alert">{actionError}</p>}
     </div>
     {confirming && action === confirming && <section className="card" aria-labelledby="confirm-order-heading"
@@ -102,7 +148,9 @@ export default function OrderDetail({ id }: { id: string }) {
         {actions[confirming].confirmation}
       </h2>
       <p id="confirm-order-description">O pedido {order.identificadorNegocio} passará de
-        {' '}{statusLabel[order.statusAtual]} para {statusLabel[actions[confirming].target]}.</p>
+        {' '}{statusLabel[order.statusAtual]} para {statusLabel[actions[confirming].target]}.
+        {confirming === 'saiu-para-entrega' && ` Entregador: ${entregadores.find((item) =>
+          item.id === entregadorUsuarioId)?.nome ?? ''}.`}</p>
       <div className="actions">
         <button type="button" className="secondary" disabled={submitting} onClick={() => {
           returnFocus.current = true; setConfirming(null);
@@ -141,6 +189,7 @@ export default function OrderDetail({ id }: { id: string }) {
         <section className="card" aria-labelledby="order-customer-heading">
           <h2 id="order-customer-heading">Cliente</h2>
           <p>{order.cliente.nome}</p>
+          {order.entregador && <p>Entregador: {order.entregador.nome}</p>}
           {order.modalidade === 'ENTREGA' && order.enderecoEntregaSnapshot && <>
             <h3>Endereço de entrega</h3>
             <address>{order.enderecoEntregaSnapshot.rua}, {order.enderecoEntregaSnapshot.numero}<br />

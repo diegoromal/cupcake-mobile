@@ -14,10 +14,11 @@ export function apiBase(): string {
   return url.origin;
 }
 export function allowed(method: string, parts: string[]): boolean {
+  if (parts.length === 1 && parts[0] === 'entregadores') return method === 'GET';
   if (parts.length === 1 && parts[0] === 'pedidos') return method === 'GET';
   if (parts.length === 2 && parts[0] === 'pedidos') return method === 'GET' && uuid.test(parts[1]);
   if (parts.length === 3 && parts[0] === 'pedidos' && uuid.test(parts[1])) {
-    return ['iniciar-producao', 'pronto-para-retirada', 'confirmar-retirada'].includes(parts[2]) &&
+    return ['iniciar-producao', 'saiu-para-entrega', 'pronto-para-retirada', 'confirmar-retirada'].includes(parts[2]) &&
       method === 'PATCH';
   }
   if (parts.length === 1 && parts[0] === 'configuracao-loja-entrega') return ['GET','PUT'].includes(method);

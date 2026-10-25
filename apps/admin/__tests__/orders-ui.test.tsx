@@ -78,7 +78,7 @@ test('não mostra pedidos quando o acesso administrativo é negado', async () =>
 
 const detail = {
   id: 'order-1', identificadorNegocio: 'PED-123', confirmacaoPagamento: '2026-10-20T12:00:00.000Z',
-  cliente: { nome: 'Ana Silva' }, modalidade: 'ENTREGA', statusAtual: 'PAGO',
+  cliente: { nome: 'Ana Silva' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
   valorItens: '70.00', freteAplicado: '8.50', total: '78.50', formaPagamento: 'PIX',
   enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
     cep: '80000000', complemento: 'Apto 2', referencia: null },
@@ -110,7 +110,8 @@ test('confirma início de produção, cancela sem PATCH e impede envio duplicado
   ] };
   let finishPatch!: (value: unknown) => void;
   const patch = new Promise((resolve) => { finishPatch = resolve; });
-  mockApi.mockResolvedValueOnce(detail).mockImplementationOnce(() => patch).mockResolvedValueOnce(updated);
+  mockApi.mockResolvedValueOnce(detail).mockImplementationOnce(() => patch).mockResolvedValueOnce(updated)
+    .mockResolvedValueOnce([]);
   render(<OrderDetail id="order-1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Iniciar produção' }));
   expect(screen.getByRole('heading', { name: 'Confirmar início da produção' })).toHaveFocus();
@@ -141,7 +142,7 @@ test('recarrega o pedido após conflito e remove a ação quando outro administr
   const updated = { ...detail, statusAtual: 'EM_PREPARO' };
   mockApi.mockResolvedValueOnce(detail)
     .mockRejectedValueOnce(new AdminApiError(409, 'Pedido não pode iniciar a produção neste status.'))
-    .mockResolvedValueOnce(updated);
+    .mockResolvedValueOnce(updated).mockResolvedValueOnce([]);
   render(<OrderDetail id="order-1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Iniciar produção' }));
   fireEvent.click(screen.getByRole('button', { name: 'Confirmar início da produção' }));
@@ -192,7 +193,7 @@ test('retirada avança apenas pelas duas ações válidas e atualiza o pedido ap
 });
 
 test('não oferece retirada em Delivery nem ação administrativa para pedido entregue', async () => {
-  mockApi.mockResolvedValueOnce({ ...detail, statusAtual: 'EM_PREPARO' });
+  mockApi.mockResolvedValueOnce({ ...detail, statusAtual: 'EM_PREPARO' }).mockResolvedValueOnce([]);
   const delivery = render(<OrderDetail id="order-1" />);
   await screen.findByRole('heading', { name: 'Pedido PED-123' });
   expect(screen.queryByRole('button', { name: /retirada/i })).not.toBeInTheDocument();
@@ -201,6 +202,40 @@ test('não oferece retirada em Delivery nem ação administrativa para pedido en
   render(<OrderDetail id="order-1" />);
   await screen.findByRole('heading', { name: 'Pedido PED-123' });
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
+});
+
+test('atribui entregador ao confirmar saída de Delivery em preparo', async () => {
+  const preparing = { ...detail, statusAtual: 'EM_PREPARO' };
+  const courier = { id: 'courier-1', nome: 'João Entregador' };
+  const departed = { ...preparing, statusAtual: 'SAIU_PARA_ENTREGA', entregador: courier };
+  mockApi.mockResolvedValueOnce(preparing).mockResolvedValueOnce([courier])
+    .mockResolvedValueOnce(departed).mockResolvedValueOnce(departed);
+  render(<OrderDetail id="order-1" />);
+  const select = await screen.findByLabelText('Entregador');
+  expect(mockApi).toHaveBeenNthCalledWith(2, '/api/admin/entregadores');
+  expect(screen.getByRole('button', { name: 'Marcar como saiu para entrega' })).toBeDisabled();
+  fireEvent.change(select, { target: { value: courier.id } });
+  fireEvent.click(screen.getByRole('button', { name: 'Marcar como saiu para entrega' }));
+  expect(screen.getByText(/Entregador: João Entregador/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Confirmar saída para entrega' }));
+  expect(await screen.findByText('Entregador: João Entregador')).toBeInTheDocument();
+  expect(mockApi).toHaveBeenNthCalledWith(3, '/api/admin/pedidos/order-1/saiu-para-entrega', {
+    method: 'PATCH', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ entregadorUsuarioId: courier.id }),
+  });
+  expect(mockApi).toHaveBeenNthCalledWith(4, '/api/admin/pedidos/order-1');
+});
+
+test('permite tentar carregar entregadores novamente após falha', async () => {
+  const preparing = { ...detail, statusAtual: 'EM_PREPARO' };
+  const courier = { id: 'courier-1', nome: 'João Entregador' };
+  mockApi.mockResolvedValueOnce(preparing).mockRejectedValueOnce(new Error('API indisponível'))
+    .mockResolvedValueOnce([courier]);
+  render(<OrderDetail id="order-1" />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar os entregadores.');
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar carregar novamente' }));
+  expect(await screen.findByRole('option', { name: 'João Entregador' })).toBeInTheDocument();
+  expect(mockApi).toHaveBeenNthCalledWith(3, '/api/admin/entregadores');
 });
 
 test('conflito na retirada recarrega estado vigente sem manter confirmação antiga', async () => {

@@ -20,6 +20,8 @@ describe('POST /pedidos', () => {
   const iniciarProducao = jest.fn();
   const marcarProntoParaRetirada = jest.fn();
   const confirmarRetirada = jest.fn();
+  const sairParaEntrega = jest.fn();
+  const listarEntregadores = jest.fn();
   const cancelarComoCliente = jest.fn();
   const user = jest.fn();
   const jwt = new JwtService();
@@ -30,10 +32,10 @@ describe('POST /pedidos', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user } })
+      .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user, findMany: listarEntregadores } })
       .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao,
         detalharParaAdministracao, iniciarProducao, marcarProntoParaRetirada, confirmarRetirada,
-        cancelarComoCliente }).compile();
+        sairParaEntrega, cancelarComoCliente }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
   });
@@ -54,6 +56,8 @@ describe('POST /pedidos', () => {
     iniciarProducao.mockResolvedValue({ id: userId, statusAtual: 'EM_PREPARO' });
     marcarProntoParaRetirada.mockResolvedValue({ id: userId, statusAtual: 'PRONTO_PARA_RETIRADA' });
     confirmarRetirada.mockResolvedValue({ id: userId, statusAtual: 'RETIRADO' });
+    sairParaEntrega.mockResolvedValue({ id: userId, statusAtual: 'SAIU_PARA_ENTREGA' });
+    listarEntregadores.mockResolvedValue([]);
     cancelarComoCliente.mockResolvedValue({ id: userId, statusAtual: 'CANCELADO' });
   });
 
@@ -150,6 +154,45 @@ describe('POST /pedidos', () => {
       await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
         .send({}).expect(409);
     }
+  });
+
+  it('PATCH de saída para entrega valida ADMIN, UUID e DTO e usa somente o ator autenticado', async () => {
+    const path = `/admin/pedidos/${enderecoId}/saiu-para-entrega`;
+    const payload = { entregadorUsuarioId: userId };
+    await request(app.getHttpServer()).patch(path).send(payload).expect(401);
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${cliente}`).send(payload).expect(403);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).patch('/admin/pedidos/invalido/saiu-para-entrega')
+      .set('Authorization', `Bearer ${admin}`).send(payload).expect(400);
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+      .send({ entregadorUsuarioId: 'invalido' }).expect(400);
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+      .send({ ...payload, statusAtual: 'ENTREGUE' }).expect(400);
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+      .send(payload).expect(200).expect({ id: userId, statusAtual: 'SAIU_PARA_ENTREGA' });
+    expect(sairParaEntrega).toHaveBeenCalledWith(enderecoId, userId, userId);
+    sairParaEntrega.mockRejectedValueOnce(new ConflictException('Pedido não pode sair para entrega neste status.'));
+    await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`).send(payload).expect(409);
+  });
+
+  it('GET /admin/entregadores exige ADMIN e retorna somente os dados selecionados', async () => {
+    await request(app.getHttpServer()).get('/admin/entregadores').expect(401);
+    const cliente = await token(PerfilUsuario.CLIENTE);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.CLIENTE });
+    await request(app.getHttpServer()).get('/admin/entregadores')
+      .set('Authorization', `Bearer ${cliente}`).expect(403);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    listarEntregadores.mockResolvedValueOnce([{ id: userId, nome: 'João' }]);
+    await request(app.getHttpServer()).get('/admin/entregadores')
+      .set('Authorization', `Bearer ${admin}`).expect(200).expect([{ id: userId, nome: 'João' }]);
+    expect(listarEntregadores).toHaveBeenCalledWith({
+      where: { perfil: PerfilUsuario.ENTREGADOR }, select: { id: true, nome: true },
+      orderBy: [{ nome: 'asc' }, { id: 'asc' }],
+    });
   });
 
   it('exige sessão e perfil cliente', async () => {

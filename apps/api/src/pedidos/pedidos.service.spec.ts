@@ -102,6 +102,77 @@ describe('PedidosService', () => {
     });
   });
 
+  describe('sairParaEntrega', () => {
+    const agora = new Date('2026-10-24T12:00:00.000Z');
+    const entregadorId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+
+    it('atribui entregador, avança o pedido e registra o administrador na mesma transação', async () => {
+      const queryRaw = jest.fn().mockResolvedValueOnce([{ statusAtual: 'EM_PREPARO', modalidade: 'ENTREGA' }])
+        .mockResolvedValueOnce([{ id: entregadorId }]).mockResolvedValueOnce([{ agora }]);
+      const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      const createHistory = jest.fn().mockResolvedValue({});
+      const detail = jest.fn().mockResolvedValue({
+        id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: agora,
+        cliente: { nome: 'Ana' }, entregador: { id: entregadorId, nome: 'João' },
+        modalidade: 'ENTREGA', statusAtual: 'SAIU_PARA_ENTREGA',
+        valorItens: dinheiro('10.00'), freteAplicado: dinheiro('2.00'), total: dinheiro('12.00'),
+        enderecoEntregaSnapshot: null, pagamentos: [], historicosStatus: [], itens: [],
+      });
+      const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create: createHistory },
+      }));
+      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detail } } as never);
+
+      await expect(adminService.sairParaEntrega(usuarioId, entregadorId, enderecoId)).resolves.toMatchObject({
+        statusAtual: 'SAIU_PARA_ENTREGA', entregador: { id: entregadorId },
+      });
+      expect(tx).toHaveBeenCalledTimes(1);
+      expect(queryRaw).toHaveBeenCalledTimes(3);
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: usuarioId, statusAtual: 'EM_PREPARO', modalidade: 'ENTREGA' },
+        data: { entregadorUsuarioId: entregadorId, statusAtual: 'SAIU_PARA_ENTREGA' },
+      });
+      expect(createHistory).toHaveBeenCalledWith({ data: {
+        pedidoId: usuarioId, statusRegistrado: 'SAIU_PARA_ENTREGA', dataHora: agora,
+        responsavelUsuarioId: enderecoId,
+      } });
+    });
+
+    it.each([
+      [[], NotFoundException],
+      [[{ statusAtual: 'EM_PREPARO', modalidade: 'RETIRADA' }], ConflictException],
+      [[{ statusAtual: 'PAGO', modalidade: 'ENTREGA' }], ConflictException],
+    ] as const)('rejeita pedido ausente ou fora do estado Delivery em preparo', async (pedido, exception) => {
+      const queryRaw = jest.fn().mockResolvedValue(pedido);
+      const updateMany = jest.fn();
+      const createHistory = jest.fn();
+      const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create: createHistory },
+      }));
+      const adminService = new PedidosService({ $transaction: tx } as never);
+
+      await expect(adminService.sairParaEntrega(usuarioId, entregadorId, enderecoId)).rejects.toBeInstanceOf(exception);
+      expect(queryRaw).toHaveBeenCalledTimes(1);
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+    });
+
+    it('rejeita usuário que não é entregador sem alterar pedido', async () => {
+      const queryRaw = jest.fn().mockResolvedValueOnce([{ statusAtual: 'EM_PREPARO', modalidade: 'ENTREGA' }])
+        .mockResolvedValueOnce([]);
+      const updateMany = jest.fn();
+      const createHistory = jest.fn();
+      const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create: createHistory },
+      }));
+      const adminService = new PedidosService({ $transaction: tx } as never);
+
+      await expect(adminService.sairParaEntrega(usuarioId, entregadorId, enderecoId)).rejects.toBeInstanceOf(NotFoundException);
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+    });
+  });
+
   describe('cancelarComoCliente', () => {
     const agora = new Date('2026-10-24T12:00:00.000Z');
     const reservas = [
@@ -296,7 +367,7 @@ describe('PedidosService', () => {
   it('detalha apenas dados persistidos da tela sem recalcular valores', async () => {
     const findUnique = jest.fn().mockResolvedValue({
       id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
-      cliente: { nome: 'Ana' }, modalidade: 'ENTREGA', statusAtual: 'PAGO',
+        cliente: { nome: 'Ana' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
       valorItens: dinheiro('10.10'), freteAplicado: dinheiro('2.05'), total: dinheiro('99.99'),
       enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
         cep: '80000000', complemento: null, referencia: 'Portão azul' },
@@ -310,7 +381,7 @@ describe('PedidosService', () => {
     const adminService = new PedidosService({ pedido: { findUnique } } as never);
     await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toEqual({
       id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
-      cliente: { nome: 'Ana' }, modalidade: 'ENTREGA', statusAtual: 'PAGO',
+      cliente: { nome: 'Ana' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
       valorItens: '10.10', freteAplicado: '2.05', total: '99.99', formaPagamento: 'PIX',
       enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
         cep: '80000000', complemento: null, referencia: 'Portão azul' },
@@ -322,7 +393,8 @@ describe('PedidosService', () => {
     const query = findUnique.mock.calls[0][0];
     expect(query.where).toEqual({ id: usuarioId });
     expect(Object.keys(query.select).sort()).toEqual([
-      'cliente', 'confirmacaoPagamento', 'enderecoEntregaSnapshot', 'freteAplicado', 'historicosStatus',
+      'cliente', 'confirmacaoPagamento', 'enderecoEntregaSnapshot', 'entregador',
+      'freteAplicado', 'historicosStatus',
       'id', 'identificadorNegocio', 'itens', 'modalidade', 'pagamentos', 'statusAtual', 'total', 'valorItens',
     ]);
     expect(query.select.pagamentos).toMatchObject({ where: { resultado: 'APROVADO' }, take: 1,
@@ -340,7 +412,7 @@ describe('PedidosService', () => {
   it('omite endereço na retirada e não inventa pagamento aprovado', async () => {
     const findUnique = jest.fn().mockResolvedValue({
       id: usuarioId, identificadorNegocio: 'PED-456', confirmacaoPagamento: null,
-      cliente: { nome: 'Ana' }, modalidade: 'RETIRADA', statusAtual: 'PENDENTE_PAGAMENTO',
+      cliente: { nome: 'Ana' }, entregador: null, modalidade: 'RETIRADA', statusAtual: 'PENDENTE_PAGAMENTO',
       valorItens: dinheiro('10.10'), freteAplicado: dinheiro('0.00'), total: dinheiro('10.10'),
       enderecoEntregaSnapshot: { rua: 'Endereço indevido' }, itens: [], pagamentos: [], historicosStatus: [],
     });
