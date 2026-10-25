@@ -606,6 +606,8 @@ async function main() {
       await cleanup('itens de pedidos', () => prisma.itemPedido.deleteMany({ where: { pedidoId: { in: removed } } }));
       await cleanup('snapshots de endereço', () => prisma.enderecoEntregaSnapshot.deleteMany({
         where: { pedidoId: { in: removed } } }));
+      await cleanup('históricos de pedidos', () => prisma.historicoStatusPedido.deleteMany({
+        where: { pedidoId: { in: removed } } }));
       await cleanup('pedidos', () => prisma.pedido.deleteMany({ where: { id: { in: removed } } }));
       await cleanup('personalizações do carrinho', () => prisma.itemCarrinhoPersonalizacao.deleteMany({
         where: { itemCarrinho: { carrinho: { usuarioId: { in: users } } } } }));
@@ -627,6 +629,8 @@ async function main() {
         await zero('snapshots de itens', prisma.itemPedidoPersonalizacaoSnapshot.count({
           where: { itemPedidoId: { in: removedItems } } }));
         await zero('snapshots de endereço', prisma.enderecoEntregaSnapshot.count({
+          where: { pedidoId: { in: removed } } }));
+        await zero('históricos de pedidos', prisma.historicoStatusPedido.count({
           where: { pedidoId: { in: removed } } }));
         await zero('reservas', prisma.reservaEstoque.count({ where: { produtoId: { in: products } } }));
         await zero('movimentações', prisma.movimentacaoEstoque.count({ where: { produtoId: { in: products } } }));

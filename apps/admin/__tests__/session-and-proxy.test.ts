@@ -25,6 +25,13 @@ test('allowlist explícita por método e rota',()=>{
  expect(allowed('GET',['pedidos',id])).toBe(true);
  for(const method of ['POST','PUT','PATCH','DELETE']) expect(allowed(method,['pedidos',id])).toBe(false);
  expect(allowed('PATCH',['pedidos',id,'iniciar-producao'])).toBe(true);
+ for(const action of ['pronto-para-retirada','confirmar-retirada']) {
+  expect(allowed('PATCH',['pedidos',id,action])).toBe(true);
+  for(const method of ['GET','POST','PUT','DELETE']) expect(allowed(method,['pedidos',id,action])).toBe(false);
+  expect(allowed('PATCH',['pedidos','invalido',action])).toBe(false);
+ }
+ expect(allowed('PATCH',['pedidos',id,'entregue'])).toBe(false);
+ expect(allowed('PATCH',['pedidos',id,'cancelar'])).toBe(false);
  expect(allowed('POST',['pedidos',id,'iniciar-producao'])).toBe(false);
  expect(allowed('PATCH',['pedidos','invalido','iniciar-producao'])).toBe(false);
  expect(allowed('GET',['pedidos','invalido'])).toBe(false);
@@ -56,6 +63,23 @@ test('proxy permite somente leitura do detalhe de pedido por UUID', async () => 
  expect((await proxyAdmin(req(`/api/admin/pedidos/${id}?status=PAGO`),['pedidos',id])).status).toBe(404);
  expect((await proxyAdmin(req(`/api/admin/pedidos/${id}`,'DELETE'),['pedidos',id])).status).toBe(404);
  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+test('proxy encaminha somente PATCH de retirada com UUID e origem válida', async () => {
+ const fetchMock=jest.spyOn(global,'fetch').mockImplementation(async () => Response.json({statusAtual:'RETIRADO'}));
+ for(const action of ['pronto-para-retirada','confirmar-retirada']) {
+  const path=`/api/admin/pedidos/${id}/${action}`;
+  const bad=req(path,'PATCH','{}',{'content-type':'application/json',origin:'http://evil.test'});
+  bad.cookies.set('admin_access','token');
+  expect((await proxyAdmin(bad,['pedidos',id,action])).status).toBe(403);
+  const good=req(path,'PATCH','{}',{'content-type':'application/json'});
+  good.cookies.set('admin_access','token');
+  expect((await proxyAdmin(good,['pedidos',id,action])).status).toBe(200);
+ }
+ expect(fetchMock).toHaveBeenCalledTimes(2);
+ expect(fetchMock.mock.calls.map(([url])=>url)).toEqual([
+  `http://localhost:3000/admin/pedidos/${id}/pronto-para-retirada`,
+  `http://localhost:3000/admin/pedidos/${id}/confirmar-retirada`,
+ ]);
 });
 test('proxy encaminha ajuste de estoque e bloqueia origem cruzada', async () => {
  const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({quantidadeDisponivel:4}));

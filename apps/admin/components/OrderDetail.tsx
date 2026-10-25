@@ -1,16 +1,39 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, adminApi } from '@/lib/client/admin-api';
 import type { PedidoDetalheAdministrativo } from '@/lib/contracts';
 import { formatCurrency, formatDate, statusLabel } from '@/lib/order-display';
 
+const actions = {
+  'iniciar-producao': { label: 'Iniciar produção', confirmation: 'Confirmar início da produção',
+    target: 'EM_PREPARO' },
+  'pronto-para-retirada': { label: 'Marcar como pronto para retirada',
+    confirmation: 'Confirmar pedido pronto para retirada', target: 'PRONTO_PARA_RETIRADA' },
+  'confirmar-retirada': { label: 'Confirmar retirada',
+    confirmation: 'Confirmar retirada do pedido', target: 'RETIRADO' },
+} as const;
+type Action = keyof typeof actions;
+
+function nextAction(order: PedidoDetalheAdministrativo): Action | null {
+  if (order.statusAtual === 'PAGO') return 'iniciar-producao';
+  if (order.modalidade !== 'RETIRADA') return null;
+  if (order.statusAtual === 'EM_PREPARO') return 'pronto-para-retirada';
+  if (order.statusAtual === 'PRONTO_PARA_RETIRADA') return 'confirmar-retirada';
+  return null;
+}
+
 export default function OrderDetail({ id }: { id: string }) {
   const [order, setOrder] = useState<PedidoDetalheAdministrativo | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'denied' | 'error'>('loading');
-  const [starting, setStarting] = useState(false);
+  const [confirming, setConfirming] = useState<Action | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const returnFocus = useRef(false);
+  const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const actionButton = useRef<HTMLButtonElement>(null);
   const load = useCallback(async () => {
-    setState('loading'); setOrder(null);
+    setState('loading'); setOrder(null); setConfirming(null); setActionError(null);
     try {
       setOrder(await adminApi<PedidoDetalheAdministrativo>(`/api/admin/pedidos/${id}`));
       setState('ready');
@@ -20,26 +43,36 @@ export default function OrderDetail({ id }: { id: string }) {
     }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { if (confirming) confirmationHeading.current?.focus(); }, [confirming]);
+  useEffect(() => {
+    if (!confirming && returnFocus.current) {
+      actionButton.current?.focus();
+      returnFocus.current = false;
+    }
+  }, [confirming]);
 
-  async function startProduction() {
-    setStarting(true);
+  async function submitAction(action: Action) {
+    if (inFlight.current || !order || confirming !== action || nextAction(order) !== action) return;
+    inFlight.current = true;
+    setSubmitting(true);
     setActionError(null);
     try {
-      const updated = await adminApi<PedidoDetalheAdministrativo>(
-        `/api/admin/pedidos/${id}/iniciar-producao`, {
+      await adminApi<PedidoDetalheAdministrativo>(
+        `/api/admin/pedidos/${id}/${action}`, {
           method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}',
         },
       );
-      setOrder(updated);
+      await load();
     } catch (cause) {
+      await load();
       if (cause instanceof AdminApiError && cause.status === 409) {
         setActionError('O pedido foi atualizado por outro administrador. Confira o status atual.');
-        await load();
-        return;
+      } else {
+        setActionError('Falha ao atualizar o pedido. Confira o status atual antes de tentar novamente.');
       }
-      setActionError(cause instanceof AdminApiError ? cause.message : 'Falha ao iniciar a produção.');
     } finally {
-      setStarting(false);
+      inFlight.current = false;
+      setSubmitting(false);
     }
   }
 
@@ -52,17 +85,34 @@ export default function OrderDetail({ id }: { id: string }) {
     {actionError ?? 'Falha ao carregar pedido.'} <button type="button" onClick={load}>Tentar novamente</button>
   </section>;
 
+  const action = nextAction(order);
   return <section className="order-detail">
     <div className="page-intro">
       <h1>Pedido {order.identificadorNegocio}</h1>
       <p><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span>
         {' · '}{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</p>
       <p>Pagamento confirmado: {formatDate(order.confirmacaoPagamento)}</p>
-      {order.statusAtual === 'PAGO' && <button type="button" onClick={startProduction} disabled={starting}>
-        {starting ? 'Iniciando produção...' : 'Iniciar produção'}
-      </button>}
+      {action && <button ref={actionButton} type="button" disabled={submitting || confirming !== null}
+        onClick={() => { setActionError(null); setConfirming(action); }}>{actions[action].label}</button>}
       {actionError && <p className="error" role="alert">{actionError}</p>}
     </div>
+    {confirming && action === confirming && <section className="card" aria-labelledby="confirm-order-heading"
+      aria-describedby="confirm-order-description" aria-busy={submitting}>
+      <h2 id="confirm-order-heading" ref={confirmationHeading} tabIndex={-1}>
+        {actions[confirming].confirmation}
+      </h2>
+      <p id="confirm-order-description">O pedido {order.identificadorNegocio} passará de
+        {' '}{statusLabel[order.statusAtual]} para {statusLabel[actions[confirming].target]}.</p>
+      <div className="actions">
+        <button type="button" className="secondary" disabled={submitting} onClick={() => {
+          returnFocus.current = true; setConfirming(null);
+        }}>Voltar sem alterar</button>
+        <button type="button" disabled={submitting} onClick={() => void submitAction(confirming)}>
+          {submitting ? 'Salvando alteração...' : actions[confirming].confirmation}
+        </button>
+      </div>
+      {submitting && <p role="status">Atualizando pedido...</p>}
+    </section>}
     <div className="order-detail-grid">
       <section className="card order-items" aria-labelledby="order-items-heading">
         <h2 id="order-items-heading">Itens do pedido</h2>

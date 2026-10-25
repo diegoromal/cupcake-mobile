@@ -60,6 +60,7 @@ async function main() {
     await prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: ids } } });
     await prisma.itemPedido.deleteMany({ where: { pedidoId: { in: ids } } });
     await prisma.enderecoEntregaSnapshot.deleteMany({ where: { pedidoId: { in: ids } } });
+    await prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: ids } } });
     await prisma.pedido.deleteMany({ where: { id: { in: ids } } });
     for (const id of ids) orders.delete(id);
     return ids;
@@ -288,6 +289,7 @@ async function main() {
       where: { itemPedido: { pedidoId: { in: removed } } },
     }), 0); checks++;
     assert.equal(await prisma.enderecoEntregaSnapshot.count({ where: { pedidoId: { in: removed } } }), 0); checks++;
+    assert.equal(await prisma.historicoStatusPedido.count({ where: { pedidoId: { in: removed } } }), 0); checks++;
     assert.equal(await prisma.carrinho.count({ where: { usuarioId: { in: allUsers } } }), 0); checks++;
     assert.equal(await prisma.itemCarrinho.count({ where: { produtoId: { in: allProducts } } }), 0); checks++;
     assert.equal(await prisma.estoque.count({ where: { produtoId: { in: allProducts } } }), 0); checks++;

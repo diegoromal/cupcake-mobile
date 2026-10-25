@@ -192,12 +192,14 @@ async function main() {
   } finally {
     if (ready) {
       await prisma.reservaEstoque.deleteMany({ where: { id: { in: reservations } } });
+      await prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: orders } } });
       await prisma.pedido.deleteMany({ where: { id: { in: orders } } });
       await prisma.estoque.deleteMany({ where: { produtoId: { in: products } } });
       await prisma.produto.deleteMany({ where: { id: { in: products } } });
       await prisma.categoria.deleteMany({ where: { id: category } });
       await prisma.usuario.deleteMany({ where: { id: user } });
       check(await prisma.reservaEstoque.count({ where: { id: { in: reservations } } }), 0);
+      check(await prisma.historicoStatusPedido.count({ where: { pedidoId: { in: orders } } }), 0);
       check(await prisma.pedido.count({ where: { id: { in: orders } } }), 0);
     }
     await prisma.$disconnect();
