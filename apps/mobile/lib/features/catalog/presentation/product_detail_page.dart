@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
+import '../../cart/data/customer_cart_api.dart';
 import '../data/customer_catalog_api.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -13,10 +15,16 @@ class ProductDetailPage extends StatefulWidget {
     required this.productId,
     required this.session,
     required this.api,
+    this.cartApi,
+    this.onOpenCart,
+    this.indeterminateCartAttempts,
   });
   final String productId;
   final CustomerSession session;
   final CustomerCatalogApi api;
+  final CustomerCartApi? cartApi;
+  final VoidCallback? onOpenCart;
+  final Set<String>? indeterminateCartAttempts;
 
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
@@ -33,6 +41,21 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   String? _unitPrice;
   CatalogRequestStatus? _priceStatus;
   bool _priceLoading = false;
+  late final CustomerCartApi _cartApi = widget.cartApi ?? CustomerCartApi();
+  int _quantity = 1;
+  bool _adding = false;
+  CartRequestStatus? _addStatus;
+  String? _addMessage;
+  final _localIndeterminateAttempts = <String>{};
+  Set<String> get _indeterminateAttempts =>
+      widget.indeterminateCartAttempts ?? _localIndeterminateAttempts;
+  String get _attemptKey {
+    final ids = _selected.map((id) => id.toLowerCase()).toList()..sort();
+    return jsonEncode([widget.productId.toLowerCase(), _quantity, ids]);
+  }
+
+  bool get _currentIndeterminate =>
+      _indeterminateAttempts.contains(_attemptKey);
 
   @override
   void initState() {
@@ -64,6 +87,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           _product = null;
           _image = null;
           _unitPrice = null;
+          _adding = false;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || widget.session.isAuthenticated) return;
@@ -101,6 +125,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       _unitPrice = null;
       _priceStatus = null;
       _priceLoading = false;
+      _quantity = 1;
+      _adding = false;
+      _addStatus = null;
+      _addMessage = null;
     });
     await widget.session.refreshIfNeeded();
     var token = widget.session.accessToken;
@@ -137,14 +165,82 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   void _toggle(CatalogPersonalization option) {
-    if (!option.available) return;
+    if (!option.available || _adding) return;
     setState(() {
       if (!_selected.add(option.id)) _selected.remove(option.id);
       _unitPrice = null;
       _priceStatus = null;
       _priceLoading = true;
+      _addStatus = null;
+      _addMessage = null;
     });
     unawaited(_preview());
+  }
+
+  void _changeQuantity(int quantity) {
+    if (_adding || quantity < 1 || quantity > 2147483647) return;
+    setState(() {
+      _quantity = quantity;
+      _addStatus = null;
+      _addMessage = null;
+    });
+  }
+
+  Future<void> _addToCart() async {
+    if (_currentIndeterminate ||
+        _adding ||
+        _priceLoading ||
+        _unitPrice == null ||
+        _product == null ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    final generation = _generation;
+    final attemptKey = _attemptKey;
+    final selectedIds = _selected.toList()..sort();
+    setState(() {
+      _adding = true;
+      _addStatus = null;
+      _addMessage = null;
+    });
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    CartResult result = token == null
+        ? const CartResult(CartRequestStatus.unauthorized)
+        : await _cartApi.addItem(
+            accessToken: token,
+            productId: widget.productId,
+            quantity: _quantity,
+            personalizationIds: selectedIds,
+          );
+    if (result.status == CartRequestStatus.unauthorized &&
+        token != null &&
+        mounted &&
+        generation == _generation &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      result = token == null
+          ? const CartResult(CartRequestStatus.unauthorized)
+          : await _cartApi.addItem(
+              accessToken: token,
+              productId: widget.productId,
+              quantity: _quantity,
+              personalizationIds: selectedIds,
+            );
+    }
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    setState(() {
+      _adding = false;
+      _addStatus = result.status;
+      _addMessage = result.message;
+      if (result.status == CartRequestStatus.unavailable) {
+        _indeterminateAttempts.add(attemptKey);
+      }
+    });
   }
 
   Future<void> _preview() async {
@@ -328,7 +424,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
             value: _selected.contains(option.id),
-            onChanged: option.available ? (_) => _toggle(option) : null,
+            onChanged: option.available && !_adding
+                ? (_) => _toggle(option)
+                : null,
             title: Text(option.name),
             subtitle: Text(
               [
@@ -386,6 +484,89 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         const SizedBox(height: AppTokens.spacing16),
         const Text('Disponível'),
+        const SizedBox(height: AppTokens.spacing16),
+        Text('Quantidade', style: Theme.of(context).textTheme.titleMedium),
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'Diminuir quantidade',
+              onPressed: _adding || _quantity == 1
+                  ? null
+                  : () => _changeQuantity(_quantity - 1),
+              icon: const Icon(Icons.remove),
+            ),
+            Semantics(
+              label: 'Quantidade selecionada: $_quantity',
+              liveRegion: true,
+              child: Text('$_quantity'),
+            ),
+            IconButton(
+              tooltip: 'Aumentar quantidade',
+              onPressed: _adding || _quantity == 2147483647
+                  ? null
+                  : () => _changeQuantity(_quantity + 1),
+              icon: const Icon(Icons.add),
+            ),
+          ],
+        ),
+        if (!_priceLoading && _unitPrice != null)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              'Subtotal: ${_formatSubtotal(_unitPrice!, _quantity)}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+        if ((_currentIndeterminate ? CartRequestStatus.unavailable : _addStatus)
+            case final status?) ...[
+          const SizedBox(height: 8),
+          Semantics(
+            liveRegion: true,
+            child: Text(switch (status) {
+              CartRequestStatus.success => 'Item adicionado ao carrinho.',
+              CartRequestStatus.conflict =>
+                _addMessage ??
+                    'Produto ou quantidade indisponível. Confira sua escolha.',
+              CartRequestStatus.notFound =>
+                'Produto ou personalização indisponível. Confira sua escolha.',
+              CartRequestStatus.unauthorized =>
+                'Sessão expirada. Entre novamente.',
+              CartRequestStatus.forbidden =>
+                'Sua conta não pode adicionar itens ao carrinho.',
+              CartRequestStatus.notConfigured =>
+                'O carrinho não está configurado neste aplicativo.',
+              CartRequestStatus.unavailable =>
+                'Não foi possível confirmar a inclusão. O item pode ter sido criado. Confira o carrinho antes de tentar novamente.',
+            }),
+          ),
+          if (status == CartRequestStatus.conflict ||
+              status == CartRequestStatus.notFound)
+            OutlinedButton(
+              onPressed: _load,
+              child: const Text('Atualizar produto'),
+            ),
+          if (status == CartRequestStatus.unavailable &&
+              widget.onOpenCart != null)
+            OutlinedButton(
+              onPressed: widget.onOpenCart,
+              child: const Text('Abrir carrinho'),
+            ),
+        ],
+        const SizedBox(height: AppTokens.spacing16),
+        FilledButton(
+          onPressed:
+              _adding ||
+                  _currentIndeterminate ||
+                  _priceLoading ||
+                  _unitPrice == null ||
+                  _addStatus == CartRequestStatus.unauthorized ||
+                  _addStatus == CartRequestStatus.forbidden
+              ? null
+              : () => unawaited(_addToCart()),
+          child: Text(_adding ? 'Adicionando…' : 'Adicionar ao carrinho'),
+        ),
+        if (_adding)
+          Semantics(liveRegion: true, child: LinearProgressIndicator()),
       ],
     );
   }
@@ -410,6 +591,16 @@ String _formatPrice(String decimal) {
     (_) => '.',
   );
   return 'R\$ $whole,${parts[1]}';
+}
+
+String _formatSubtotal(String unitPrice, int quantity) {
+  final parts = unitPrice.split('.');
+  final cents =
+      (BigInt.parse(parts[0]) * BigInt.from(100) + BigInt.parse(parts[1])) *
+      BigInt.from(quantity);
+  final decimal =
+      '${cents ~/ BigInt.from(100)}.${(cents % BigInt.from(100)).toString().padLeft(2, '0')}';
+  return _formatPrice(decimal);
 }
 
 String _formatSignedPrice(String decimal) => decimal.startsWith('-')

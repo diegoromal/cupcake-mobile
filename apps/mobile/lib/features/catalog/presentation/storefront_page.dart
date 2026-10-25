@@ -32,6 +32,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
   static const _measurePerformance = bool.fromEnvironment('D29_PERF');
   final _products = <CatalogProduct>[];
   final _seenIds = <String>{};
+  final _indeterminateCartAttempts = <String>{};
   List<CatalogCategory> _categories = const [];
   CatalogCategory? _selectedCategory;
   bool _categoriesLoading = true;
@@ -475,6 +476,9 @@ class _StorefrontPageState extends State<StorefrontPage> {
                     productId: entry.product!.id,
                     session: widget.session,
                     api: widget.api,
+                    cartApi: widget.cartApi,
+                    onOpenCart: _openCart,
+                    indeterminateCartAttempts: _indeterminateCartAttempts,
                   ),
                 ),
               ),
