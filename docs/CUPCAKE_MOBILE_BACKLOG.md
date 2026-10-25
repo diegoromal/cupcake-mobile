@@ -18,7 +18,7 @@
 - [x] Fase 5 --- Endereço, cobertura e frete
 - [x] Fase 6 --- Pedido e reserva de estoque
 - [x] Fase 7 --- Pagamento
-- [ ] Fase 8 --- Operação da loja
+- [x] Fase 8 --- Operação da loja
 - [ ] Fase 9 --- Entregador
 - [ ] Fase 10 --- WhatsApp
 - [ ] Fase 11 --- Histórico e relatórios
@@ -157,18 +157,18 @@ produtos.
 
 ## 🏪 FASE 8 --- Operação da loja
 
-- [ ] **D62 --- Painel administrativo de pedidos**
-- [ ] **D63 --- Filtros e detalhes**
-- [ ] **D64 --- Máquina de estados do pedido**
-- [ ] **D65 --- Histórico de alterações**
-- [ ] **D66 --- Fluxo de produção**
-- [ ] **D67 --- Fluxo de retirada**
-  - [ ] `EM_PREPARO → PRONTO_PARA_RETIRADA`
-  - [ ] `PRONTO_PARA_RETIRADA → RETIRADO`
-  - [ ] Loja confirma retirada
-- [ ] **D68 --- Cancelamento enquanto `PAGO`**
-- [ ] **D69 --- Devolução do estoque no cancelamento**
-- [ ] **D70 --- Testes do ciclo de status**
+- [x] **D62 --- Painel administrativo de pedidos**
+- [x] **D63 --- Filtros e detalhes**
+- [x] **D64 --- Máquina de estados do pedido**
+- [x] **D65 --- Histórico de alterações**
+- [x] **D66 --- Fluxo de produção**
+- [x] **D67 --- Fluxo de retirada**
+  - [x] `EM_PREPARO → PRONTO_PARA_RETIRADA`
+  - [x] `PRONTO_PARA_RETIRADA → RETIRADO`
+  - [x] Loja confirma retirada
+- [x] **D68 --- Cancelamento enquanto `PAGO`**
+- [x] **D69 --- Devolução do estoque no cancelamento**
+- [x] **D70 --- Testes do ciclo de status**
 
 **Delivery:**
 `PENDENTE_PAGAMENTO → PAGO → EM_PREPARO → SAIU_PARA_ENTREGA → ENTREGUE`\
@@ -176,7 +176,7 @@ produtos.
 `PENDENTE_PAGAMENTO → PAGO → EM_PREPARO → PRONTO_PARA_RETIRADA → RETIRADO`\
 **Exceções:** `PENDENTE_PAGAMENTO → EXPIRADO` e `PAGO → CANCELADO`.
 
-**Marco 9:** loja consegue operar o pedido até a conclusão.
+**Marco 9 (concluído):** loja consegue operar o pedido até a conclusão.
 
 ## 🚗 FASE 9 --- Entregador
 
