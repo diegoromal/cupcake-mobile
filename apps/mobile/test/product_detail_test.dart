@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
+import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
 import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
 import 'package:cupcake_mobile/features/catalog/presentation/product_detail_page.dart';
 import 'package:cupcake_mobile/features/catalog/presentation/storefront_page.dart';
@@ -126,6 +127,50 @@ class Api extends CustomerCatalogApi {
   }
 }
 
+class CartApi extends CustomerCartApi {
+  final responses = <Future<CartResult>>[];
+  final additions = <(String, int, List<String>, String)>[];
+  int cartReads = 0;
+
+  @override
+  Future<CartResult> addItem({
+    required String accessToken,
+    required String productId,
+    required int quantity,
+    required List<String> personalizationIds,
+  }) {
+    additions.add((productId, quantity, personalizationIds, accessToken));
+    return responses.removeAt(0);
+  }
+
+  @override
+  Future<CartResult> fetchCart({required String accessToken}) async {
+    cartReads++;
+    return const CartResult(
+      CartRequestStatus.success,
+      cart: CustomerCart(
+        id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        items: [
+          CartItem(
+            id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            productId: id,
+            name: 'Cupcake atual',
+            imageAvailable: false,
+            quantity: 2,
+            personalizations: [],
+            unitPrice: '12.30',
+            subtotal: '24.60',
+            available: true,
+            reason: null,
+          ),
+        ],
+        subtotal: '24.60',
+        total: '24.60',
+      ),
+    );
+  }
+}
+
 Future<CustomerSession> session(AuthApi auth) async {
   final result = CustomerSession(
     authApi: auth,
@@ -140,18 +185,300 @@ Future<CustomerSession> session(AuthApi auth) async {
 Widget app(
   CustomerSession session,
   Api api, {
+  CustomerCartApi? cartApi,
   bool storefront = false,
   double scale = 1,
 }) => MaterialApp(
   home: MediaQuery(
     data: MediaQueryData(textScaler: TextScaler.linear(scale)),
     child: storefront
-        ? StorefrontPage(session: session, api: api)
-        : ProductDetailPage(productId: id, session: session, api: api),
+        ? StorefrontPage(session: session, api: api, cartApi: cartApi)
+        : ProductDetailPage(
+            productId: id,
+            session: session,
+            api: api,
+            cartApi: cartApi,
+          ),
   ),
 );
 
 void main() {
+  testWidgets(
+    'detalhe envia seleção e quantidade uma vez, confirma e carrinho lê linha',
+    (tester) async {
+      final active = await session(AuthApi());
+      addTearDown(active.dispose);
+      const option = CatalogPersonalization(
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        name: 'Cobertura',
+        description: null,
+        available: true,
+        adjustment: '1.00',
+      );
+      final catalog = Api([
+        Future.value(
+          const CatalogDetailResult(
+            CatalogRequestStatus.success,
+            product: CatalogProductDetail(
+              id: id,
+              name: 'Cupcake atual',
+              description: null,
+              price: '12.30',
+              category: category,
+              imageAvailable: false,
+              personalizations: [option],
+            ),
+          ),
+        ),
+      ]);
+      catalog.previewResponses.add(
+        Future.value(
+          const CatalogPriceResult(
+            CatalogRequestStatus.success,
+            unitPrice: '13.30',
+          ),
+        ),
+      );
+      final cart = CartApi();
+      final pending = Completer<CartResult>();
+      cart.responses.add(pending.future);
+      await tester.pumpWidget(
+        app(active, catalog, storefront: true, cartApi: cart),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nome antigo'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Cobertura'));
+      await tester.tap(find.text('Cobertura'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byTooltip('Aumentar quantidade'));
+      await tester.tap(find.byTooltip('Aumentar quantidade'));
+      await tester.pumpAndSettle();
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('Subtotal: R\$ 26,60'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+      await tester.tap(find.text('Adicionar ao carrinho'));
+      await tester.pump();
+      expect(cart.additions, hasLength(1));
+      expect(cart.additions.single.$1, id);
+      expect(cart.additions.single.$2, 2);
+      expect(cart.additions.single.$3, [option.id]);
+      expect(cart.additions.single.$4, isNotEmpty);
+      expect(find.text('Adicionando…'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Adicionando…'),
+            )
+            .onPressed,
+        isNull,
+      );
+      pending.complete(const CartResult(CartRequestStatus.success));
+      await tester.pumpAndSettle();
+      expect(find.text('Item adicionado ao carrinho.'), findsOneWidget);
+      expect(find.text('Detalhes do cupcake'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Carrinho'));
+      await tester.pumpAndSettle();
+      expect(cart.cartReads, 1);
+      expect(find.text('Cupcake atual'), findsOneWidget);
+      expect(find.text('Subtotal: R\$ 24,60'), findsOneWidget);
+    },
+  );
+
+  testWidgets('resultado indeterminado bloqueia reenvio e abre carrinho', (
+    tester,
+  ) async {
+    final active = await session(AuthApi());
+    addTearDown(active.dispose);
+    final catalog = Api([
+      Future.value(
+        const CatalogDetailResult(
+          CatalogRequestStatus.success,
+          product: detail,
+        ),
+      ),
+    ]);
+    final cart = CartApi();
+    cart.responses.add(
+      Future.value(const CartResult(CartRequestStatus.unavailable)),
+    );
+    cart.responses.add(
+      Future.value(const CartResult(CartRequestStatus.success)),
+    );
+    await tester.pumpWidget(
+      app(active, catalog, storefront: true, cartApi: cart),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nome antigo'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.tap(find.text('Adicionar ao carrinho'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('O item pode ter sido criado'), findsOneWidget);
+    expect(find.text('Item adicionado ao carrinho.'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 100);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Adicionar ao carrinho'),
+          )
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.text('Adicionar ao carrinho'));
+    await tester.pumpAndSettle();
+    expect(cart.additions, hasLength(1));
+    await tester.ensureVisible(find.text('Abrir carrinho'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Abrir carrinho'));
+    await tester.pumpAndSettle();
+    expect(find.text('Carrinho'), findsOneWidget);
+    expect(cart.cartReads, 1);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Detalhes do cupcake'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Adicionar ao carrinho'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(cart.additions, hasLength(1));
+    await tester.ensureVisible(find.byTooltip('Aumentar quantidade'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Aumentar quantidade'));
+    await tester.pumpAndSettle();
+    expect(find.text('2'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 100);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Adicionar ao carrinho'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    await tester.tap(find.text('Adicionar ao carrinho'));
+    await tester.pumpAndSettle();
+    expect(cart.additions, hasLength(2));
+    expect(cart.additions.last.$2, 2);
+    await tester.ensureVisible(find.byTooltip('Diminuir quantidade'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Diminuir quantidade'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 100);
+    expect(find.textContaining('O item pode ter sido criado'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Adicionar ao carrinho'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(cart.additions, hasLength(2));
+  });
+
+  testWidgets('reabrir mesmo payload indeterminado não reenviará POST', (
+    tester,
+  ) async {
+    final active = await session(AuthApi());
+    addTearDown(active.dispose);
+    final catalog = Api([
+      Future.value(
+        const CatalogDetailResult(
+          CatalogRequestStatus.success,
+          product: detail,
+        ),
+      ),
+      Future.value(
+        const CatalogDetailResult(
+          CatalogRequestStatus.success,
+          product: detail,
+        ),
+      ),
+    ]);
+    final cart = CartApi()
+      ..responses.add(
+        Future.value(const CartResult(CartRequestStatus.unavailable)),
+      );
+    await tester.pumpWidget(
+      app(active, catalog, storefront: true, cartApi: cart),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nome antigo'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.tap(find.text('Adicionar ao carrinho'));
+    await tester.pumpAndSettle();
+    expect(cart.additions, hasLength(1));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nome antigo'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    expect(find.textContaining('O item pode ter sido criado'), findsOneWidget);
+    expect(find.text('Abrir carrinho'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Adicionar ao carrinho'),
+          )
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.text('Adicionar ao carrinho'));
+    await tester.pumpAndSettle();
+    expect(cart.additions, hasLength(1));
+  });
+
+  testWidgets('conflito não confirma inclusão e permite atualizar o produto', (
+    tester,
+  ) async {
+    final active = await session(AuthApi());
+    addTearDown(active.dispose);
+    final catalog = Api([
+      Future.value(
+        const CatalogDetailResult(
+          CatalogRequestStatus.success,
+          product: detail,
+        ),
+      ),
+      Future.value(
+        const CatalogDetailResult(
+          CatalogRequestStatus.success,
+          product: detail,
+        ),
+      ),
+    ]);
+    final cart = CartApi()
+      ..responses.add(
+        Future.value(
+          const CartResult(
+            CartRequestStatus.conflict,
+            message: 'Quantidade superior à disponibilidade.',
+          ),
+        ),
+      );
+    await tester.pumpWidget(app(active, catalog, cartApi: cart));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.tap(find.text('Adicionar ao carrinho'));
+    await tester.pumpAndSettle();
+    expect(find.text('Quantidade superior à disponibilidade.'), findsOneWidget);
+    expect(find.text('Item adicionado ao carrinho.'), findsNothing);
+    await tester.ensureVisible(find.text('Atualizar produto'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Atualizar produto'));
+    await tester.pumpAndSettle();
+    expect(catalog.ids, [id, id]);
+    expect(find.text('Cupcake atual'), findsOneWidget);
+  });
   testWidgets('negative preview hides old price and 401 refreshes once', (
     tester,
   ) async {
@@ -199,6 +526,7 @@ void main() {
     ]);
     expect(find.textContaining('preço negativo'), findsOneWidget);
     expect(find.textContaining('Preço unitário:'), findsNothing);
+    expect(find.textContaining('Subtotal:'), findsNothing);
     expect(active.isAuthenticated, isTrue);
   });
   testWidgets(
@@ -262,6 +590,7 @@ void main() {
         find.bySemanticsLabel('Calculando preço unitário…'),
         findsOneWidget,
       );
+      expect(find.textContaining('Subtotal:'), findsNothing);
       await tester.tap(find.text('Cobertura'));
       await tester.pumpAndSettle();
       stale.complete(
@@ -273,6 +602,7 @@ void main() {
       await tester.pump();
       expect(find.textContaining('99,00'), findsNothing);
       expect(find.textContaining('Não foi possível calcular'), findsOneWidget);
+      expect(find.textContaining('Subtotal:'), findsNothing);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Preço unitário: R\$ 11,25'), findsOneWidget);

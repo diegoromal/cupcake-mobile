@@ -44,6 +44,8 @@ class ApiConfig {
 
   Uri? get cartUri => _validBaseUri?.resolve('/carrinho');
 
+  Uri? get cartItemsUri => _validBaseUri?.resolve('/carrinho/itens');
+
   Uri? get orderReviewUri => _validBaseUri?.resolve('/pedidos/revisao');
 
   Uri? get ordersUri => _validBaseUri?.resolve('/pedidos');
