@@ -146,6 +146,9 @@ describe('POST /pedidos', () => {
       await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
         .send({}).expect(200).expect({ id: userId, statusAtual: status });
       expect(method).toHaveBeenCalledWith(enderecoId, userId);
+      method.mockRejectedValueOnce(new ConflictException('Pedido atualizado por outra operação.'));
+      await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${admin}`)
+        .send({}).expect(409);
     }
   });
 
