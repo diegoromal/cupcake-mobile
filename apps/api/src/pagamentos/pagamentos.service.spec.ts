@@ -1,6 +1,8 @@
 import { GatewayTimeoutException, Logger } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
+import { StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { PagamentosService } from './pagamentos.service';
 import { PagamentoSimuladorService } from './pagamento-simulador.service';
 
@@ -12,6 +14,7 @@ describe('espera e consulta Pix', () => {
     dataTransacao: null, valorAplicavel: new Prisma.Decimal('12.34') };
   let prisma: { $transaction: jest.Mock; $executeRaw: jest.Mock; pagamento: { findFirst: jest.Mock } };
   let simulador: { simular: jest.Mock };
+  let agendarStatusPedido: jest.Mock;
   let service: PagamentosService;
 
   beforeEach(() => {
@@ -20,7 +23,12 @@ describe('espera e consulta Pix', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       pagamento: { findFirst: jest.fn().mockResolvedValue(pendente) } };
     simulador = { simular: jest.fn() };
-    service = new PagamentosService(prisma as unknown as PrismaService, simulador as PagamentoSimuladorService);
+    agendarStatusPedido = jest.fn().mockResolvedValue(undefined);
+    service = new PagamentosService(
+      prisma as unknown as PrismaService,
+      simulador as PagamentoSimuladorService,
+      { agendarStatusPedido } as unknown as NotificacoesService,
+    );
   });
   afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
 
@@ -76,8 +84,13 @@ describe('espera e consulta Pix', () => {
     });
     simulador.simular.mockResolvedValue('APROVADO');
     prisma.$transaction.mockResolvedValueOnce({ pagamento: cartao, criado: true })
-      .mockResolvedValueOnce({ ...cartao, resultado: 'APROVADO',
-        dataTransacao: new Date('2026-10-23T12:00:00Z') });
+      .mockResolvedValueOnce({
+        pagamento: { ...cartao, resultado: 'APROVADO',
+          dataTransacao: new Date('2026-10-23T12:00:00Z') },
+        evento: {
+          pedidoId, identificadorNegocio: 'PED-123', telefone: '11999999999', status: StatusPedido.PAGO,
+        },
+      });
 
     await expect(service.iniciarCartao(usuarioId, pedidoId, id)).resolves.toEqual({
       criado: true,
@@ -86,6 +99,9 @@ describe('espera e consulta Pix', () => {
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     expect(simulador.simular).toHaveBeenCalledWith(id);
+    expect(agendarStatusPedido).toHaveBeenCalledWith({
+      pedidoId, identificadorNegocio: 'PED-123', telefone: '11999999999', status: StatusPedido.PAGO,
+    });
   });
 
   it('consulta tentativa de cartão sem iniciar nova simulação nem escrita', async () => {

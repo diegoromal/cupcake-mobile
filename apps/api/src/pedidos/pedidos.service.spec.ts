@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { ModalidadeRecebimento } from '../generated/prisma/enums';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { PedidosService } from './pedidos.service';
 
 const usuarioId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -9,6 +10,9 @@ const outroProdutoId = '99999999-9999-4999-8999-999999999999';
 const enderecoId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const personalizacaoId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const dinheiro = (value: string) => new Prisma.Decimal(value);
+const criarNotificacoesFalsas = () => ({
+  agendarStatusPedido: jest.fn().mockResolvedValue(undefined),
+}) as unknown as NotificacoesService;
 
 function linha(quantidade = 2) {
   return {
@@ -52,27 +56,39 @@ describe('PedidosService', () => {
   };
   const transaction = jest.fn(async (callback: (client: typeof db) => Promise<unknown>) => callback(db));
   const service = new PedidosService({ $transaction: transaction,
-    pedido: { findFirst: findOrder } } as never);
+    pedido: { findFirst: findOrder } } as never, criarNotificacoesFalsas());
 
   describe('iniciarProducao', () => {
     const agora = new Date('2026-10-24T12:00:00.000Z');
 
     it('valida PAGO, altera o pedido e registra o administrador no histórico', async () => {
       const queryRaw = jest.fn()
-        .mockResolvedValueOnce([{ statusAtual: 'PAGO', modalidade: 'ENTREGA' }])
+        .mockResolvedValueOnce([{
+          statusAtual: 'PAGO', modalidade: 'ENTREGA',
+          identificadorNegocio: 'PED-123', telefone: '11999999999',
+        }])
         .mockResolvedValueOnce([{ agora }]);
       const updateMany = jest.fn().mockResolvedValue({ count: 1 });
       const create = jest.fn().mockResolvedValue({});
-      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
-        $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
-      }));
+      let committed = false;
+      const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => {
+        const result = await callback({
+          $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
+        });
+        committed = true;
+        return result;
+      });
+      const agendarStatusPedido = jest.fn().mockImplementation(() => {
+        expect(committed).toBe(true);
+        return Promise.resolve();
+      });
       const detalhe = jest.fn().mockResolvedValue({
         id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: agora,
         cliente: { nome: 'Ana' }, modalidade: 'ENTREGA', statusAtual: 'EM_PREPARO',
         valorItens: dinheiro('10.00'), freteAplicado: dinheiro('2.00'), total: dinheiro('12.00'),
         enderecoEntregaSnapshot: null, pagamentos: [], historicosStatus: [], itens: [],
       });
-      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detalhe } } as never);
+      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detalhe } } as never, { agendarStatusPedido } as never);
 
       await expect(adminService.iniciarProducao(usuarioId, enderecoId)).resolves.toMatchObject({
         id: usuarioId, statusAtual: 'EM_PREPARO',
@@ -85,6 +101,10 @@ describe('PedidosService', () => {
         pedidoId: usuarioId, statusRegistrado: 'EM_PREPARO', dataHora: agora,
         responsavelUsuarioId: enderecoId,
       } });
+      expect(agendarStatusPedido).toHaveBeenCalledWith({
+        pedidoId: usuarioId, identificadorNegocio: 'PED-123',
+        telefone: '11999999999', status: 'EM_PREPARO',
+      });
     });
 
     it('rejeita status diferente de PAGO sem alterar nem registrar histórico', async () => {
@@ -94,7 +114,7 @@ describe('PedidosService', () => {
       const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
         $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
       }));
-      const adminService = new PedidosService({ $transaction: tx } as never);
+      const adminService = new PedidosService({ $transaction: tx } as never, criarNotificacoesFalsas());
 
       await expect(adminService.iniciarProducao(usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
       expect(updateMany).not.toHaveBeenCalled();
@@ -107,10 +127,14 @@ describe('PedidosService', () => {
     const entregadorId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 
     it('atribui entregador, avança o pedido e registra o administrador na mesma transação', async () => {
-      const queryRaw = jest.fn().mockResolvedValueOnce([{ statusAtual: 'EM_PREPARO', modalidade: 'ENTREGA' }])
+      const queryRaw = jest.fn().mockResolvedValueOnce([{
+        statusAtual: 'EM_PREPARO', modalidade: 'ENTREGA',
+        identificadorNegocio: 'PED-123', telefone: '11999999999',
+      }])
         .mockResolvedValueOnce([{ id: entregadorId }]).mockResolvedValueOnce([{ agora }]);
       const updateMany = jest.fn().mockResolvedValue({ count: 1 });
       const createHistory = jest.fn().mockResolvedValue({});
+      const agendarStatusPedido = jest.fn().mockResolvedValue(undefined);
       const detail = jest.fn().mockResolvedValue({
         id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: agora,
         cliente: { nome: 'Ana' }, entregador: { id: entregadorId, nome: 'João' },
@@ -121,7 +145,7 @@ describe('PedidosService', () => {
       const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
         $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create: createHistory },
       }));
-      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detail } } as never);
+      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detail } } as never, { agendarStatusPedido } as never);
 
       await expect(adminService.sairParaEntrega(usuarioId, entregadorId, enderecoId)).resolves.toMatchObject({
         statusAtual: 'SAIU_PARA_ENTREGA', entregador: { id: entregadorId },
@@ -136,6 +160,10 @@ describe('PedidosService', () => {
         pedidoId: usuarioId, statusRegistrado: 'SAIU_PARA_ENTREGA', dataHora: agora,
         responsavelUsuarioId: enderecoId,
       } });
+      expect(agendarStatusPedido).toHaveBeenCalledWith({
+        pedidoId: usuarioId, identificadorNegocio: 'PED-123',
+        telefone: '11999999999', status: 'SAIU_PARA_ENTREGA',
+      });
     });
 
     it.each([
@@ -149,7 +177,7 @@ describe('PedidosService', () => {
       const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
         $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create: createHistory },
       }));
-      const adminService = new PedidosService({ $transaction: tx } as never);
+      const adminService = new PedidosService({ $transaction: tx } as never, criarNotificacoesFalsas());
 
       await expect(adminService.sairParaEntrega(usuarioId, entregadorId, enderecoId)).rejects.toBeInstanceOf(exception);
       expect(queryRaw).toHaveBeenCalledTimes(1);
@@ -165,7 +193,7 @@ describe('PedidosService', () => {
       const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
         $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create: createHistory },
       }));
-      const adminService = new PedidosService({ $transaction: tx } as never);
+      const adminService = new PedidosService({ $transaction: tx } as never, criarNotificacoesFalsas());
 
       await expect(adminService.sairParaEntrega(usuarioId, entregadorId, enderecoId)).rejects.toBeInstanceOf(NotFoundException);
       expect(updateMany).not.toHaveBeenCalled();
@@ -186,7 +214,7 @@ describe('PedidosService', () => {
         pedido: { updateMany },
         historicoStatusPedido: { create: createHistory },
       }));
-      const service = new PedidosService({ $transaction: tx } as never);
+      const service = new PedidosService({ $transaction: tx } as never, criarNotificacoesFalsas());
 
       await expect(service.confirmarEntrega(pedidoId, entregadorAutenticadoId))
         .rejects.toBeInstanceOf(NotFoundException);
@@ -223,7 +251,7 @@ describe('PedidosService', () => {
         movimentacaoEstoque: { create: createMovement },
       }));
       return {
-        service: new PedidosService({ $transaction: tx } as never),
+        service: new PedidosService({ $transaction: tx } as never, criarNotificacoesFalsas()),
         queryRaw, updatePedido, updateEstoque, updateReserva, createHistory, createMovement,
       };
     };
@@ -346,13 +374,15 @@ describe('PedidosService', () => {
       const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
         $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
       }));
-      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detalhe } } as never);
+      const agendarStatusPedido = jest.fn().mockResolvedValue(undefined);
+      const adminService = new PedidosService({ $transaction: tx, pedido: { findUnique: detalhe } } as never, { agendarStatusPedido } as never);
 
       await expect(adminService[operation](usuarioId, enderecoId)).resolves.toMatchObject({ statusAtual: proximo });
       expect(updateMany).toHaveBeenCalledWith({ where: { id: usuarioId, statusAtual: atual }, data: { statusAtual: proximo } });
       expect(create).toHaveBeenCalledWith({ data: {
         pedidoId: usuarioId, statusRegistrado: proximo, dataHora: agora, responsavelUsuarioId: enderecoId,
       } });
+      expect(agendarStatusPedido).toHaveBeenCalledWith(expect.objectContaining({ status: proximo }));
     });
 
     it.each([
@@ -365,7 +395,7 @@ describe('PedidosService', () => {
       const tx = jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback({
         $queryRaw: queryRaw, pedido: { updateMany }, historicoStatusPedido: { create },
       }));
-      const adminService = new PedidosService({ $transaction: tx } as never);
+      const adminService = new PedidosService({ $transaction: tx } as never, criarNotificacoesFalsas());
       await expect(adminService[operation](usuarioId, enderecoId)).rejects.toBeInstanceOf(ConflictException);
       expect(updateMany).not.toHaveBeenCalled();
       expect(create).not.toHaveBeenCalled();
@@ -374,7 +404,7 @@ describe('PedidosService', () => {
 
   it('lista somente campos operacionais e ordena pela confirmação do pagamento', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
-    const adminService = new PedidosService({ pedido: { findMany } } as never);
+    const adminService = new PedidosService({ pedido: { findMany } } as never, criarNotificacoesFalsas());
 
     await expect(adminService.listarParaAdministracao()).resolves.toEqual([]);
     expect(findMany).toHaveBeenCalledWith({
@@ -404,7 +434,7 @@ describe('PedidosService', () => {
       historicosStatus: [{ id: 'history-1', statusRegistrado: 'PAGO',
         dataHora: new Date('2026-10-24T12:01:00Z'), responsavel: null }],
     });
-    const adminService = new PedidosService({ pedido: { findUnique } } as never);
+    const adminService = new PedidosService({ pedido: { findUnique } } as never, criarNotificacoesFalsas());
     await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toEqual({
       id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
       cliente: { nome: 'Ana' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
@@ -431,7 +461,7 @@ describe('PedidosService', () => {
 
   it('retorna 404 para pedido inexistente', async () => {
     const findUnique = jest.fn().mockResolvedValue(null);
-    const adminService = new PedidosService({ pedido: { findUnique } } as never);
+    const adminService = new PedidosService({ pedido: { findUnique } } as never, criarNotificacoesFalsas());
     await expect(adminService.detalharParaAdministracao(usuarioId)).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -442,7 +472,7 @@ describe('PedidosService', () => {
       valorItens: dinheiro('10.10'), freteAplicado: dinheiro('0.00'), total: dinheiro('10.10'),
       enderecoEntregaSnapshot: { rua: 'Endereço indevido' }, itens: [], pagamentos: [], historicosStatus: [],
     });
-    const adminService = new PedidosService({ pedido: { findUnique } } as never);
+    const adminService = new PedidosService({ pedido: { findUnique } } as never, criarNotificacoesFalsas());
     await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toMatchObject({
       enderecoEntregaSnapshot: null, formaPagamento: null,
     });

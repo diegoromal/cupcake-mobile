@@ -19,6 +19,7 @@ export function resolvePort(value = process.env.PORT): number {
 
 export async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
   await app.listen(resolvePort());
 }
 

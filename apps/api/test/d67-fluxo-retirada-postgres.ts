@@ -20,7 +20,7 @@ async function main() {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
   const blocker = new Client({ connectionString: raw });
   const observer = new Client({ connectionString: raw });
-  const service = new PedidosService(prisma as never);
+  const service = new PedidosService(prisma as never, { agendarStatusPedido: async () => undefined } as never);
   const clienteId = randomUUID(), adminId = randomUUID();
   const prontoId = randomUUID(), retiradoId = randomUUID(), invalidoId = randomUUID();
   const concorrenteId = randomUUID(), rollbackId = randomUUID();

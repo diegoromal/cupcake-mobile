@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../prisma/prisma.module';
 import { EvolutionApiService } from './evolution-api.service';
+import { NotificacoesService } from './notificacoes.service';
 
 @Module({
-  providers: [EvolutionApiService],
-  exports: [EvolutionApiService],
+  imports: [PrismaModule],
+  providers: [EvolutionApiService, NotificacoesService],
+  exports: [EvolutionApiService, NotificacoesService],
 })
 export class NotificacoesModule {}
