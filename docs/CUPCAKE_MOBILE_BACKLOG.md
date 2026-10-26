@@ -21,7 +21,7 @@
 - [x] Fase 8 --- Operação da loja
 - [x] Fase 9 --- Entregador
 - [x] Fase 10 --- WhatsApp
-- [ ] Fase 11 --- Histórico e relatórios
+- [x] Fase 11 --- Histórico e relatórios
 - [ ] Fase 12 --- IHC e documentação visual
 - [ ] Fase 13 --- Qualidade
 - [ ] Fase 14 --- Entrega
@@ -213,14 +213,14 @@ produtos.
 
 ## 📋 FASE 11 --- Histórico e relatórios
 
-- [ ] **D83 --- Endpoint de histórico do cliente**
-- [ ] **D84 --- Tela Meus Pedidos**
-- [ ] **D85 --- Atualização periódica do status**
-- [ ] **D86 --- Relatório por período**
-- [ ] **D87 --- Total vendido + quantidade de pedidos**
-- [ ] **D88 --- Considerar `ENTREGUE` + `RETIRADO`**
-- [ ] **D89 --- Exportação em PDF**
-- [ ] **D90 --- Testes de histórico e relatório**
+- [x] **D83 --- Endpoint de histórico do cliente**
+- [x] **D84 --- Tela Meus Pedidos**
+- [x] **D85 --- Atualização periódica do status**
+- [x] **D86 --- Relatório por período**
+- [x] **D87 --- Total vendido + quantidade de pedidos**
+- [x] **D88 --- Considerar `ENTREGUE` + `RETIRADO`**
+- [x] **D89 --- Exportação em PDF**
+- [x] **D90 --- Testes de histórico e relatório**
 
 ## 🎨 FASE 12 --- IHC e documentação visual
 
