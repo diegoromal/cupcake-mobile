@@ -50,6 +50,8 @@ class ApiConfig {
 
   Uri? get ordersUri => _validBaseUri?.resolve('/pedidos');
 
+  Uri? get courierOrdersUri => _validBaseUri?.resolve('/entregador/pedidos');
+
   Uri? paymentUri(String orderId, String method) {
     if (!_itemIdPattern.hasMatch(orderId) ||
         (method != 'pix' && method != 'cartao')) {
