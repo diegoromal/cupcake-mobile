@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/navigation/app_navigation.dart';
 import '../../../core/design/app_tokens.dart';
+import '../data/customer_auth_api.dart';
 import '../data/customer_registration_api.dart';
 import '../session/customer_session.dart';
 import 'customer_sign_up_validation.dart';
+import 'courier_access_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
   const CustomerLoginPage({
@@ -142,8 +144,10 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                         ),
                       ),
                       const SizedBox(height: AppTokens.spacing12),
-                      const Text(
-                        'Acesse sua conta para continuar.',
+                      Text(
+                        widget.session.profile == SessionProfile.courier
+                            ? 'Entre para acessar suas entregas.'
+                            : 'Acesse sua conta para continuar.',
                         textAlign: TextAlign.center,
                       ),
                       if (widget.session.sessionExpired) ...[
@@ -236,15 +240,27 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                         child: const Text('Entrar'),
                       ),
                       const SizedBox(height: AppTokens.spacing12),
-                      TextButton(
-                        onPressed: _loading
-                            ? null
-                            : () => AppNavigation.openCustomerSignUp(
-                                context,
-                                registrationApi: widget.registrationApi,
-                              ),
-                        child: const Text('Criar conta'),
-                      ),
+                      if (widget.session.profile == SessionProfile.customer)
+                        TextButton(
+                          onPressed: _loading
+                              ? null
+                              : () => AppNavigation.openCustomerSignUp(
+                                  context,
+                                  registrationApi: widget.registrationApi,
+                                ),
+                          child: const Text('Criar conta'),
+                        ),
+                      if (widget.session.profile == SessionProfile.customer)
+                        TextButton(
+                          onPressed: _loading
+                              ? null
+                              : () => Navigator.of(context).push<void>(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const CourierAccessPage(),
+                                  ),
+                                ),
+                          child: const Text('Acesso do entregador'),
+                        ),
                     ],
                   ),
                 ),

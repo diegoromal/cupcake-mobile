@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
+import '../data/customer_auth_api.dart';
 import '../data/customer_registration_api.dart';
 import '../session/customer_session.dart';
 import '../../catalog/data/customer_catalog_api.dart';
 import '../../catalog/presentation/storefront_page.dart';
 import 'customer_login_page.dart';
+import '../../courier/presentation/courier_home_page.dart';
 
 class CustomerSessionPage extends StatefulWidget {
   const CustomerSessionPage({
@@ -66,10 +68,13 @@ class _CustomerSessionPageState extends State<CustomerSessionPage>
         session: widget.session,
         registrationApi: widget.registrationApi,
       ),
-      CustomerSessionState.authenticated => StorefrontPage(
-        session: widget.session,
-        api: widget.catalogApi ?? CustomerCatalogApi(),
-      ),
+      CustomerSessionState.authenticated =>
+        widget.session.profile == SessionProfile.courier
+            ? CourierHomePage(session: widget.session)
+            : StorefrontPage(
+                session: widget.session,
+                api: widget.catalogApi ?? CustomerCatalogApi(),
+              ),
       CustomerSessionState.restorationUnavailable => _SessionRecoveryPage(
         session: widget.session,
         message:

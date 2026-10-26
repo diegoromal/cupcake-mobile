@@ -13,13 +13,24 @@ enum AuthRequestStatus {
   invalidToken,
 }
 
+enum SessionProfile {
+  customer('CLIENTE'),
+  courier('ENTREGADOR');
+
+  const SessionProfile(this.claim);
+  final String claim;
+}
+
 class CustomerTokens {
   const CustomerTokens({required this.accessToken, required this.refreshToken});
 
   final String accessToken;
   final String refreshToken;
 
-  static CustomerTokens? parseLogin(Object? body) {
+  static CustomerTokens? parseLogin(
+    Object? body, {
+    SessionProfile profile = SessionProfile.customer,
+  }) {
     if (body is! Map<String, dynamic> ||
         body.length != 2 ||
         body.keys.toSet().difference({
@@ -28,8 +39,16 @@ class CustomerTokens {
         }).isNotEmpty) {
       return null;
     }
-    final access = _parseJwt(body['accessToken'], expectedType: 'access');
-    final refresh = _parseJwt(body['refreshToken'], expectedType: 'refresh');
+    final access = _parseJwt(
+      body['accessToken'],
+      expectedType: 'access',
+      profile: profile,
+    );
+    final refresh = _parseJwt(
+      body['refreshToken'],
+      expectedType: 'refresh',
+      profile: profile,
+    );
     if (access == null ||
         refresh == null ||
         access.subject != refresh.subject) {
@@ -41,9 +60,16 @@ class CustomerTokens {
     );
   }
 
-  CustomerTokens? withAccessToken(Object? value) {
-    final access = _parseJwt(value, expectedType: 'access');
-    final refresh = _parseJwt(refreshToken, expectedType: 'refresh');
+  CustomerTokens? withAccessToken(
+    Object? value, {
+    SessionProfile profile = SessionProfile.customer,
+  }) {
+    final access = _parseJwt(value, expectedType: 'access', profile: profile);
+    final refresh = _parseJwt(
+      refreshToken,
+      expectedType: 'refresh',
+      profile: profile,
+    );
     if (access == null ||
         refresh == null ||
         access.subject != refresh.subject) {
@@ -55,24 +81,40 @@ class CustomerTokens {
     );
   }
 
-  bool get hasRecoverableRefresh =>
-      _parseJwt(refreshToken, expectedType: 'refresh') != null;
+  bool hasRecoverableRefreshFor(SessionProfile profile) =>
+      _parseJwt(refreshToken, expectedType: 'refresh', profile: profile) !=
+      null;
 
-  static bool isCustomerAccessToken(String token) =>
-      _parseJwt(token, expectedType: 'access') != null;
+  static bool isAccessToken(String token, SessionProfile profile) =>
+      _parseJwt(token, expectedType: 'access', profile: profile) != null;
 
-  bool get accessNeedsRefresh => accessNeedsRefreshAt(DateTime.now());
+  bool accessNeedsRefreshFor(SessionProfile profile) =>
+      accessNeedsRefreshAt(DateTime.now(), profile: profile);
 
-  bool accessNeedsRefreshAt(DateTime now) {
-    final claims = _parseJwt(accessToken, expectedType: 'access');
+  bool get accessNeedsRefresh =>
+      accessNeedsRefreshAt(DateTime.now(), profile: SessionProfile.customer);
+
+  bool accessNeedsRefreshAt(
+    DateTime now, {
+    SessionProfile profile = SessionProfile.customer,
+  }) {
+    final claims = _parseJwt(
+      accessToken,
+      expectedType: 'access',
+      profile: profile,
+    );
     return claims == null ||
         claims.expiresAt <= now.millisecondsSinceEpoch ~/ 1000 + 60;
   }
 
-  Duration timeUntilAccessRefreshAt(DateTime now) {
+  Duration timeUntilAccessRefreshAt(
+    DateTime now, {
+    SessionProfile profile = SessionProfile.customer,
+  }) {
     final claims = _parseJwt(
       accessToken,
       expectedType: 'access',
+      profile: profile,
       allowExpired: true,
     );
     if (claims == null) return Duration.zero;
@@ -80,10 +122,14 @@ class CustomerTokens {
     return Duration(seconds: seconds > 0 ? seconds : 0);
   }
 
-  Duration timeUntilAccessExpiryAt(DateTime now) {
+  Duration timeUntilAccessExpiryAt(
+    DateTime now, {
+    SessionProfile profile = SessionProfile.customer,
+  }) {
     final claims = _parseJwt(
       accessToken,
       expectedType: 'access',
+      profile: profile,
       allowExpired: true,
     );
     if (claims == null) return Duration.zero;
@@ -96,7 +142,10 @@ class CustomerTokens {
     'refreshToken': refreshToken,
   };
 
-  static CustomerTokens? fromJson(Object? value) {
+  static CustomerTokens? fromJson(
+    Object? value, {
+    SessionProfile profile = SessionProfile.customer,
+  }) {
     if (value is! Map<String, dynamic> || value.length != 2) return null;
     final accessToken = value['accessToken'];
     final refreshToken = value['refreshToken'];
@@ -104,9 +153,14 @@ class CustomerTokens {
     final access = _parseJwt(
       accessToken,
       expectedType: 'access',
+      profile: profile,
       allowExpired: true,
     );
-    final refresh = _parseJwt(refreshToken, expectedType: 'refresh');
+    final refresh = _parseJwt(
+      refreshToken,
+      expectedType: 'refresh',
+      profile: profile,
+    );
     if (access == null ||
         refresh == null ||
         access.subject != refresh.subject) {
@@ -114,6 +168,17 @@ class CustomerTokens {
     }
     return CustomerTokens(accessToken: accessToken, refreshToken: refreshToken);
   }
+
+  bool matchesProfile(SessionProfile profile) =>
+      _parseJwt(
+            accessToken,
+            expectedType: 'access',
+            profile: profile,
+            allowExpired: true,
+          ) !=
+          null &&
+      _parseJwt(refreshToken, expectedType: 'refresh', profile: profile) !=
+          null;
 }
 
 class AuthRequestResult {
@@ -128,12 +193,14 @@ class CustomerAuthApi {
   CustomerAuthApi({
     ApiConfig? config,
     HttpClient Function()? clientFactory,
+    this.profile = SessionProfile.customer,
     this.timeout = const Duration(seconds: 30),
   }) : _config = config ?? ApiConfig(),
        _clientFactory = clientFactory ?? HttpClient.new;
 
   final ApiConfig _config;
   final HttpClient Function() _clientFactory;
+  final SessionProfile profile;
   final Duration timeout;
 
   Future<AuthRequestResult> login({
@@ -212,7 +279,7 @@ class CustomerAuthApi {
       return const AuthRequestResult(AuthRequestStatus.unavailable);
     }
     if (login) {
-      final tokens = CustomerTokens.parseLogin(decoded);
+      final tokens = CustomerTokens.parseLogin(decoded, profile: profile);
       return tokens == null
           ? const AuthRequestResult(AuthRequestStatus.invalidToken)
           : AuthRequestResult(AuthRequestStatus.success, tokens: tokens);
@@ -221,7 +288,7 @@ class CustomerAuthApi {
       return const AuthRequestResult(AuthRequestStatus.invalidToken);
     }
     final access = decoded['accessToken'];
-    return access is String && CustomerTokens.isCustomerAccessToken(access)
+    return access is String && CustomerTokens.isAccessToken(access, profile)
         ? AuthRequestResult(AuthRequestStatus.success, accessToken: access)
         : const AuthRequestResult(AuthRequestStatus.invalidToken);
   }
@@ -237,6 +304,7 @@ class _JwtClaims {
 _JwtClaims? _parseJwt(
   Object? token, {
   required String expectedType,
+  SessionProfile profile = SessionProfile.customer,
   bool allowExpired = false,
 }) {
   if (token is! String) return null;
@@ -248,7 +316,7 @@ _JwtClaims? _parseJwt(
     );
     if (decoded is! Map<String, dynamic> ||
         decoded['type'] != expectedType ||
-        decoded['perfil'] != 'CLIENTE' ||
+        decoded['perfil'] != profile.claim ||
         decoded['sub'] is! String ||
         !_isUuid(decoded['sub'] as String) ||
         decoded['iat'] is! int ||

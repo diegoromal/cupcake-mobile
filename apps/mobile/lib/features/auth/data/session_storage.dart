@@ -11,15 +11,24 @@ abstract interface class SessionStorage {
 }
 
 class SecureSessionStorage implements SessionStorage {
-  SecureSessionStorage({FlutterSecureStorage? storage})
-    : _storage =
-          storage ??
-          const FlutterSecureStorage(
-            iOptions: IOSOptions(accessibility: KeychainAccessibility.unlocked),
-          );
+  SecureSessionStorage({
+    FlutterSecureStorage? storage,
+    this.profile = SessionProfile.customer,
+  }) : _storage =
+           storage ??
+           const FlutterSecureStorage(
+             iOptions: IOSOptions(
+               accessibility: KeychainAccessibility.unlocked,
+             ),
+           );
 
-  static const _key = 'customer_session';
+  final SessionProfile profile;
   final FlutterSecureStorage _storage;
+
+  String get _key => switch (profile) {
+    SessionProfile.customer => 'customer_session',
+    SessionProfile.courier => 'courier_session',
+  };
 
   @override
   Future<CustomerTokens?> read() async {
@@ -27,7 +36,7 @@ class SecureSessionStorage implements SessionStorage {
     if (value == null) return null;
     try {
       final decoded = jsonDecode(value);
-      final tokens = CustomerTokens.fromJson(decoded);
+      final tokens = CustomerTokens.fromJson(decoded, profile: profile);
       if (tokens == null) await clear();
       return tokens;
     } on FormatException {
