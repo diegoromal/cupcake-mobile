@@ -213,4 +213,80 @@ void main() {
       CourierOrdersStatus.notConfigured,
     );
   });
+
+  test(
+    'PATCH confirmação envia só rota e Bearer e valida resposta do banco',
+    () async {
+      var body = jsonEncode({
+        'statusAtual': 'ENTREGUE',
+        'dataHora': '2026-10-25T12:34:00.000Z',
+      });
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(server.close);
+      server.listen((request) async {
+        expect(request.method, 'PATCH');
+        expect(request.uri.path, '/entregador/pedidos/$_id/confirmar-entrega');
+        expect(request.uri.query, isEmpty);
+        expect(
+          request.headers.value(HttpHeaders.authorizationHeader),
+          'Bearer token',
+        );
+        expect(await utf8.decoder.bind(request).join(), isEmpty);
+        request.response
+          ..headers.contentType = ContentType.json
+          ..write(body);
+        await request.response.close();
+      });
+      final api = CourierOrdersApi(
+        config: ApiConfig(
+          baseUrl: 'http://${server.address.address}:${server.port}',
+        ),
+      );
+      Future<CourierDeliveryConfirmationResult> call() =>
+          api.confirmDelivery(orderId: _id, accessToken: 'token');
+      final result = await call();
+      expect(result.status, CourierOrdersStatus.success);
+      expect(result.deliveredAt, DateTime.utc(2026, 10, 25, 12, 34));
+      body = jsonEncode({'statusAtual': 'ENTREGUE', 'dataHora': 'invalid'});
+      expect((await call()).status, CourierOrdersStatus.unavailable);
+      body = jsonEncode({
+        'statusAtual': 'SAIU_PARA_ENTREGA',
+        'dataHora': '2026-10-25T12:34:00.000Z',
+      });
+      expect((await call()).status, CourierOrdersStatus.unavailable);
+    },
+  );
+
+  test('PATCH distingue 401, 403, 404, 409 e falha transitória', () async {
+    var status = HttpStatus.unauthorized;
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    server.listen((request) async {
+      request.response.statusCode = status;
+      await request.response.close();
+    });
+    final api = CourierOrdersApi(
+      config: ApiConfig(
+        baseUrl: 'http://${server.address.address}:${server.port}',
+      ),
+    );
+    Future<CourierOrdersStatus> call() async =>
+        (await api.confirmDelivery(orderId: _id, accessToken: 'token')).status;
+    expect(await call(), CourierOrdersStatus.unauthorized);
+    status = HttpStatus.forbidden;
+    expect(await call(), CourierOrdersStatus.forbidden);
+    status = HttpStatus.notFound;
+    expect(await call(), CourierOrdersStatus.notFound);
+    status = HttpStatus.conflict;
+    expect(await call(), CourierOrdersStatus.conflict);
+    status = HttpStatus.serviceUnavailable;
+    expect(await call(), CourierOrdersStatus.unavailable);
+    expect(
+      (await api.confirmDelivery(
+        orderId: 'invalid',
+        accessToken: 'token',
+      )).status,
+      CourierOrdersStatus.notConfigured,
+    );
+  });
 }

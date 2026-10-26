@@ -57,6 +57,11 @@ class ApiConfig {
     return _validBaseUri?.resolve('/entregador/pedidos/$orderId');
   }
 
+  Uri? courierConfirmDeliveryUri(String orderId) {
+    final detail = courierOrderDetailUri(orderId);
+    return detail?.replace(path: '${detail.path}/confirmar-entrega');
+  }
+
   Uri? paymentUri(String orderId, String method) {
     if (!_itemIdPattern.hasMatch(orderId) ||
         (method != 'pix' && method != 'cartao')) {

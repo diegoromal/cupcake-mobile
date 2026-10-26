@@ -10,11 +10,13 @@ class CourierOrderDetailPage extends StatefulWidget {
   const CourierOrderDetailPage({
     super.key,
     required this.orderId,
+    required this.initialStatus,
     required this.session,
     required this.api,
   });
 
   final String orderId;
+  final String initialStatus;
   final CustomerSession session;
   final CourierOrdersApi api;
 
@@ -27,6 +29,13 @@ class _CourierOrderDetailPageState extends State<CourierOrderDetailPage> {
   bool _loading = true;
   CourierOrdersStatus? _status;
   CourierOrderDetail? _detail;
+  late String _deliveryStatus = widget.initialStatus;
+  DateTime? _deliveredAt;
+  bool _confirming = false;
+  bool _checkingStatus = false;
+  bool _indeterminate = false;
+  bool _confirmationBlocked = false;
+  String? _confirmationMessage;
 
   @override
   void initState() {
@@ -106,6 +115,154 @@ class _CourierOrderDetailPageState extends State<CourierOrderDetailPage> {
     });
   }
 
+  Future<void> _confirmDelivery() async {
+    if (!widget.session.isAuthenticated ||
+        _confirming ||
+        _checkingStatus ||
+        _indeterminate ||
+        _confirmationBlocked ||
+        _deliveryStatus != 'SAIU_PARA_ENTREGA') {
+      return;
+    }
+    final generation = ++_generation;
+    setState(() {
+      _confirming = true;
+      _confirmationMessage = null;
+    });
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    var result = token == null
+        ? const CourierDeliveryConfirmationResult(
+            CourierOrdersStatus.unauthorized,
+          )
+        : await widget.api.confirmDelivery(
+            orderId: widget.orderId,
+            accessToken: token,
+          );
+    var uncertain =
+        result.status == CourierOrdersStatus.unavailable && token != null;
+    if (result.status == CourierOrdersStatus.unauthorized &&
+        token != null &&
+        mounted &&
+        generation == _generation &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (!mounted ||
+          generation != _generation ||
+          !widget.session.isAuthenticated) {
+        return;
+      }
+      result = token == null
+          ? widget.session.refreshUnavailable
+                ? const CourierDeliveryConfirmationResult(
+                    CourierOrdersStatus.unavailable,
+                  )
+                : const CourierDeliveryConfirmationResult(
+                    CourierOrdersStatus.unauthorized,
+                  )
+          : await widget.api.confirmDelivery(
+              orderId: widget.orderId,
+              accessToken: token,
+            );
+      uncertain =
+          token != null && result.status == CourierOrdersStatus.unavailable;
+    }
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    if (result.status == CourierOrdersStatus.unauthorized) {
+      await widget.session.signOut();
+      return;
+    }
+    setState(() {
+      _confirming = false;
+      if (result.status == CourierOrdersStatus.success) {
+        _deliveryStatus = 'ENTREGUE';
+        _deliveredAt = result.deliveredAt;
+        _confirmationMessage = 'Entrega confirmada.';
+      } else if (result.status == CourierOrdersStatus.forbidden ||
+          result.status == CourierOrdersStatus.notFound) {
+        _confirmationBlocked = true;
+        _confirmationMessage = result.status == CourierOrdersStatus.forbidden
+            ? 'Acesso negado a esta entrega.'
+            : 'Entrega não encontrada.';
+      } else if (result.status == CourierOrdersStatus.conflict || uncertain) {
+        _indeterminate = true;
+        _confirmationMessage = 'Verificando o estado da entrega…';
+      } else {
+        _confirmationMessage = 'Não foi possível confirmar. Tente novamente.';
+      }
+    });
+    if (result.status == CourierOrdersStatus.conflict || uncertain) {
+      await _checkStatus();
+    }
+  }
+
+  Future<void> _checkStatus() async {
+    if (!widget.session.isAuthenticated || _checkingStatus) return;
+    final generation = ++_generation;
+    setState(() => _checkingStatus = true);
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    var result = token == null
+        ? const CourierOrdersResult(CourierOrdersStatus.unauthorized)
+        : await widget.api.fetchOrders(accessToken: token);
+    if (result.status == CourierOrdersStatus.unauthorized &&
+        token != null &&
+        mounted &&
+        generation == _generation &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (!mounted ||
+          generation != _generation ||
+          !widget.session.isAuthenticated) {
+        return;
+      }
+      result = token == null
+          ? widget.session.refreshUnavailable
+                ? const CourierOrdersResult(CourierOrdersStatus.unavailable)
+                : const CourierOrdersResult(CourierOrdersStatus.unauthorized)
+          : await widget.api.fetchOrders(accessToken: token);
+    }
+    if (!mounted ||
+        generation != _generation ||
+        !widget.session.isAuthenticated) {
+      return;
+    }
+    if (result.status == CourierOrdersStatus.unauthorized) {
+      await widget.session.signOut();
+      return;
+    }
+    setState(() {
+      _checkingStatus = false;
+      if (result.status == CourierOrdersStatus.forbidden) {
+        _confirmationBlocked = true;
+        _confirmationMessage = 'Acesso negado a esta entrega.';
+        return;
+      }
+      if (result.status != CourierOrdersStatus.success) {
+        _confirmationMessage =
+            'Resultado incerto. Verifique o estado antes de reenviar.';
+        return;
+      }
+      final matches = (result.orders ?? const <CourierOrder>[]).where(
+        (order) => order.id == widget.orderId,
+      );
+      if (matches.isEmpty) {
+        _confirmationBlocked = true;
+        _confirmationMessage = 'Entrega não encontrada.';
+        return;
+      }
+      _deliveryStatus = matches.single.status;
+      _indeterminate = false;
+      _confirmationMessage = _deliveryStatus == 'ENTREGUE'
+          ? 'Entrega confirmada.'
+          : 'Entrega ainda não confirmada. Você pode tentar novamente.';
+    });
+  }
+
   Widget _body() {
     if (_loading) {
       return Center(
@@ -180,6 +337,40 @@ class _CourierOrderDetailPageState extends State<CourierOrderDetailPage> {
               ? 'Horário de saída indisponível'
               : '${localizations.formatFullDate(departure)} às ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(departure))}',
         ),
+        const SizedBox(height: AppTokens.spacing24),
+        Text(
+          'Status: ${_deliveryStatus == 'ENTREGUE'
+              ? 'Entregue'
+              : _deliveryStatus == 'SAIU_PARA_ENTREGA'
+              ? 'Saiu para entrega'
+              : _deliveryStatus}',
+        ),
+        if (_deliveredAt != null)
+          Text(
+            'Confirmada em ${localizations.formatFullDate(_deliveredAt!.toLocal())} às ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(_deliveredAt!.toLocal()))}',
+          ),
+        if (_confirmationMessage != null) ...[
+          const SizedBox(height: AppTokens.spacing16),
+          Semantics(liveRegion: true, child: Text(_confirmationMessage!)),
+        ],
+        if (_deliveryStatus == 'SAIU_PARA_ENTREGA' &&
+            !_confirmationBlocked) ...[
+          const SizedBox(height: AppTokens.spacing16),
+          if (_indeterminate)
+            FilledButton(
+              onPressed: _checkingStatus ? null : _checkStatus,
+              child: Text(
+                _checkingStatus ? 'Verificando…' : 'Verificar estado',
+              ),
+            )
+          else
+            FilledButton(
+              onPressed: _confirming || _checkingStatus
+                  ? null
+                  : _confirmDelivery,
+              child: Text(_confirming ? 'Confirmando…' : 'Confirmar entrega'),
+            ),
+        ],
       ],
     );
   }
