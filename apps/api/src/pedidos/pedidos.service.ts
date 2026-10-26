@@ -14,6 +14,13 @@ const limiteMonetario = new Prisma.Decimal('9999999999.99');
 export class PedidosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  listarParaEntregador(entregadorUsuarioId: string) {
+    return this.prisma.pedido.findMany({
+      where: { entregadorUsuarioId, modalidade: ModalidadeRecebimento.ENTREGA },
+      select: { id: true, identificadorNegocio: true, statusAtual: true },
+    });
+  }
+
   listarParaAdministracao() {
     return this.prisma.pedido.findMany({
       where: {

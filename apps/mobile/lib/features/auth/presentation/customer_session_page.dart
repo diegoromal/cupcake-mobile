@@ -10,6 +10,7 @@ import '../../catalog/data/customer_catalog_api.dart';
 import '../../catalog/presentation/storefront_page.dart';
 import 'customer_login_page.dart';
 import '../../courier/presentation/courier_home_page.dart';
+import '../../courier/data/courier_orders_api.dart';
 
 class CustomerSessionPage extends StatefulWidget {
   const CustomerSessionPage({
@@ -17,11 +18,13 @@ class CustomerSessionPage extends StatefulWidget {
     required this.session,
     this.registrationApi,
     this.catalogApi,
+    this.courierOrdersApi,
   });
 
   final CustomerSession session;
   final CustomerRegistrationApi? registrationApi;
   final CustomerCatalogApi? catalogApi;
+  final CourierOrdersApi? courierOrdersApi;
 
   @override
   State<CustomerSessionPage> createState() => _CustomerSessionPageState();
@@ -70,7 +73,10 @@ class _CustomerSessionPageState extends State<CustomerSessionPage>
       ),
       CustomerSessionState.authenticated =>
         widget.session.profile == SessionProfile.courier
-            ? CourierHomePage(session: widget.session)
+            ? CourierHomePage(
+                session: widget.session,
+                api: widget.courierOrdersApi,
+              )
             : StorefrontPage(
                 session: widget.session,
                 api: widget.catalogApi ?? CustomerCatalogApi(),
