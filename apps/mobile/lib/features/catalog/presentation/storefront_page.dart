@@ -10,6 +10,7 @@ import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
 import '../../cart/data/customer_cart_api.dart';
 import '../../cart/presentation/cart_page.dart';
+import '../../orders/presentation/customer_orders_page.dart';
 import '../data/customer_catalog_api.dart';
 import 'product_detail_page.dart';
 
@@ -238,6 +239,15 @@ class _StorefrontPageState extends State<StorefrontPage> {
     );
   }
 
+  void _openOrders() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => CustomerOrdersPage(session: widget.session),
+      ),
+    );
+  }
+
   Future<void> _signOut() async {
     if (_signOutBusy) return;
     setState(() => _signOutBusy = true);
@@ -266,6 +276,11 @@ class _StorefrontPageState extends State<StorefrontPage> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     _barAction('Atualizar', _loading ? null : _refresh),
+                    IconButton(
+                      tooltip: 'Meus pedidos',
+                      onPressed: _openOrders,
+                      icon: const Icon(Icons.receipt_long_outlined),
+                    ),
                     _barAction('Carrinho', _openCart),
                     _barAction('Sair', _signOutBusy ? null : _signOut),
                   ],
