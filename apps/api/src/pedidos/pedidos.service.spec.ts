@@ -58,6 +58,30 @@ describe('PedidosService', () => {
   const service = new PedidosService({ $transaction: transaction,
     pedido: { findFirst: findOrder } } as never, criarNotificacoesFalsas());
 
+  describe('listarParaCliente', () => {
+    it('retorna somente os campos da lista, filtra pelo cliente e ordena do mais recente', async () => {
+      const data = new Date('2026-10-25T12:00:00.000Z');
+      const findMany = jest.fn().mockResolvedValue([{
+        id: '11111111-1111-4111-8111-111111111111', identificadorNegocio: 'PED-123',
+        data, modalidade: 'RETIRADA', total: dinheiro('20.50'), statusAtual: 'PAGO',
+      }]);
+      const clienteService = new PedidosService({ pedido: { findMany } } as never, criarNotificacoesFalsas());
+
+      await expect(clienteService.listarParaCliente(usuarioId)).resolves.toEqual([{
+        id: '11111111-1111-4111-8111-111111111111', identificadorNegocio: 'PED-123',
+        data, modalidade: 'RETIRADA', total: '20.50', statusAtual: 'PAGO',
+      }]);
+      expect(findMany).toHaveBeenCalledWith({
+        where: { clienteUsuarioId: usuarioId },
+        select: {
+          id: true, identificadorNegocio: true, data: true,
+          modalidade: true, total: true, statusAtual: true,
+        },
+        orderBy: [{ data: 'desc' }, { id: 'desc' }],
+      });
+    });
+  });
+
   describe('iniciarProducao', () => {
     const agora = new Date('2026-10-24T12:00:00.000Z');
 
