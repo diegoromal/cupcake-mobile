@@ -20,7 +20,7 @@
 - [x] Fase 7 --- Pagamento
 - [x] Fase 8 --- Operação da loja
 - [x] Fase 9 --- Entregador
-- [ ] Fase 10 --- WhatsApp
+- [x] Fase 10 --- WhatsApp
 - [ ] Fase 11 --- Histórico e relatórios
 - [ ] Fase 12 --- IHC e documentação visual
 - [ ] Fase 13 --- Qualidade
@@ -197,19 +197,19 @@ produtos.
 
 ## 💬 FASE 10 --- WhatsApp
 
-- [ ] **D78 --- Integrar Evolution API**
-- [ ] **D79 --- Criar templates de notificações**
-- [ ] **D80 --- Disparar mensagens por mudança de status**
-  - [ ] `PAGO`
-  - [ ] `EM_PREPARO`
-  - [ ] `SAIU_PARA_ENTREGA`
-  - [ ] `ENTREGUE`
-  - [ ] `PRONTO_PARA_RETIRADA`
-  - [ ] `RETIRADO`
-- [ ] **D81 --- Registrar sucesso/falha sem bloquear o pedido**
-- [ ] **D82 --- Testar fluxo completo de notificações**
+- [x] **D78 --- Integrar Evolution API**
+- [x] **D79 --- Criar templates de notificações**
+- [x] **D80 --- Disparar mensagens por mudança de status**
+  - [x] `PAGO`
+  - [x] `EM_PREPARO`
+  - [x] `SAIU_PARA_ENTREGA`
+  - [x] `ENTREGUE`
+  - [x] `PRONTO_PARA_RETIRADA`
+  - [x] `RETIRADO`
+- [x] **D81 --- Registrar sucesso/falha sem bloquear o pedido**
+- [x] **D82 --- Testar fluxo completo de notificações**
 
-**Marco 11:** cliente recebe atualizações relevantes via WhatsApp.
+**Marco 11 (concluído):** cliente recebe atualizações relevantes via WhatsApp.
 
 ## 📋 FASE 11 --- Histórico e relatórios
 
