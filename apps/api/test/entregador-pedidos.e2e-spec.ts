@@ -1,4 +1,4 @@
-import { INestApplication, NotFoundException } from '@nestjs/common';
+import { ConflictException, INestApplication, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -15,6 +15,7 @@ describe('GET /entregador/pedidos', () => {
   const findUser = jest.fn();
   const list = jest.fn();
   const detail = jest.fn();
+  const confirm = jest.fn();
   const jwt = new JwtService();
   const token = (profile: PerfilUsuario) => jwt.signAsync(
     { sub: courierId, perfil: profile, type: 'access' },
@@ -24,7 +25,9 @@ describe('GET /entregador/pedidos', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: findUser } })
-      .overrideProvider(PedidosService).useValue({ listarParaEntregador: list, detalharParaEntregador: detail })
+      .overrideProvider(PedidosService).useValue({
+        listarParaEntregador: list, detalharParaEntregador: detail, confirmarEntrega: confirm,
+      })
       .compile();
     app = moduleRef.createNestApplication();
     await app.init();
@@ -45,6 +48,7 @@ describe('GET /entregador/pedidos', () => {
       },
       dataHoraSaidaParaEntrega: '2026-10-25T12:34:00.000Z',
     });
+    confirm.mockResolvedValue({ statusAtual: 'ENTREGUE', dataHora: '2026-10-25T12:34:00.000Z' });
   });
 
   it('exige autenticação e perfil ENTREGADOR', async () => {
@@ -100,5 +104,36 @@ describe('GET /entregador/pedidos', () => {
     detail.mockRejectedValue(new NotFoundException('Pedido não encontrado.'));
     await request(app.getHttpServer()).get(`/entregador/pedidos/${otherId}`)
       .set('Authorization', `Bearer ${await token(PerfilUsuario.ENTREGADOR)}`).expect(404);
+  });
+
+  it('confirmação exige autenticação, perfil e UUID', async () => {
+    await request(app.getHttpServer()).patch(`/entregador/pedidos/${otherId}/confirmar-entrega`).expect(401);
+    for (const profile of [PerfilUsuario.CLIENTE, PerfilUsuario.ADMIN]) {
+      findUser.mockResolvedValueOnce({ id: courierId, perfil: profile });
+      await request(app.getHttpServer()).patch(`/entregador/pedidos/${otherId}/confirmar-entrega`)
+        .set('Authorization', `Bearer ${await token(profile)}`).expect(403);
+    }
+    await request(app.getHttpServer()).patch('/entregador/pedidos/invalid/confirmar-entrega')
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.ENTREGADOR)}`).expect(400);
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('confirmação usa somente id da rota e sujeito do JWT', async () => {
+    await request(app.getHttpServer()).patch(`/entregador/pedidos/${otherId}/confirmar-entrega`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.ENTREGADOR)}`)
+      .send({ statusAtual: 'ENTREGUE', dataHora: '2099-01-01', entregadorUsuarioId: otherId })
+      .expect(200)
+      .expect({ statusAtual: 'ENTREGUE', dataHora: '2026-10-25T12:34:00.000Z' });
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm).toHaveBeenCalledWith(otherId, courierId);
+  });
+
+  it('confirmação propaga 404 sem revelar existência e 409 para inelegível', async () => {
+    confirm.mockRejectedValueOnce(new NotFoundException('Pedido não encontrado.'));
+    await request(app.getHttpServer()).patch(`/entregador/pedidos/${otherId}/confirmar-entrega`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.ENTREGADOR)}`).expect(404);
+    confirm.mockRejectedValueOnce(new ConflictException('Status inválido.'));
+    await request(app.getHttpServer()).patch(`/entregador/pedidos/${otherId}/confirmar-entrega`)
+      .set('Authorization', `Bearer ${await token(PerfilUsuario.ENTREGADOR)}`).expect(409);
   });
 });

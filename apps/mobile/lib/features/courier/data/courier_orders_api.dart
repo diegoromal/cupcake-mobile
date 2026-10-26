@@ -25,6 +25,7 @@ enum CourierOrdersStatus {
   unauthorized,
   forbidden,
   notFound,
+  conflict,
   unavailable,
   notConfigured,
 }
@@ -131,6 +132,13 @@ class CourierOrderDetailResult {
 
   final CourierOrdersStatus status;
   final CourierOrderDetail? detail;
+}
+
+class CourierDeliveryConfirmationResult {
+  const CourierDeliveryConfirmationResult(this.status, {this.deliveredAt});
+
+  final CourierOrdersStatus status;
+  final DateTime? deliveredAt;
 }
 
 class CourierOrder {
@@ -271,6 +279,79 @@ class CourierOrdersApi {
             );
     } on Object {
       return const CourierOrderDetailResult(CourierOrdersStatus.unavailable);
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<CourierDeliveryConfirmationResult> confirmDelivery({
+    required String orderId,
+    required String accessToken,
+  }) async {
+    final uri = _config.courierConfirmDeliveryUri(orderId);
+    if (uri == null) {
+      return const CourierDeliveryConfirmationResult(
+        CourierOrdersStatus.notConfigured,
+      );
+    }
+    final client = _clientFactory();
+    try {
+      final request = await client.patchUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+      final response = await request.close().timeout(timeout);
+      if (response.statusCode == HttpStatus.unauthorized) {
+        return const CourierDeliveryConfirmationResult(
+          CourierOrdersStatus.unauthorized,
+        );
+      }
+      if (response.statusCode == HttpStatus.forbidden) {
+        return const CourierDeliveryConfirmationResult(
+          CourierOrdersStatus.forbidden,
+        );
+      }
+      if (response.statusCode == HttpStatus.notFound) {
+        return const CourierDeliveryConfirmationResult(
+          CourierOrdersStatus.notFound,
+        );
+      }
+      if (response.statusCode == HttpStatus.conflict) {
+        return const CourierDeliveryConfirmationResult(
+          CourierOrdersStatus.conflict,
+        );
+      }
+      if (response.statusCode != HttpStatus.ok) {
+        return const CourierDeliveryConfirmationResult(
+          CourierOrdersStatus.unavailable,
+        );
+      }
+      final body = jsonDecode(
+        await utf8.decoder.bind(response.timeout(timeout)).join(),
+      );
+      if (body is! Map<String, dynamic> ||
+          body.length != 2 ||
+          body['statusAtual'] != 'ENTREGUE' ||
+          body['dataHora'] is! String) {
+        return const CourierDeliveryConfirmationResult(
+          CourierOrdersStatus.unavailable,
+        );
+      }
+      final deliveredAt = DateTime.tryParse(body['dataHora'] as String);
+      return deliveredAt == null
+          ? const CourierDeliveryConfirmationResult(
+              CourierOrdersStatus.unavailable,
+            )
+          : CourierDeliveryConfirmationResult(
+              CourierOrdersStatus.success,
+              deliveredAt: deliveredAt,
+            );
+    } on Object {
+      return const CourierDeliveryConfirmationResult(
+        CourierOrdersStatus.unavailable,
+      );
     } finally {
       client.close(force: true);
     }

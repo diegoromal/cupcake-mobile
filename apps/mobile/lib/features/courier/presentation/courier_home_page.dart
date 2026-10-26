@@ -154,15 +154,19 @@ class _CourierHomePageState extends State<CourierHomePage> {
             title: Text('Pedido ${order.businessNumber}'),
             subtitle: Text('Status: ${_statusLabel(order.status)}'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => CourierOrderDetailPage(
-                  orderId: order.id,
-                  session: widget.session,
-                  api: _api,
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CourierOrderDetailPage(
+                    orderId: order.id,
+                    initialStatus: order.status,
+                    session: widget.session,
+                    api: _api,
+                  ),
                 ),
-              ),
-            ),
+              );
+              if (mounted && widget.session.isAuthenticated) await _load();
+            },
           ),
         );
       },

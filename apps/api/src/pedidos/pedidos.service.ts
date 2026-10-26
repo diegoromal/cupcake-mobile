@@ -170,6 +170,44 @@ export class PedidosService {
     return this.detalharParaAdministracao(id);
   }
 
+  async confirmarEntrega(id: string, entregadorUsuarioId: string) {
+    return this.prisma.$transaction(async (db) => {
+      const [pedido] = await db.$queryRaw<Array<{
+        statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
+      }>>`SELECT "statusAtual", modalidade FROM "Pedido"
+          WHERE id = ${id}::uuid AND "entregadorUsuarioId" = ${entregadorUsuarioId}::uuid
+          FOR UPDATE`;
+      if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+
+      try {
+        validarTransicaoPedido(pedido.statusAtual, StatusPedido.ENTREGUE, pedido.modalidade);
+      } catch (error) {
+        if (error instanceof TransicaoPedidoInvalidaError) {
+          throw new ConflictException('Pedido não pode ser confirmado como entregue neste status.');
+        }
+        throw error;
+      }
+
+      const [{ agora }] = await db.$queryRaw<Array<{ agora: Date }>>`
+        SELECT clock_timestamp() AS agora`;
+      const atualizado = await db.pedido.updateMany({
+        where: {
+          id, entregadorUsuarioId, modalidade: ModalidadeRecebimento.ENTREGA,
+          statusAtual: StatusPedido.SAIU_PARA_ENTREGA,
+        },
+        data: { statusAtual: StatusPedido.ENTREGUE },
+      });
+      if (atualizado.count !== 1) {
+        throw new ConflictException('Pedido alterado durante a confirmação da entrega.');
+      }
+      await db.historicoStatusPedido.create({ data: {
+        pedidoId: id, statusRegistrado: StatusPedido.ENTREGUE,
+        dataHora: agora, responsavelUsuarioId: entregadorUsuarioId,
+      } });
+      return { statusAtual: StatusPedido.ENTREGUE, dataHora: agora };
+    });
+  }
+
   async cancelarComoCliente(id: string, clienteUsuarioId: string) {
     await this.prisma.$transaction(async (db) => {
       const [pedido] = await db.$queryRaw<Array<{ statusAtual: StatusPedido }>>`
