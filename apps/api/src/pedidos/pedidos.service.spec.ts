@@ -173,6 +173,32 @@ describe('PedidosService', () => {
     });
   });
 
+  describe('confirmarEntrega', () => {
+    const pedidoId = '11111111-1111-4111-8111-111111111111';
+    const entregadorAutenticadoId = '22222222-2222-4222-8222-222222222222';
+
+    it('não revela pedido sem atribuição ao entregador autenticado nem altera pedido ou histórico', async () => {
+      const queryRaw = jest.fn().mockResolvedValue([]);
+      const updateMany = jest.fn();
+      const createHistory = jest.fn();
+      const tx = jest.fn(async (callback: (client: unknown) => Promise<unknown>) => callback({
+        $queryRaw: queryRaw,
+        pedido: { updateMany },
+        historicoStatusPedido: { create: createHistory },
+      }));
+      const service = new PedidosService({ $transaction: tx } as never);
+
+      await expect(service.confirmarEntrega(pedidoId, entregadorAutenticadoId))
+        .rejects.toBeInstanceOf(NotFoundException);
+
+      expect(queryRaw).toHaveBeenCalledTimes(1);
+      expect(queryRaw.mock.calls[0][0].join('')).toContain('"entregadorUsuarioId" = ');
+      expect(queryRaw.mock.calls[0].slice(1)).toEqual([pedidoId, entregadorAutenticadoId]);
+      expect(updateMany).not.toHaveBeenCalled();
+      expect(createHistory).not.toHaveBeenCalled();
+    });
+  });
+
   describe('cancelarComoCliente', () => {
     const agora = new Date('2026-10-24T12:00:00.000Z');
     const reservas = [
