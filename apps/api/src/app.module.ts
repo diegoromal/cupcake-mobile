@@ -11,8 +11,9 @@ import { EnderecosModule } from './enderecos/enderecos.module';
 import { ConfiguracaoLojaEntregaModule } from './configuracao-loja-entrega/configuracao-loja-entrega.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { PagamentosModule } from './pagamentos/pagamentos.module';
+import { NotificacoesModule } from './notificacoes/notificacoes.module';
 
 @Module({
-  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule, PedidosModule, PagamentosModule],
+  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule, PedidosModule, PagamentosModule, NotificacoesModule],
 })
 export class AppModule {}
