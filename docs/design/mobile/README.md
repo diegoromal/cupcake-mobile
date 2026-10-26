@@ -16,6 +16,10 @@ A D118 produz referência visual e documentação. A implementação pertence à
 
 ## Telas
 
+Os fluxos entre telas e perfis são consolidados em
+[`../NAVIGATION.md`](../NAVIGATION.md). Este README indexa as referências
+visuais por área.
+
 ### Autenticação
 
 ```text
@@ -70,11 +74,11 @@ orders/
 
 ### Entregador
 
-O diretório `courier/` documenta fluxo futuro de ENTREGADOR.
+O diretório `courier/` documenta o fluxo de ENTREGADOR.
 
-Não pertence ao fluxo do cliente.
+É uma área autenticada separada do fluxo do cliente.
 
-## Fluxo resumido
+## Fluxo de referência resumido
 
 ```text
 Cadastro/Login
@@ -86,7 +90,7 @@ Cadastro/Login
 → Pagamento
 → Resultado
 → Meus Pedidos
-→ Detalhe/Acompanhamento
+→ Detalhe/Acompanhamento (referência; navegação ainda não implementada)
 ```
 
 ## Regras de domínio que o design não pode inventar
