@@ -21,6 +21,32 @@ export class PedidosService {
     });
   }
 
+  async detalharParaEntregador(id: string, entregadorUsuarioId: string) {
+    const pedido = await this.prisma.pedido.findFirst({
+      where: { id, entregadorUsuarioId, modalidade: ModalidadeRecebimento.ENTREGA },
+      select: {
+        identificadorNegocio: true,
+        cliente: { select: { nome: true, telefone: true } },
+        enderecoEntregaSnapshot: { select: {
+          rua: true, numero: true, bairro: true, cidade: true, cep: true,
+          complemento: true, referencia: true,
+        } },
+        historicosStatus: {
+          where: { statusRegistrado: StatusPedido.SAIU_PARA_ENTREGA },
+          orderBy: [{ dataHora: 'desc' }, { id: 'desc' }], take: 1,
+          select: { dataHora: true },
+        },
+      },
+    });
+    if (!pedido) throw new NotFoundException('Pedido não encontrado.');
+    return {
+      identificadorNegocio: pedido.identificadorNegocio,
+      cliente: pedido.cliente,
+      enderecoEntregaSnapshot: pedido.enderecoEntregaSnapshot,
+      dataHoraSaidaParaEntrega: pedido.historicosStatus[0]?.dataHora ?? null,
+    };
+  }
+
   listarParaAdministracao() {
     return this.prisma.pedido.findMany({
       where: {

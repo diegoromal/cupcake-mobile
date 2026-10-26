@@ -100,4 +100,117 @@ void main() {
       );
     },
   );
+
+  test(
+    'detalhe GET usa id na rota, Bearer e aceita opcionais ausentes',
+    () async {
+      var body = jsonEncode({
+        'identificadorNegocio': 'PED-42',
+        'cliente': {'nome': 'Cliente', 'telefone': '11999999999'},
+        'enderecoEntregaSnapshot': {
+          'rua': 'Rua A',
+          'numero': '10',
+          'bairro': 'Centro',
+          'cidade': 'São Paulo',
+          'cep': '01001000',
+          'complemento': null,
+          'referencia': 'Portaria',
+        },
+        'dataHoraSaidaParaEntrega': '2026-10-25T12:34:00.000Z',
+      });
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(server.close);
+      server.listen((request) async {
+        expect(request.method, 'GET');
+        expect(request.uri.path, '/entregador/pedidos/$_id');
+        expect(request.uri.query, isEmpty);
+        expect(
+          request.headers.value(HttpHeaders.authorizationHeader),
+          'Bearer token',
+        );
+        request.response
+          ..headers.contentType = ContentType.json
+          ..write(body);
+        await request.response.close();
+      });
+      final api = CourierOrdersApi(
+        config: ApiConfig(
+          baseUrl: 'http://${server.address.address}:${server.port}',
+        ),
+      );
+      Future<CourierOrderDetailResult> call() =>
+          api.fetchDetail(orderId: _id, accessToken: 'token');
+      final result = await call();
+      expect(result.status, CourierOrdersStatus.success);
+      expect(result.detail?.businessNumber, 'PED-42');
+      expect(result.detail?.customerPhone, '11999999999');
+      expect(result.detail?.address.street, 'Rua A');
+      expect(result.detail?.address.complement, isNull);
+      expect(result.detail?.address.reference, 'Portaria');
+      expect(result.detail?.departureAt, DateTime.utc(2026, 10, 25, 12, 34));
+
+      body = jsonEncode({
+        'identificadorNegocio': 'PED-42',
+        'cliente': {
+          'nome': 'Cliente',
+          'telefone': '11999999999',
+          'email': 'leak',
+        },
+        'enderecoEntregaSnapshot': {
+          'rua': 'Rua A',
+          'numero': '10',
+          'bairro': 'Centro',
+          'cidade': 'São Paulo',
+          'cep': '01001000',
+          'complemento': null,
+          'referencia': null,
+        },
+        'dataHoraSaidaParaEntrega': null,
+      });
+      expect((await call()).status, CourierOrdersStatus.unavailable);
+      body = jsonEncode({
+        'identificadorNegocio': 'PED-42',
+        'cliente': {'nome': 'Cliente', 'telefone': '11999999999'},
+        'enderecoEntregaSnapshot': {
+          'rua': 'Rua A',
+          'numero': '10',
+          'bairro': 'Centro',
+          'cidade': 'São Paulo',
+          'cep': '01001000',
+          'referencia': null,
+          'coordenadas': 'não expor',
+        },
+        'dataHoraSaidaParaEntrega': null,
+      });
+      expect((await call()).status, CourierOrdersStatus.unavailable);
+    },
+  );
+
+  test('detalhe distingue 401, 403, 404, falha e UUID inválido', () async {
+    var status = HttpStatus.unauthorized;
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    server.listen((request) async {
+      request.response.statusCode = status;
+      await request.response.close();
+    });
+    final api = CourierOrdersApi(
+      config: ApiConfig(
+        baseUrl: 'http://${server.address.address}:${server.port}',
+      ),
+    );
+    Future<CourierOrdersStatus> call() async =>
+        (await api.fetchDetail(orderId: _id, accessToken: 'token')).status;
+    expect(await call(), CourierOrdersStatus.unauthorized);
+    status = HttpStatus.forbidden;
+    expect(await call(), CourierOrdersStatus.forbidden);
+    status = HttpStatus.notFound;
+    expect(await call(), CourierOrdersStatus.notFound);
+    status = HttpStatus.serviceUnavailable;
+    expect(await call(), CourierOrdersStatus.unavailable);
+    expect(
+      (await api.fetchDetail(orderId: 'invalid', accessToken: 'token')).status,
+      CourierOrdersStatus.notConfigured,
+    );
+  });
 }

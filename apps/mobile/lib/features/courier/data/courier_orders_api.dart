@@ -24,8 +24,113 @@ enum CourierOrdersStatus {
   success,
   unauthorized,
   forbidden,
+  notFound,
   unavailable,
   notConfigured,
+}
+
+class CourierDeliveryAddress {
+  const CourierDeliveryAddress({
+    required this.street,
+    required this.number,
+    required this.neighborhood,
+    required this.city,
+    required this.postalCode,
+    required this.complement,
+    required this.reference,
+  });
+
+  final String street;
+  final String number;
+  final String neighborhood;
+  final String city;
+  final String postalCode;
+  final String? complement;
+  final String? reference;
+
+  static CourierDeliveryAddress? parse(Object? value) {
+    if (value is! Map<String, dynamic> ||
+        value.length != 7 ||
+        !value.containsKey('complemento') ||
+        !value.containsKey('referencia') ||
+        value['rua'] is! String ||
+        value['numero'] is! String ||
+        value['bairro'] is! String ||
+        value['cidade'] is! String ||
+        value['cep'] is! String ||
+        (value['complemento'] != null && value['complemento'] is! String) ||
+        (value['referencia'] != null && value['referencia'] is! String)) {
+      return null;
+    }
+    return CourierDeliveryAddress(
+      street: value['rua'] as String,
+      number: value['numero'] as String,
+      neighborhood: value['bairro'] as String,
+      city: value['cidade'] as String,
+      postalCode: value['cep'] as String,
+      complement: value['complemento'] as String?,
+      reference: value['referencia'] as String?,
+    );
+  }
+}
+
+class CourierOrderDetail {
+  const CourierOrderDetail({
+    required this.businessNumber,
+    required this.customerName,
+    required this.customerPhone,
+    required this.address,
+    required this.departureAt,
+  });
+
+  final String businessNumber;
+  final String customerName;
+  final String customerPhone;
+  final CourierDeliveryAddress address;
+  final DateTime? departureAt;
+
+  static CourierOrderDetail? parse(Object? value) {
+    if (value is! Map<String, dynamic> ||
+        value.length != 4 ||
+        !value.containsKey('dataHoraSaidaParaEntrega')) {
+      return null;
+    }
+    final customer = value['cliente'];
+    if (customer is! Map<String, dynamic> ||
+        customer.length != 2 ||
+        customer['nome'] is! String ||
+        customer['telefone'] is! String ||
+        value['identificadorNegocio'] is! String ||
+        (value['identificadorNegocio'] as String).isEmpty) {
+      return null;
+    }
+    final address = CourierDeliveryAddress.parse(
+      value['enderecoEntregaSnapshot'],
+    );
+    final departureValue = value['dataHoraSaidaParaEntrega'];
+    if (address == null ||
+        (departureValue != null &&
+            (departureValue is! String ||
+                DateTime.tryParse(departureValue) == null))) {
+      return null;
+    }
+    return CourierOrderDetail(
+      businessNumber: value['identificadorNegocio'] as String,
+      customerName: customer['nome'] as String,
+      customerPhone: customer['telefone'] as String,
+      address: address,
+      departureAt: departureValue == null
+          ? null
+          : DateTime.parse(departureValue as String),
+    );
+  }
+}
+
+class CourierOrderDetailResult {
+  const CourierOrderDetailResult(this.status, {this.detail});
+
+  final CourierOrdersStatus status;
+  final CourierOrderDetail? detail;
 }
 
 class CourierOrder {
@@ -121,6 +226,51 @@ class CourierOrdersApi {
       );
     } on Object {
       return const CourierOrdersResult(CourierOrdersStatus.unavailable);
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<CourierOrderDetailResult> fetchDetail({
+    required String orderId,
+    required String accessToken,
+  }) async {
+    final uri = _config.courierOrderDetailUri(orderId);
+    if (uri == null) {
+      return const CourierOrderDetailResult(CourierOrdersStatus.notConfigured);
+    }
+    final client = _clientFactory();
+    try {
+      final request = await client.getUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+      final response = await request.close().timeout(timeout);
+      if (response.statusCode == HttpStatus.unauthorized) {
+        return const CourierOrderDetailResult(CourierOrdersStatus.unauthorized);
+      }
+      if (response.statusCode == HttpStatus.forbidden) {
+        return const CourierOrderDetailResult(CourierOrdersStatus.forbidden);
+      }
+      if (response.statusCode == HttpStatus.notFound) {
+        return const CourierOrderDetailResult(CourierOrdersStatus.notFound);
+      }
+      if (response.statusCode != HttpStatus.ok) {
+        return const CourierOrderDetailResult(CourierOrdersStatus.unavailable);
+      }
+      final detail = CourierOrderDetail.parse(
+        jsonDecode(await utf8.decoder.bind(response.timeout(timeout)).join()),
+      );
+      return detail == null
+          ? const CourierOrderDetailResult(CourierOrdersStatus.unavailable)
+          : CourierOrderDetailResult(
+              CourierOrdersStatus.success,
+              detail: detail,
+            );
+    } on Object {
+      return const CourierOrderDetailResult(CourierOrdersStatus.unavailable);
     } finally {
       client.close(force: true);
     }

@@ -68,13 +68,48 @@ Future<void> _loginFromPage(WidgetTester tester) async {
 class _CourierOrdersApi extends CourierOrdersApi {
   final responses = <Future<CourierOrdersResult>>[];
   final tokens = <String>[];
+  final detailResponses = <Future<CourierOrderDetailResult>>[];
+  final detailTokens = <String>[];
+  final detailIds = <String>[];
 
   @override
   Future<CourierOrdersResult> fetchOrders({required String accessToken}) {
     tokens.add(accessToken);
     return responses.removeAt(0);
   }
+
+  @override
+  Future<CourierOrderDetailResult> fetchDetail({
+    required String orderId,
+    required String accessToken,
+  }) {
+    detailIds.add(orderId);
+    detailTokens.add(accessToken);
+    return detailResponses.removeAt(0);
+  }
 }
+
+const _assignedOrder = CourierOrder(
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  businessNumber: 'PED-42',
+  status: 'SAIU_PARA_ENTREGA',
+);
+
+const _deliveryDetail = CourierOrderDetail(
+  businessNumber: 'PED-42',
+  customerName: 'Cliente Exemplo',
+  customerPhone: '11999999999',
+  address: CourierDeliveryAddress(
+    street: 'Rua A',
+    number: '10',
+    neighborhood: 'Centro',
+    city: 'São Paulo',
+    postalCode: '01001000',
+    complement: null,
+    reference: 'Portaria',
+  ),
+  departureAt: null,
+);
 
 Future<CustomerSession> _signedInSession() async {
   final session = CustomerSession(
@@ -347,5 +382,224 @@ void main() {
     expect(session.state, CustomerSessionState.authenticated);
     expect(api.tokens, hasLength(2));
     expect(api.tokens.last, api.tokens.first);
+  });
+
+  testWidgets('lista abre detalhe, mostra loading, campos e volta', (
+    tester,
+  ) async {
+    final session = await _signedInSession();
+    addTearDown(session.dispose);
+    final pending = Completer<CourierOrderDetailResult>();
+    final api = _CourierOrdersApi()
+      ..responses.add(
+        Future.value(
+          const CourierOrdersResult(
+            CourierOrdersStatus.success,
+            orders: [_assignedOrder],
+          ),
+        ),
+      )
+      ..detailResponses.add(pending.future);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourierHomePage(session: session, api: api),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('Detalhe da entrega'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Carregando detalhe da entrega…'),
+      findsOneWidget,
+    );
+    pending.complete(
+      CourierOrderDetailResult(
+        CourierOrdersStatus.success,
+        detail: CourierOrderDetail(
+          businessNumber: _deliveryDetail.businessNumber,
+          customerName: _deliveryDetail.customerName,
+          customerPhone: _deliveryDetail.customerPhone,
+          address: _deliveryDetail.address,
+          departureAt: DateTime.utc(2026, 10, 25, 12, 34),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Cliente Exemplo'), findsOneWidget);
+    expect(find.text('Telefone: 11999999999'), findsOneWidget);
+    expect(find.text('Rua A, 10'), findsOneWidget);
+    expect(find.text('Centro — São Paulo'), findsOneWidget);
+    expect(find.text('CEP: 01001000'), findsOneWidget);
+    expect(find.text('Referência: Portaria'), findsOneWidget);
+    expect(find.textContaining('Complemento:'), findsNothing);
+    expect(find.textContaining('às'), findsOneWidget);
+    expect(find.text('Horário de saída indisponível'), findsNothing);
+    expect(api.detailIds, [_assignedOrder.id]);
+    expect(api.detailTokens, [session.accessToken]);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Área do entregador'), findsOneWidget);
+    expect(find.text('Pedido PED-42'), findsOneWidget);
+  });
+
+  testWidgets('detalhe permite retry e distingue 403 e 404', (tester) async {
+    final session = await _signedInSession();
+    addTearDown(session.dispose);
+    final api = _CourierOrdersApi()
+      ..responses.add(
+        Future.value(
+          const CourierOrdersResult(
+            CourierOrdersStatus.success,
+            orders: [_assignedOrder],
+          ),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(CourierOrdersStatus.unavailable),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(
+            CourierOrdersStatus.success,
+            detail: _deliveryDetail,
+          ),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(CourierOrdersStatus.forbidden),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(CourierOrdersStatus.notFound),
+        ),
+      );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CourierHomePage(session: session, api: api),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Não foi possível carregar'), findsOneWidget);
+    await tester.tap(find.text('Tentar novamente'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cliente Exemplo'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pumpAndSettle();
+    expect(find.text('Acesso negado a esta entrega.'), findsOneWidget);
+    expect(find.text('Tentar novamente'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entrega não encontrada.'), findsOneWidget);
+    expect(find.text('Tentar novamente'), findsNothing);
+    expect(api.detailIds, List.filled(4, _assignedOrder.id));
+  });
+
+  testWidgets('401 final no detalhe encerra sessão e retorna ao login', (
+    tester,
+  ) async {
+    final storage = MemorySessionStorage();
+    final refreshedAccess = _token('access', jti: 'detail-refreshed');
+    final authApi = _CourierAuthApi()
+      ..refreshOutcome = AuthRequestResult(
+        AuthRequestStatus.success,
+        accessToken: refreshedAccess,
+      );
+    final session = CustomerSession(authApi: authApi, storage: storage);
+    addTearDown(session.dispose);
+    final api = _CourierOrdersApi()
+      ..responses.add(
+        Future.value(
+          const CourierOrdersResult(
+            CourierOrdersStatus.success,
+            orders: [_assignedOrder],
+          ),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(CourierOrdersStatus.unauthorized),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(CourierOrdersStatus.unauthorized),
+        ),
+      );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomerSessionPage(session: session, courierOrdersApi: api),
+      ),
+    );
+    await _loginFromPage(tester);
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pumpAndSettle();
+    expect(authApi.refreshRequests, 1);
+    expect(api.detailTokens, hasLength(2));
+    expect(api.detailTokens.last, refreshedAccess);
+    expect(session.state, CustomerSessionState.public);
+    expect(storage.value, isNull);
+    expect(find.text('Entre para acessar suas entregas.'), findsOneWidget);
+    expect(find.text('Detalhe da entrega'), findsNothing);
+  });
+
+  testWidgets('refresh transitório no detalhe mantém sessão e oferece retry', (
+    tester,
+  ) async {
+    final authApi = _CourierAuthApi();
+    final session = CustomerSession(
+      authApi: authApi,
+      storage: MemorySessionStorage(),
+    );
+    addTearDown(session.dispose);
+    final api = _CourierOrdersApi()
+      ..responses.add(
+        Future.value(
+          const CourierOrdersResult(
+            CourierOrdersStatus.success,
+            orders: [_assignedOrder],
+          ),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(CourierOrdersStatus.unauthorized),
+        ),
+      )
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(
+            CourierOrdersStatus.success,
+            detail: _deliveryDetail,
+          ),
+        ),
+      );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomerSessionPage(session: session, courierOrdersApi: api),
+      ),
+    );
+    await _loginFromPage(tester);
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pumpAndSettle();
+    expect(authApi.refreshRequests, 1);
+    expect(session.state, CustomerSessionState.authenticated);
+    expect(find.textContaining('Não foi possível carregar'), findsOneWidget);
+    await tester.tap(find.text('Tentar novamente'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cliente Exemplo'), findsOneWidget);
+    expect(api.detailTokens, hasLength(2));
+    expect(api.detailTokens.last, api.detailTokens.first);
   });
 }
