@@ -12,8 +12,9 @@ import { ConfiguracaoLojaEntregaModule } from './configuracao-loja-entrega/confi
 import { PedidosModule } from './pedidos/pedidos.module';
 import { PagamentosModule } from './pagamentos/pagamentos.module';
 import { NotificacoesModule } from './notificacoes/notificacoes.module';
+import { RelatoriosModule } from './relatorios/relatorios.module';
 
 @Module({
-  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule, PedidosModule, PagamentosModule, NotificacoesModule],
+  imports: [HealthModule, UsersModule, AuthModule, CategoriasModule, PersonalizacoesModule, ProdutosModule, CatalogoModule, CarrinhoModule, EnderecosModule, ConfiguracaoLojaEntregaModule, PedidosModule, PagamentosModule, NotificacoesModule, RelatoriosModule],
 })
 export class AppModule {}

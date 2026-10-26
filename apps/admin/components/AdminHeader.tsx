@@ -11,7 +11,7 @@ export default function AdminHeader() {
       <Link href="/pedidos" aria-current={pathname==='/pedidos'||pathname.startsWith('/pedidos/')?'page':undefined}>Pedidos</Link>
       {([['/produtos','Produtos / Cardápio'],['/categorias','Categorias'],['/personalizacoes','Personalizações']] as const).map(([href,label])=><Link key={href} href={href} aria-current={pathname===href||pathname.startsWith(`${href}/`)?'page':undefined}>{label}</Link>)}
       <Link href="/configuracao-loja-entrega" aria-current={pathname==='/configuracao-loja-entrega'?'page':undefined}>Configuração de entrega</Link>
-      <span className="nav-unavailable" aria-disabled="true">Relatório de Vendas <small>Em breve</small></span>
+      <Link href="/relatorios/vendas" aria-current={pathname.startsWith('/relatorios/vendas')?'page':undefined}>Relatório de Vendas</Link>
     </nav>
     <div className="sidebar-footer"><span className="admin-identity">Admin</span><LogoutButton/></div>
   </aside>;
