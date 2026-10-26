@@ -45,6 +45,7 @@ export default function SalesReport() {
   const [fim, setFim] = useState('');
   const [report, setReport] = useState<SalesReportResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const invalidPeriod = Boolean(error) && (!inicio || !fim || inicio > fim);
 
@@ -72,6 +73,20 @@ export default function SalesReport() {
     }
   }
 
+  function exportPdf() {
+    if (!report || exporting) return;
+    setExporting(true);
+    window.setTimeout(() => {
+      try {
+        window.print();
+      } catch {
+        setError('Não foi possível preparar o PDF. Tente novamente.');
+      } finally {
+        setExporting(false);
+      }
+    }, 0);
+  }
+
   return <section className="sales-report">
     <div className="heading"><div><h1>Relatório de vendas</h1><p>Consulte pedidos entregues e retirados por período.</p></div></div>
     <form className="card report-filters" onSubmit={applyPeriod} noValidate aria-busy={busy}>
@@ -86,6 +101,12 @@ export default function SalesReport() {
       <div className="report-summary">
         <article className="card"><h2>Total vendido</h2><p>{formatCurrency(report.totalVendido)}</p></article>
         <article className="card"><h2>Quantidade de pedidos</h2><p>{report.quantidadePedidos}</p></article>
+      </div>
+      <div className="report-export">
+        <button type="button" onClick={exportPdf} disabled={exporting}>
+          {exporting ? 'Preparando PDF…' : 'Exportar PDF'}
+        </button>
+        {exporting && <p role="status">Preparando o relatório para salvar como PDF…</p>}
       </div>
       <h2>Pedidos do período</h2>
       {report.pedidos.length === 0 ? <div className="card">Nenhum pedido finalizado encontrado neste período.</div> :

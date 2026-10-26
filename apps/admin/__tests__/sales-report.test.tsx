@@ -49,3 +49,19 @@ test('mostra estado vazio quando o período não possui pedidos elegíveis', asy
   await waitFor(() => expect(screen.getByText('Nenhum pedido finalizado encontrado neste período.')).toBeInTheDocument());
   expect(screen.getByText(/0,00/)).toBeInTheDocument();
 });
+
+test('prepara a impressão somente após carregar o relatório', async () => {
+  const print = jest.spyOn(window, 'print').mockImplementation(() => undefined);
+  jest.mocked(adminApi).mockResolvedValue(result);
+  render(<SalesReport />);
+
+  expect(screen.queryByRole('button', { name: 'Exportar PDF' })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: '2026-10-01' } });
+  fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-10-31' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar período' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Exportar PDF' }));
+
+  await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+  expect(screen.getByText('2026-10-01')).toBeInTheDocument();
+  print.mockRestore();
+});
