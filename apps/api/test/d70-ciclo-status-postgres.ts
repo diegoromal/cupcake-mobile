@@ -19,7 +19,7 @@ async function main() {
   const marker = `D70-${randomUUID()}`;
   url.searchParams.set('application_name', marker);
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
-  const pedidos = new PedidosService(prisma as never);
+  const pedidos = new PedidosService(prisma as never, { agendarStatusPedido: async () => undefined } as never);
   const expiracao = new ExpiracaoPedidosService(prisma as never);
   const clienteId = randomUUID(), adminId = randomUUID();
   const retiradaId = randomUUID(), vencidoId = randomUUID(), vigenteId = randomUUID();

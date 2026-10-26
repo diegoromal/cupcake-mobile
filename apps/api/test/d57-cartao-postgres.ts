@@ -9,6 +9,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import request from 'supertest';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PagamentosModule } from '../src/pagamentos/pagamentos.module';
+import { NotificacoesService } from '../src/notificacoes/notificacoes.service';
 
 const raw = process.env.D57_TEST_DATABASE_URL;
 if (!raw) throw new Error('Defina D57_TEST_DATABASE_URL.');
@@ -57,7 +58,9 @@ async function main() {
       await prisma.reservaEstoque.create({ data: { pedidoId: id, produtoId, quantidade: 1,
         estado: 'ATIVA', momentoExpiracaoValidade: new Date(Date.now() + 900_000) } });
     }
-    const module = await Test.createTestingModule({ imports: [PagamentosModule] }).compile();
+    const module = await Test.createTestingModule({ imports: [PagamentosModule] })
+      .overrideProvider(NotificacoesService).useValue({ agendarStatusPedido: () => undefined })
+      .compile();
     app = module.createNestApplication();
     app.useLogger(false);
     await app.init();
@@ -119,6 +122,7 @@ async function main() {
     await cleanup('movimentações', () => prisma.movimentacaoEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('históricos', () => prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('reservas', () => prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('notificações', () => prisma.notificacao.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('pedidos', () => prisma.pedido.deleteMany({ where: { id: { in: pedidos } } }));
     await cleanup('estoque', () => prisma.estoque.deleteMany({ where: { produtoId } }));
     await cleanup('produto', () => prisma.produto.deleteMany({ where: { id: produtoId } }));
@@ -127,6 +131,7 @@ async function main() {
     await cleanup('fixtures residuais', async () => {
       eq(await prisma.pagamento.count({ where: { id: { in: tentativas } } }), 0, 'Sem pagamentos residuais');
       eq(await prisma.pedido.count({ where: { id: { in: pedidos } } }), 0, 'Sem pedidos residuais');
+      eq(await prisma.notificacao.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem notificações residuais');
       eq(await prisma.usuario.count({ where: { id: { in: usuarios } } }), 0, 'Sem usuários residuais');
     });
     await cleanup('fechar prisma', () => prisma.$disconnect());

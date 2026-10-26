@@ -9,7 +9,7 @@ describe('listarParaEntregador', () => {
       { id: 'pedido-1', identificadorNegocio: 'PED-1', statusAtual: 'SAIU_PARA_ENTREGA' },
       { id: 'pedido-2', identificadorNegocio: 'PED-2', statusAtual: 'ENTREGUE' },
     ]);
-    const service = new PedidosService({ pedido: { findMany } } as unknown as PrismaService);
+    const service = new PedidosService({ pedido: { findMany } } as unknown as PrismaService, { agendarStatusPedido: jest.fn() } as never);
 
     expect(await service.listarParaEntregador('entregador-autenticado')).toHaveLength(2);
     expect(findMany).toHaveBeenCalledWith({
@@ -35,7 +35,7 @@ describe('detalharParaEntregador', () => {
       historicosStatus: [{ dataHora }],
     };
     const findFirst = jest.fn().mockResolvedValue(pedido);
-    const service = new PedidosService({ pedido: { findFirst } } as unknown as PrismaService);
+    const service = new PedidosService({ pedido: { findFirst } } as unknown as PrismaService, { agendarStatusPedido: jest.fn() } as never);
 
     expect(await service.detalharParaEntregador('pedido-id', 'entregador-id')).toEqual({
       identificadorNegocio: pedido.identificadorNegocio,
@@ -66,7 +66,7 @@ describe('detalharParaEntregador', () => {
 
   it('usa 404 uniforme para inexistente, alheio e retirada', async () => {
     const findFirst = jest.fn().mockResolvedValue(null);
-    const service = new PedidosService({ pedido: { findFirst } } as unknown as PrismaService);
+    const service = new PedidosService({ pedido: { findFirst } } as unknown as PrismaService, { agendarStatusPedido: jest.fn() } as never);
     await expect(service.detalharParaEntregador('pedido-id', 'entregador-id'))
       .rejects.toThrow(NotFoundException);
   });
@@ -78,7 +78,7 @@ describe('detalharParaEntregador', () => {
       enderecoEntregaSnapshot: null,
       historicosStatus: [],
     });
-    const service = new PedidosService({ pedido: { findFirst } } as unknown as PrismaService);
+    const service = new PedidosService({ pedido: { findFirst } } as unknown as PrismaService, { agendarStatusPedido: jest.fn() } as never);
     expect(await service.detalharParaEntregador('pedido-id', 'entregador-id'))
       .toMatchObject({ dataHoraSaidaParaEntrega: null });
   });

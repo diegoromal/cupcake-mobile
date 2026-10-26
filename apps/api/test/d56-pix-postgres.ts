@@ -11,6 +11,7 @@ import { Client } from 'pg';
 import request from 'supertest';
 import { PagamentosModule } from '../src/pagamentos/pagamentos.module';
 import { PagamentoSimuladorService } from '../src/pagamentos/pagamento-simulador.service';
+import { NotificacoesService } from '../src/notificacoes/notificacoes.service';
 import { PrismaClient } from '../src/generated/prisma/client';
 
 const raw = process.env.D56_TEST_DATABASE_URL;
@@ -80,7 +81,9 @@ async function main() {
     const simulador = new SimuladorControlado();
     simuladores.push(simulador);
     const module = await Test.createTestingModule({ imports: [PagamentosModule] })
-      .overrideProvider(PagamentoSimuladorService).useValue(simulador).compile();
+      .overrideProvider(PagamentoSimuladorService).useValue(simulador)
+      .overrideProvider(NotificacoesService).useValue({ agendarStatusPedido: () => undefined })
+      .compile();
     const app = module.createNestApplication();
     app.useLogger(false);
     apps.push(app);
@@ -279,7 +282,7 @@ async function main() {
     await blocker.query('BEGIN');
     await blocker.query('SELECT id FROM "Pedido" WHERE id = $1 FOR UPDATE', [limiteDuranteSimulacao]);
     simulador.liberar(limiteId);
-    await aguardar(() => bloqueados('SELECT id, "statusAtual", data', 1), 'conclusão bloqueada no pedido');
+    await aguardar(() => bloqueados('FOR UPDATE', 1), 'conclusão bloqueada no pedido');
     await blocker.query(
       'UPDATE "Pedido" SET data = clock_timestamp() - interval \'15 minutes\' WHERE id = $1',
       [limiteDuranteSimulacao]);
@@ -288,7 +291,7 @@ async function main() {
       const [{ ativos }] = await prisma.$queryRaw<Array<{ ativos: bigint }>>`
         SELECT count(*) AS ativos FROM pg_stat_activity
         WHERE pid <> pg_backend_pid() AND application_name = ${marker} AND state = 'active'
-          AND query LIKE '%SELECT id, "statusAtual", data FROM "Pedido"%'`;
+          AND query LIKE '%"Pedido"%' AND query LIKE '%FOR UPDATE%'`;
       return ativos === 0n;
     }, 'finalização após revalidação do prazo');
     eq(await prisma.pagamento.findUnique({ where: { id: limiteId } }).then((p) => p?.resultado),
@@ -346,6 +349,7 @@ async function main() {
     await cleanup('movimentações', () => prisma.movimentacaoEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('históricos', () => prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('reservas', () => prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('notificações', () => prisma.notificacao.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('pedidos', () => prisma.pedido.deleteMany({ where: { id: { in: pedidos } } }));
     await cleanup('estoque', () => prisma.estoque.deleteMany({ where: { produtoId } }));
     await cleanup('produto', () => prisma.produto.deleteMany({ where: { id: produtoId } }));
@@ -356,6 +360,7 @@ async function main() {
       eq(await prisma.reservaEstoque.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem reservas residuais');
       eq(await prisma.movimentacaoEstoque.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem movimentações residuais');
       eq(await prisma.historicoStatusPedido.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem históricos residuais');
+      eq(await prisma.notificacao.count({ where: { pedidoId: { in: pedidos } } }), 0, 'Sem notificações residuais');
       eq(await prisma.pedido.count({ where: { id: { in: pedidos } } }), 0, 'Sem pedidos residuais');
       eq(await prisma.estoque.count({ where: { produtoId } }), 0, 'Sem estoque residual');
       eq(await prisma.produto.count({ where: { id: produtoId } }), 0, 'Sem produto residual');

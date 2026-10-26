@@ -13,7 +13,10 @@ function setup(statusAtual: StatusPedido, modalidade: ModalidadeRecebimento = Mo
   const create = jest.fn().mockResolvedValue({ id: 'historico' });
   const db = { $queryRaw: query, pedido: { updateMany }, historicoStatusPedido: { create } };
   const transaction = jest.fn((callback: (value: typeof db) => Promise<unknown>) => callback(db));
-  const service = new PedidosService({ $transaction: transaction } as unknown as PrismaService);
+  const service = new PedidosService(
+    { $transaction: transaction } as unknown as PrismaService,
+    { agendarStatusPedido: jest.fn().mockResolvedValue(undefined) } as never,
+  );
   return { service, query, updateMany, create, transaction };
 }
 

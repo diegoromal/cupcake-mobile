@@ -1,6 +1,7 @@
 import { ConflictException, GatewayTimeoutException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Pagamento, Prisma } from '../generated/prisma/client';
 import { StatusPedido } from '../generated/prisma/enums';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { TransicaoPedidoInvalidaError, validarTransicaoPedido } from '../pedidos/maquina-estados-pedido';
 import { PrismaService } from '../prisma/prisma.service';
 import { PagamentoSimuladorService } from './pagamento-simulador.service';
@@ -13,7 +14,11 @@ type FormaPagamento = 'PIX' | 'CARTAO';
 export class PagamentosService {
   private readonly logger = new Logger(PagamentosService.name);
 
-  constructor(private readonly prisma: PrismaService, private readonly simulador: PagamentoSimuladorService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly simulador: PagamentoSimuladorService,
+    private readonly notificacoes: NotificacoesService,
+  ) {}
 
   iniciarPix(usuarioId: string, pedidoId: string, tentativaId: string) {
     return this.iniciar(usuarioId, pedidoId, tentativaId, 'PIX');
@@ -107,24 +112,31 @@ export class PagamentosService {
 
   private async concluir(usuarioId: string, pagamento: Pagamento) {
     const resultado = await this.simulador.simular(pagamento.id);
-    return this.prisma.$transaction(async (db) => {
-      const [pedido] = await db.$queryRaw<Array<{ id: string; statusAtual: StatusPedido; data: Date }>>`
-        SELECT id, "statusAtual", data FROM "Pedido"
-        WHERE id = ${pagamento.pedidoId}::uuid AND "clienteUsuarioId" = ${usuarioId}::uuid
-        FOR UPDATE`;
+    const transicao = await this.prisma.$transaction(async (db) => {
+      const [pedido] = await db.$queryRaw<Array<{
+        id: string; statusAtual: StatusPedido; data: Date;
+        identificadorNegocio: string; telefone: string;
+      }>>`
+        SELECT p.id, p."statusAtual", p.data, p."identificadorNegocio", u.telefone
+        FROM "Pedido" p JOIN "Usuario" u ON u.id = p."clienteUsuarioId"
+        WHERE p.id = ${pagamento.pedidoId}::uuid AND p."clienteUsuarioId" = ${usuarioId}::uuid
+        FOR UPDATE OF p`;
       if (!pedido) throw new NotFoundException('Pedido não encontrado.');
 
       const atual = await db.pagamento.findUnique({ where: { id: pagamento.id } });
       if (!atual || atual.pedidoId !== pagamento.pedidoId || atual.forma !== pagamento.forma) {
         throw new NotFoundException('Tentativa não encontrada.');
       }
-      if (atual.resultado !== 'PENDENTE') return atual;
+      if (atual.resultado !== 'PENDENTE') return { pagamento: atual, evento: null };
 
       if (resultado === 'RECUSADO') {
         await db.$executeRaw`
           UPDATE "Pagamento" SET resultado = 'RECUSADO', "dataTransacao" = clock_timestamp()
           WHERE id = ${pagamento.id}::uuid AND resultado = 'PENDENTE'`;
-        return db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } });
+        return {
+          pagamento: await db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } }),
+          evento: null,
+        };
       }
 
       try {
@@ -198,8 +210,20 @@ export class PagamentosService {
       await db.historicoStatusPedido.create({ data: {
         pedidoId: pagamento.pedidoId, statusRegistrado: StatusPedido.PAGO, dataHora: agora,
       } });
-      return db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } });
+      return {
+        pagamento: await db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } }),
+        evento: {
+          pedidoId: pedido.id,
+          identificadorNegocio: pedido.identificadorNegocio,
+          telefone: pedido.telefone,
+          status: StatusPedido.PAGO,
+        },
+      };
     }, { timeout: 30_000 });
+    if (transicao.evento) {
+      this.notificacoes.agendarStatusPedido(transicao.evento);
+    }
+    return transicao.pagamento;
   }
 
   private async buscar(usuarioId: string, pedidoId: string, tentativaId: string, forma: FormaPagamento) {
