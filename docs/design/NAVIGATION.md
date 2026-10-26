@@ -1,10 +1,13 @@
-# Navegação — Cupcake Mobile
+# Mapa Navegacional — Cupcake Mobile
 
 ## Objetivo
 
-Documentar fluxos e transições entre referências de UX/UI.
+Referência central dos fluxos navegacionais do cliente, entregador e
+administrador. Este mapa consolida destinos já implementados e fluxos de
+referência ainda sem rota; não cria contratos técnicos.
 
-Este arquivo não cria rotas técnicas quando a aplicação ainda não foi implementada.
+O mapa identifica quando um fluxo pertence à referência de UX e ainda não tem
+destino técnico implementado.
 
 ## Perfis
 
@@ -21,11 +24,14 @@ Cada perfil possui fluxo próprio.
 
 ```text
 Aplicativo
-├── Cliente sem sessão
+├── Restaurando sessão
+├── Sessão indisponível / falha ao sair → tentar novamente ou sair
+├── Visitante / sessão expirada
 │   ├── Login
-│   └── Criar conta
-└── Cliente autenticado
-    └── Vitrine (D29)
+│   ├── Criar conta
+│   └── Acesso do entregador → Login ENTREGADOR
+├── Cliente autenticado → Vitrine
+└── Entregador autenticado → Área do entregador
 ```
 
 ### Autenticação
@@ -36,7 +42,8 @@ customer-sign-up
 └── erro → permanece no cadastro
 
 customer-login
-├── sucesso de CLIENTE → área autenticada mínima (D28)
+├── sucesso de CLIENTE → Vitrine (D28/D29)
+├── acesso do entregador → login com perfil ENTREGADOR
 ├── credenciais inválidas → permanece no login
 ├── bloqueio temporário → permanece no login
 └── sessão expirada → login
@@ -52,6 +59,9 @@ envia `POST /users`; somente um `201` com resposta estruturalmente válida
 retorna ao Login com a confirmação `Cadastro confirmado. Entre para continuar.`
 Falhas recuperáveis permanecem no cadastro e não criam sessão.
 
+No login, `Acesso do entregador` abre o fluxo autenticado com perfil
+ENTREGADOR; o login de cliente não concede acesso às entregas.
+
 ## Mobile — catálogo
 
 ```text
@@ -65,7 +75,9 @@ product-detail (D31)
 └── voltar → mesma instância de storefront, sem recarga automática
 ```
 
-Quantidade, personalizações e carrinho entram em tarefas posteriores.
+Na Vitrine, `Carrinho` abre cart, `Meus pedidos` abre order-list, `Meus endereços`
+abre a gestão de endereços, e `Sair` encerra a sessão. Essas ações são acessos
+da tela, não itens de bottom navigation.
 
 Produtos/opções indisponíveis devem respeitar o domínio; a interface não pode forçar inclusão.
 
@@ -75,6 +87,10 @@ Produtos/opções indisponíveis devem respeitar o domínio; a interface não po
 cart
 ├── continuar comprando → storefront
 └── continuar → fulfillment
+
+Meus endereços
+├── criar/editar/excluir endereço → permanece na gestão
+└── voltar → tela de origem (Vitrine ou fulfillment)
 
 fulfillment
 ├── Delivery
@@ -102,27 +118,24 @@ payment
 └── resultado → payment-result
 
 payment-result
-├── aprovado → order-detail
-├── recusado → payment, quando o pedido continuar elegível
-├── resultado desconhecido → não afirmar aprovado/recusado
-└── ver pedido → order-detail
+├── aprovado → permanece; consulta de pedido ainda indisponível
+├── recusado → fechar resultado → payment para nova tentativa
+├── resultado desconhecido → verificar ou fechar conforme ação disponível
+└── voltar ao início → raiz da sessão
 ```
 
 ## Mobile — pedidos
 
 ```text
 order-list
-└── selecionar pedido → order-detail
+├── atualizar → mesma lista
+└── voltar → Vitrine
 
-order-detail
-├── acompanhar → permanece
-├── atualizar → permanece
-├── cancelar quando elegível → confirmação → resultado
-└── voltar → order-list
+order-detail (referência visual; sem navegação implementada)
+└── comportamento/rota técnica → tarefa futura
 ```
 
-A D118 representa cancelamento somente no caso confirmado de pedido `PAGO` antes do preparo.
-
+A referência visual de detalhe/cancelamento não implica navegação implementada.
 Não inferir cancelamento para estados cuja regra permaneça aberta.
 
 ## WhatsApp
@@ -160,18 +173,17 @@ Fluxo:
 
 Referência completa da navegação lateral, nesta ordem:
 
-1. Pedidos
-2. Produtos / Cardápio
-3. Categorias
-4. Personalizações
-5. Relatório de Vendas
+1. Pedidos — `/pedidos`
+2. Produtos / Cardápio — `/produtos`
+3. Categorias — `/categorias`
+4. Personalizações — `/personalizacoes`
+5. Configuração de entrega — `/configuracao-loja-entrega`
+6. Relatório de Vendas — `/relatorios/vendas`
 
-Os PNGs de cada tela podem mostrar apenas um recorte desses destinos. Os itens
-visíveis no recorte não redefinem o conjunto completo nem sua ordem. Pedidos e
-Relatório de Vendas fazem parte da referência, embora suas rotas ainda estejam
-previstas para implementação futura; as rotas existentes estão indicadas nas
-seções abaixo. Estoque permanece conteúdo relacionado ao produto, não um sexto
-destino da navegação.
+As páginas de Pedidos, Configuração de entrega e Relatório de Vendas estão
+implementadas. Os PNGs de cada tela podem mostrar apenas um recorte dos
+destinos; os itens visíveis no recorte não redefinem o conjunto nem sua ordem.
+Estoque permanece conteúdo relacionado ao produto, não um destino separado.
 
 ## Admin — Produtos / Cardápio
 
@@ -258,14 +270,14 @@ Fluxos:
 └── 409/erro → permanece
 ```
 
-## Admin — Pedidos futuro
+## Admin — Pedidos
 
 Referências:
 
 - `admin/orders/order-list`;
 - `admin/orders/order-detail`.
 
-Fluxo conceitual:
+Fluxo implementado:
 
 ```text
 order-list
@@ -277,42 +289,49 @@ order-detail
 └── voltar → order-list
 ```
 
-A rota técnica será definida na tarefa de implementação correspondente.
+Rotas existentes: `/pedidos` e `/pedidos/[id]`.
 
 Não antecipar estrutura de URL apenas a partir da referência visual.
 
-## Admin — Relatório futuro
+## Admin — Relatório de Vendas
 
 Referência:
 
 `admin/reports/sales-report`
 
-Fluxo conceitual:
+Fluxo implementado:
 
 ```text
 sales-report
 ├── definir período
 ├── aplicar período
 ├── consultar resultado
-├── exportar PDF
-└── exportar CSV
+└── exportar PDF
 ```
 
-A rota técnica será definida na tarefa correspondente.
+Rota existente: `/relatorios/vendas`.
 
-## Entregador futuro
+## Admin — Configuração de entrega
 
-Fluxo conceitual:
+Rota existente: `/configuracao-loja-entrega`.
+
+O formulário configura localização da loja, raio máximo, taxa base e valor por
+quilômetro. A navegação retorna à própria página após salvar; o menu lateral
+permite seguir para os demais destinos administrativos.
+
+## Entregador
+
+Fluxo implementado no Mobile:
 
 ```text
-sessão ENTREGADOR
+Login ENTREGADOR
 → lista de entregas atribuídas
 → detalhe da entrega
-→ confirmação de entrega
-→ retorno/atualização da lista
+→ confirmação explícita
+→ retorno e atualização da lista
 ```
 
-Regras detalhadas ficam em:
+O mecanismo técnico de confirmação e as regras detalhadas ficam em:
 
 `mobile/courier/README.md`
 

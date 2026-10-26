@@ -13,6 +13,9 @@ Indexar as referências administrativas do Cupcake Mobile.
 
 ## Navegação consolidada
 
+O mapa de fluxos e transições está em
+[`../NAVIGATION.md`](../NAVIGATION.md).
+
 1. Pedidos
 2. Produtos / Cardápio
 3. Categorias
@@ -97,7 +100,7 @@ Referência principal:
 
 `catalog/product-detail.md`
 
-## Pedidos futuros
+## Pedidos
 
 ```text
 orders/
@@ -107,11 +110,12 @@ orders/
 └── order-detail.png
 ```
 
-Essas referências orientam implementação futura.
+Rotas existentes:
 
-Não assumir que suas rotas já existem.
+- `/pedidos`;
+- `/pedidos/[id]`.
 
-## Relatórios futuros
+## Relatórios
 
 ```text
 reports/
@@ -119,7 +123,15 @@ reports/
 └── sales-report.png
 ```
 
-A referência orienta a futura implementação de relatório por período e exportação.
+Rota existente:
+
+- `/relatorios/vendas`.
+
+## Configuração de entrega
+
+Rota existente:
+
+- `/configuracao-loja-entrega`.
 
 ## Auditoria do legado
 
