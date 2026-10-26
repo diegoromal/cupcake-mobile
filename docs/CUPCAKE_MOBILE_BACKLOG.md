@@ -19,7 +19,7 @@
 - [x] Fase 6 --- Pedido e reserva de estoque
 - [x] Fase 7 --- Pagamento
 - [x] Fase 8 --- Operação da loja
-- [ ] Fase 9 --- Entregador
+- [x] Fase 9 --- Entregador
 - [ ] Fase 10 --- WhatsApp
 - [ ] Fase 11 --- Histórico e relatórios
 - [ ] Fase 12 --- IHC e documentação visual
@@ -180,20 +180,20 @@ produtos.
 
 ## 🚗 FASE 9 --- Entregador
 
-- [ ] **D71 --- Atribuir entregador ao pedido**
-- [ ] **D72 --- Interface Flutter do entregador**
-- [ ] **D73 --- Listar somente entregas atribuídas**
-- [ ] **D74 --- Tela enxuta de detalhes da entrega**
-  - [ ] Número do pedido
-  - [ ] Cliente e telefone
-  - [ ] Endereço completo
-  - [ ] Complemento/referência, quando houver
-  - [ ] Horário de saída
-- [ ] **D75 --- Confirmar entrega pelo entregador responsável**
-- [ ] **D76 --- Registrar data/hora e alterar para `ENTREGUE`**
-- [ ] **D77 --- Testes de autorização do entregador**
+- [x] **D71 --- Atribuir entregador ao pedido**
+- [x] **D72 --- Interface Flutter do entregador**
+- [x] **D73 --- Listar somente entregas atribuídas**
+- [x] **D74 --- Tela enxuta de detalhes da entrega**
+  - [x] Número do pedido
+  - [x] Cliente e telefone
+  - [x] Endereço completo
+  - [x] Complemento/referência, quando houver
+  - [x] Horário de saída
+- [x] **D75 --- Confirmar entrega pelo entregador responsável**
+- [x] **D76 --- Registrar data/hora e alterar para `ENTREGUE`**
+- [x] **D77 --- Testes de autorização do entregador**
 
-**Marco 10:** ciclo delivery completo.
+**Marco 10 (concluído):** ciclo delivery completo.
 
 ## 💬 FASE 10 --- WhatsApp
 
