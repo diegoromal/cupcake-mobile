@@ -21,6 +21,14 @@ String _token(String type, {String? jti}) {
   return '${encode({'alg': 'HS256', 'typ': 'JWT'})}.${encode({'sub': _id, 'perfil': 'ENTREGADOR', 'type': type, 'iat': now, 'exp': now + 3600, 'jti': ?jti})}.signature';
 }
 
+Map<String, dynamic> _tokenClaims(String token) =>
+    jsonDecode(
+          utf8.decode(
+            base64Url.decode(base64Url.normalize(token.split('.')[1])),
+          ),
+        )
+        as Map<String, dynamic>;
+
 class _CourierAuthApi extends CustomerAuthApi {
   _CourierAuthApi()
     : super(
@@ -225,6 +233,8 @@ void main() {
     (tester) async {
       final session = await _signedInSession();
       addTearDown(session.dispose);
+      final accessToken = session.accessToken!;
+      final accessTokenClaims = _tokenClaims(accessToken);
       final pending = Completer<CourierOrdersResult>();
       const order = CourierOrder(
         id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
@@ -253,7 +263,10 @@ void main() {
       expect(find.text('Pedido PED-42'), findsOneWidget);
       expect(find.text('Status: Saiu para entrega'), findsOneWidget);
       expect(find.textContaining('telefone'), findsNothing);
-      expect(api.tokens, [_token('access')]);
+      expect(accessTokenClaims['type'], 'access');
+      expect(accessTokenClaims['iat'], isA<int>());
+      expect(accessTokenClaims['exp'], accessTokenClaims['iat'] + 3600);
+      expect(api.tokens, [accessToken]);
       await tester.tap(find.byTooltip('Atualizar entregas'));
       await tester.pumpAndSettle();
       expect(
