@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/authenticated-user';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -16,5 +16,11 @@ export class EntregadorPedidosController {
   listar(@Req() request: AuthenticatedRequest) {
     if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
     return this.pedidos.listarParaEntregador(request.user.id);
+  }
+
+  @Get(':id')
+  detalhar(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    return this.pedidos.detalharParaEntregador(id, request.user.id);
   }
 }

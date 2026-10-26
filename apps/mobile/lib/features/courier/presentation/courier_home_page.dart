@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
 import '../data/courier_orders_api.dart';
+import 'courier_order_detail_page.dart';
 
 class CourierHomePage extends StatefulWidget {
   const CourierHomePage({super.key, required this.session, this.api});
@@ -152,6 +153,16 @@ class _CourierHomePageState extends State<CourierHomePage> {
           child: ListTile(
             title: Text('Pedido ${order.businessNumber}'),
             subtitle: Text('Status: ${_statusLabel(order.status)}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CourierOrderDetailPage(
+                  orderId: order.id,
+                  session: widget.session,
+                  api: _api,
+                ),
+              ),
+            ),
           ),
         );
       },
