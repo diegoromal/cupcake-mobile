@@ -137,6 +137,42 @@ void main() {
     );
   });
 
+  test('sessão de entregador aceita somente tokens ENTREGADOR', () async {
+    final courierApi = CustomerAuthApi(
+      profile: SessionProfile.courier,
+      config: ApiConfig(baseUrl: ''),
+    );
+    final courierTokens = CustomerTokens.parseLogin({
+      'accessToken': _token('access', profile: 'ENTREGADOR'),
+      'refreshToken': _token('refresh', profile: 'ENTREGADOR'),
+    }, profile: SessionProfile.courier);
+
+    expect(courierTokens, isNotNull);
+    expect(
+      CustomerTokens.parseLogin({
+        'accessToken': _token('access', profile: 'ENTREGADOR'),
+        'refreshToken': _token('refresh', profile: 'ENTREGADOR'),
+      }),
+      isNull,
+    );
+    expect(
+      courierTokens!.withAccessToken(
+        _token('access', profile: 'CLIENTE'),
+        profile: SessionProfile.courier,
+      ),
+      isNull,
+    );
+    expect(courierApi.profile, SessionProfile.courier);
+    expect(
+      CustomerTokens.fromJson(
+        courierTokens.toJson(),
+        profile: SessionProfile.courier,
+      ),
+      isNotNull,
+    );
+    expect(CustomerTokens.fromJson(courierTokens.toJson()), isNull);
+  });
+
   test('URL não configurada não inicia request', () async {
     final result = await CustomerAuthApi(
       config: ApiConfig(baseUrl: ''),

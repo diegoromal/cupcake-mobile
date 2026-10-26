@@ -70,6 +70,7 @@ class CustomerSession extends ChangeNotifier {
   }
 
   CustomerSessionState get state => _state;
+  SessionProfile get profile => authApi.profile;
   bool get sessionExpired => _sessionExpired;
   bool get refreshUnavailable => _refreshUnavailable;
   bool get isAuthenticated => _state == CustomerSessionState.authenticated;
@@ -88,11 +89,11 @@ class CustomerSession extends ChangeNotifier {
     if (_disposed || !_foreground || !isAuthenticated || tokens == null) return;
     final now = _clock();
     var delay = _refreshUnavailable
-        ? tokens.timeUntilAccessExpiryAt(now)
-        : tokens.timeUntilAccessRefreshAt(now);
+        ? tokens.timeUntilAccessExpiryAt(now, profile: profile)
+        : tokens.timeUntilAccessRefreshAt(now, profile: profile);
     if (afterRefresh && delay == Duration.zero) {
       // A short-lived response must not start another refresh immediately.
-      final untilExpiry = tokens.timeUntilAccessExpiryAt(now);
+      final untilExpiry = tokens.timeUntilAccessExpiryAt(now, profile: profile);
       delay = untilExpiry > const Duration(seconds: 1)
           ? untilExpiry
           : const Duration(seconds: 1);
@@ -100,7 +101,8 @@ class CustomerSession extends ChangeNotifier {
     _accessRefreshTimer = Timer(delay, () {
       _accessRefreshTimer = null;
       if (_refreshUnavailable) {
-        if (tokens.timeUntilAccessExpiryAt(_clock()) == Duration.zero) {
+        if (tokens.timeUntilAccessExpiryAt(_clock(), profile: profile) ==
+            Duration.zero) {
           _setState(CustomerSessionState.restorationUnavailable);
         } else {
           _scheduleAccessRefresh();
@@ -142,7 +144,8 @@ class CustomerSession extends ChangeNotifier {
       return;
     }
     _tokens = stored;
-    if (!stored.hasRecoverableRefresh) {
+    if (!stored.matchesProfile(profile) ||
+        !stored.hasRecoverableRefreshFor(profile)) {
       await _endSession(generation);
       return;
     }
@@ -201,7 +204,7 @@ class CustomerSession extends ChangeNotifier {
     if (_state != CustomerSessionState.authenticated ||
         tokens == null ||
         _refreshUnavailable ||
-        !tokens.accessNeedsRefreshAt(_clock())) {
+        !tokens.accessNeedsRefreshAt(_clock(), profile: profile)) {
       return;
     }
     await _refresh(_generation, restoring: false);
@@ -249,7 +252,10 @@ class CustomerSession extends ChangeNotifier {
     if (!_isCurrent(generation)) return;
     if (result.status == AuthRequestStatus.success &&
         result.accessToken != null) {
-      final updated = previous.withAccessToken(result.accessToken);
+      final updated = previous.withAccessToken(
+        result.accessToken,
+        profile: profile,
+      );
       if (updated == null) {
         await _endSession(generation);
         return;
@@ -281,7 +287,8 @@ class CustomerSession extends ChangeNotifier {
     required bool restoring,
   }) {
     if (restoring ||
-        previous.timeUntilAccessExpiryAt(_clock()) == Duration.zero) {
+        previous.timeUntilAccessExpiryAt(_clock(), profile: profile) ==
+            Duration.zero) {
       _setState(CustomerSessionState.restorationUnavailable);
       return;
     }
