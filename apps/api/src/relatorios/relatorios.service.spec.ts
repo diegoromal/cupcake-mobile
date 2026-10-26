@@ -29,6 +29,16 @@ describe('RelatoriosService', () => {
         statusAtual: { in: [StatusPedido.ENTREGUE, StatusPedido.RETIRADO] },
         data: { gte: new Date('2026-10-01T03:00:00.000Z'), lt: new Date('2026-10-04T03:00:00.000Z') },
       },
+      orderBy: [{ data: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        identificadorNegocio: true,
+        data: true,
+        modalidade: true,
+        statusAtual: true,
+        total: true,
+        cliente: { select: { nome: true } },
+      },
     }));
     expect(result.totalVendido).toBe('12.35');
     expect(result.quantidadePedidos).toBe(2);
