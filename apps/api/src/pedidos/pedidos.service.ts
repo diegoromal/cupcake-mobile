@@ -18,6 +18,25 @@ export class PedidosService {
     private readonly notificacoes: NotificacoesService,
   ) {}
 
+  async listarParaCliente(clienteUsuarioId: string) {
+    const pedidos = await this.prisma.pedido.findMany({
+      where: { clienteUsuarioId },
+      select: {
+        id: true,
+        identificadorNegocio: true,
+        data: true,
+        modalidade: true,
+        total: true,
+        statusAtual: true,
+      },
+      orderBy: [{ data: 'desc' }, { id: 'desc' }],
+    });
+    return pedidos.map((pedido) => ({
+      ...pedido,
+      total: pedido.total.toFixed(2),
+    }));
+  }
+
   listarParaEntregador(entregadorUsuarioId: string) {
     return this.prisma.pedido.findMany({
       where: { entregadorUsuarioId, modalidade: ModalidadeRecebimento.ENTREGA },

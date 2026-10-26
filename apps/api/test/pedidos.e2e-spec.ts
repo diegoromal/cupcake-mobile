@@ -15,6 +15,7 @@ describe('POST /pedidos', () => {
   let app: INestApplication;
   const criar = jest.fn();
   const revisar = jest.fn();
+  const listarParaCliente = jest.fn();
   const listarParaAdministracao = jest.fn();
   const detalharParaAdministracao = jest.fn();
   const iniciarProducao = jest.fn();
@@ -33,7 +34,7 @@ describe('POST /pedidos', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService).useValue({ usuario: { findUnique: user, findMany: listarEntregadores } })
-      .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaAdministracao,
+      .overrideProvider(PedidosService).useValue({ criar, revisar, listarParaCliente, listarParaAdministracao,
         detalharParaAdministracao, iniciarProducao, marcarProntoParaRetirada, confirmarRetirada,
         sairParaEntrega, cancelarComoCliente }).compile();
     app = moduleRef.createNestApplication();
@@ -51,6 +52,7 @@ describe('POST /pedidos', () => {
     revisar.mockResolvedValue({ modalidade: 'RETIRADA', valorItens: '10.30',
       freteAplicado: '0.00', total: '10.30', revisaoId: 'a'.repeat(64),
       itens: [{ nome: 'Cupcake', quantidade: 1, personalizacoes: [] }] });
+    listarParaCliente.mockResolvedValue([]);
     listarParaAdministracao.mockResolvedValue([]);
     detalharParaAdministracao.mockResolvedValue({ id: userId, identificadorNegocio: 'PED-123' });
     iniciarProducao.mockResolvedValue({ id: userId, statusAtual: 'EM_PREPARO' });
@@ -79,6 +81,22 @@ describe('POST /pedidos', () => {
     cancelarComoCliente.mockRejectedValueOnce(new ConflictException('Pedido não pode ser cancelado neste status.'));
     await request(app.getHttpServer()).patch(path).set('Authorization', `Bearer ${cliente}`)
       .send({}).expect(409);
+  });
+
+  it('GET /pedidos exige CLIENTE e usa somente o cliente autenticado', async () => {
+    await request(app.getHttpServer()).get('/pedidos').expect(401);
+    const admin = await token(PerfilUsuario.ADMIN);
+    user.mockResolvedValue({ id: userId, perfil: PerfilUsuario.ADMIN });
+    await request(app.getHttpServer()).get('/pedidos')
+      .set('Authorization', `Bearer ${admin}`).expect(403);
+
+    const clienteId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const cliente = await token(PerfilUsuario.CLIENTE, clienteId);
+    user.mockResolvedValue({ id: clienteId, perfil: PerfilUsuario.CLIENTE });
+    await request(app.getHttpServer()).get('/pedidos')
+      .set('Authorization', `Bearer ${cliente}`).expect(200).expect([]);
+    expect(listarParaCliente).toHaveBeenCalledTimes(1);
+    expect(listarParaCliente).toHaveBeenCalledWith(clienteId);
   });
 
   it('GET /admin/pedidos exige ADMIN e retorna a listagem autorizada', async () => {

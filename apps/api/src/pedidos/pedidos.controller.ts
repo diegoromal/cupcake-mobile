@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, ParseUUIDPipe, Patch, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/authenticated-user';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -16,6 +16,12 @@ import { PedidosService } from './pedidos.service';
 }))
 export class PedidosController {
   constructor(private readonly pedidos: PedidosService) {}
+
+  @Get()
+  listar(@Req() request: AuthenticatedRequest) {
+    if (!request.user?.id) throw new UnauthorizedException('Access token inválido.');
+    return this.pedidos.listarParaCliente(request.user.id);
+  }
 
   @Patch(':id/cancelar')
   cancelar(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
