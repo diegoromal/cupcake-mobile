@@ -227,9 +227,9 @@ produtos.
 - [x] **D91 --- Consolidar mapa navegacional**
 - [x] **D92 --- Wireframes Cliente --- parte 1**
 - [x] **D93 --- Wireframes Cliente --- parte 2**
-- [ ] **D94 --- Wireframes Administrador**
-- [ ] **D95 --- Wireframes Entregador**
-- [ ] **D96 --- Estados vazios, loading e mensagens de erro**
+- [x] **D94 --- Wireframes Administrador**
+- [x] **D95 --- Wireframes Entregador**
+- [x] **D96 --- Estados vazios, loading e mensagens de erro**
 - [ ] **D97 --- Revisar protótipo × aplicação real**
 
 **Marco 12:** documentação visual corresponde ao produto implementado.
