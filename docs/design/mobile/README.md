@@ -1,8 +1,8 @@
-# Mobile Cliente — Referências de UX/UI
+# Mobile — Referências de UX/UI
 
 ## Objetivo
 
-Indexar as referências aprovadas para o aplicativo Flutter do cliente.
+Indexar as referências para o aplicativo Flutter de cliente e entregador.
 
 A D118 produz referência visual e documentação. A implementação pertence às tarefas próprias da Fase 3.
 
@@ -74,9 +74,9 @@ orders/
 
 ### Entregador
 
-O diretório `courier/` documenta o fluxo de ENTREGADOR.
-
-É uma área autenticada separada do fluxo do cliente.
+O diretório [`courier/`](courier/README.md) contém as referências da lista de
+entregas e do detalhe/confirmação de entrega. É uma área autenticada separada
+do fluxo do cliente.
 
 ## Fluxo de referência resumido
 

@@ -162,11 +162,15 @@ cria contrato funcional adicional.
 
 ## Entregador
 
-O fluxo do entregador permanece documentado em:
+Referências detalhadas do fluxo implementado:
 
-`docs/design/mobile/courier/README.md`
+- `mobile.courier.delivery-list` — lista de entregas atribuídas;
+- `mobile.courier.delivery-detail` — detalhe e confirmação de entrega.
 
-A D118 não exige detalhamento integral das telas do entregador.
+Arquivos Markdown e PNG estão em `docs/design/mobile/courier/`. Os PNGs usam
+dados demonstrativos; contratos, estados e limites estão descritos nos
+Markdowns. O design não cria funcionalidades além do domínio e do fluxo
+implementado.
 
 ## Relação com as HU
 
