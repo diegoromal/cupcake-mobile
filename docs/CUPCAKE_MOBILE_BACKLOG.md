@@ -224,9 +224,9 @@ produtos.
 
 ## 🎨 FASE 12 --- IHC e documentação visual
 
-- [ ] **D91 --- Consolidar mapa navegacional**
-- [ ] **D92 --- Wireframes Cliente --- parte 1**
-- [ ] **D93 --- Wireframes Cliente --- parte 2**
+- [x] **D91 --- Consolidar mapa navegacional**
+- [x] **D92 --- Wireframes Cliente --- parte 1**
+- [x] **D93 --- Wireframes Cliente --- parte 2**
 - [ ] **D94 --- Wireframes Administrador**
 - [ ] **D95 --- Wireframes Entregador**
 - [ ] **D96 --- Estados vazios, loading e mensagens de erro**
