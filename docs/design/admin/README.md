@@ -20,7 +20,8 @@ O mapa de fluxos e transições está em
 2. Produtos / Cardápio
 3. Categorias
 4. Personalizações
-5. Relatório de Vendas
+5. Configuração de entrega
+6. Relatório de Vendas
 
 `Confeitaria Admin` é massa demonstrativa de identificação, não um cargo.
 
@@ -128,6 +129,11 @@ Rota existente:
 - `/relatorios/vendas`.
 
 ## Configuração de entrega
+
+```text
+├── delivery-configuration.md
+└── delivery-configuration.png
+```
 
 Rota existente:
 
