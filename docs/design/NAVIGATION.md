@@ -325,15 +325,15 @@ Fluxo implementado no Mobile:
 
 ```text
 Login ENTREGADOR
-→ lista de entregas atribuídas
-→ detalhe da entrega
+→ `mobile.courier.delivery-list`
+→ `mobile.courier.delivery-detail`
 → confirmação explícita
 → retorno e atualização da lista
 ```
 
 O mecanismo técnico de confirmação e as regras detalhadas ficam em:
 
-`mobile/courier/README.md`
+`mobile/courier/delivery-list.md` e `mobile/courier/delivery-detail.md`.
 
 ## Sessão expirada
 
