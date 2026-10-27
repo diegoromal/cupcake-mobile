@@ -258,6 +258,7 @@ Sidebar consolidada:
 - Produtos / Cardápio;
 - Categorias;
 - Personalizações;
+- Configuração de entrega;
 - Relatório de Vendas.
 
 A seção ativa deve ter diferenciação visual e semântica.

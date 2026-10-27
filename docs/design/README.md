@@ -141,7 +141,14 @@ Template de revisão:
 
 `docs/design/admin/_audit/screen-review-template.md`
 
-## Admin futuro
+## Admin — Configuração de entrega
+
+A tela administrativa de configuração de entrega possui referência D94:
+
+- `admin.delivery.configuration` — `/configuracao-loja-entrega`;
+- `admin/delivery-configuration.md` e `admin/delivery-configuration.png`.
+
+## Admin — Pedidos e relatórios
 
 A D118 também possui referências para:
 
@@ -149,7 +156,9 @@ A D118 também possui referências para:
 - `admin/orders/order-detail`;
 - `admin/reports/sales-report`.
 
-Essas referências orientam tarefas futuras. Sua existência não significa que as rotas já estejam implementadas.
+Essas referências orientam as telas administrativas de pedidos e relatório;
+ambas possuem rotas implementadas. A existência de uma referência visual não
+cria contrato funcional adicional.
 
 ## Entregador
 
