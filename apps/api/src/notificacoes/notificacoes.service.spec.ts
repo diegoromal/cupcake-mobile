@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ResultadoNotificacao, StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { TEST_NOTIFICATION_PHONE } from '../../test/test-notification-phone';
 import { EvolutionApiService } from './evolution-api.service';
 import { NotificacoesService } from './notificacoes.service';
 
@@ -9,7 +10,7 @@ describe('NotificacoesService', () => {
   const eventoBase = {
     pedidoId,
     identificadorNegocio: 'PED-123',
-    telefone: '(11) 99999-9999',
+    telefone: TEST_NOTIFICATION_PHONE,
   };
   let criar: jest.Mock;
   let enviarTexto: jest.Mock;
@@ -38,11 +39,11 @@ describe('NotificacoesService', () => {
   ])('renderiza e registra template de %s', async (status, texto) => {
     await service.notificarStatusPedido({ ...eventoBase, status });
 
-    expect(enviarTexto).toHaveBeenCalledWith('5511999999999', texto);
+    expect(enviarTexto).toHaveBeenCalledWith(TEST_NOTIFICATION_PHONE, texto);
     expect(criar).toHaveBeenCalledWith({ data: expect.objectContaining({
       pedidoId,
       eventoStatusOriginador: status,
-      destino: '5511999999999',
+      destino: TEST_NOTIFICATION_PHONE,
       canal: 'WHATSAPP',
       resultado: ResultadoNotificacao.SUCESSO,
       dataHora: expect.any(Date),
@@ -90,12 +91,12 @@ describe('NotificacoesService', () => {
 
   it('preserva telefone internacional informado com prefixo +', async () => {
     await service.notificarStatusPedido({
-      ...eventoBase, telefone: '+1 (415) 555-2671', status: StatusPedido.PAGO,
+      ...eventoBase, telefone: `+${TEST_NOTIFICATION_PHONE}`, status: StatusPedido.PAGO,
     });
 
-    expect(enviarTexto).toHaveBeenCalledWith('14155552671', expect.any(String));
+    expect(enviarTexto).toHaveBeenCalledWith(TEST_NOTIFICATION_PHONE, expect.any(String));
     expect(criar).toHaveBeenCalledWith({ data: expect.objectContaining({
-      destino: '14155552671', resultado: ResultadoNotificacao.SUCESSO,
+      destino: TEST_NOTIFICATION_PHONE, resultado: ResultadoNotificacao.SUCESSO,
     }) });
   });
 

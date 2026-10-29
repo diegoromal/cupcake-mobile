@@ -1,4 +1,5 @@
 import { ServiceUnavailableException } from '@nestjs/common';
+import { TEST_NOTIFICATION_PHONE } from '../../test/test-notification-phone';
 import { EvolutionApiService } from './evolution-api.service';
 
 describe('EvolutionApiService', () => {
@@ -28,14 +29,14 @@ describe('EvolutionApiService', () => {
   it('envia texto à instância configurada com autenticação apikey', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 201 }));
 
-    await expect(service.enviarTexto('5511999999999', 'Pedido confirmado')).resolves.toBeUndefined();
+    await expect(service.enviarTexto(TEST_NOTIFICATION_PHONE, 'Pedido confirmado')).resolves.toBeUndefined();
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://evolution.example.test/message/sendText/cupcake',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({ apikey: 'test-api-key' }),
-        body: JSON.stringify({ number: '5511999999999', text: 'Pedido confirmado' }),
+        body: JSON.stringify({ number: TEST_NOTIFICATION_PHONE, text: 'Pedido confirmado' }),
       }),
     );
   });
@@ -43,14 +44,14 @@ describe('EvolutionApiService', () => {
   it('falha sem consultar o provedor quando a configuração está incompleta', async () => {
     delete process.env.EVOLUTION_API_KEY;
 
-    await expect(service.enviarTexto('5511999999999', 'Mensagem'))
+    await expect(service.enviarTexto(TEST_NOTIFICATION_PHONE, 'Mensagem'))
       .rejects.toBeInstanceOf(ServiceUnavailableException);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it.each([
     ['', 'Mensagem'],
-    ['5511999999999', '  '],
+    [TEST_NOTIFICATION_PHONE, '  '],
   ])('rejeita destino ou texto vazio', async (destino, texto) => {
     await expect(service.enviarTexto(destino, texto)).rejects.toBeInstanceOf(TypeError);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -59,14 +60,14 @@ describe('EvolutionApiService', () => {
   it('converte respostas HTTP não exitosas em erro de indisponibilidade sem expor o corpo', async () => {
     fetchMock.mockResolvedValue(new Response('internal provider details', { status: 401 }));
 
-    await expect(service.enviarTexto('5511999999999', 'Mensagem'))
+    await expect(service.enviarTexto(TEST_NOTIFICATION_PHONE, 'Mensagem'))
       .rejects.toThrow('Envio de mensagem indisponível.');
   });
 
   it('converte falhas de rede em erro de indisponibilidade', async () => {
     fetchMock.mockRejectedValue(new Error('network failure'));
 
-    await expect(service.enviarTexto('5511999999999', 'Mensagem'))
+    await expect(service.enviarTexto(TEST_NOTIFICATION_PHONE, 'Mensagem'))
       .rejects.toThrow('Envio de mensagem indisponível.');
   });
 });

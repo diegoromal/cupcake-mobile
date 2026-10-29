@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { NotificacoesService } from '../src/notificacoes/notificacoes.service';
 import { PedidosService } from '../src/pedidos/pedidos.service';
+import { TEST_NOTIFICATION_PHONE } from './test-notification-phone';
 
 async function main() {
   const raw = process.env.D81_TEST_DATABASE_URL;
@@ -48,7 +49,7 @@ async function main() {
 
     await prisma.usuario.createMany({ data: [
       { id: clienteId, nome: `${marker} cliente`, email: `${marker}-cliente@example.test`,
-        telefone: '(11) 99999-9999', credencialSenha: 'fixture', perfil: 'CLIENTE' },
+        telefone: TEST_NOTIFICATION_PHONE, credencialSenha: 'fixture', perfil: 'CLIENTE' },
       { id: adminId, nome: `${marker} admin`, email: `${marker}-admin@example.test`,
         telefone: '00000000000', credencialSenha: 'fixture', perfil: 'ADMIN' },
     ] });
@@ -71,7 +72,7 @@ async function main() {
     const falha = await prisma.notificacao.findFirstOrThrow({ where: { pedidoId: pedidoIds[0] } });
     assert.equal(falha.resultado, 'FALHA'); checks++;
     assert.equal(falha.eventoStatusOriginador, 'EM_PREPARO'); checks++;
-    assert.equal(falha.destino, '5511999999999'); checks++;
+    assert.equal(falha.destino, TEST_NOTIFICATION_PHONE); checks++;
 
     bloquearEnvio = false;
     deveFalhar = false;
