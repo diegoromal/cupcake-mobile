@@ -237,7 +237,7 @@ produtos.
 ## 🧪 FASE 13 --- Qualidade
 
 - [x] **D98 --- Plano geral de testes**
-- [ ] **D99 --- Teste ponta a ponta --- cliente**
+- [x] **D99 --- Teste ponta a ponta --- cliente**
 - [ ] **D100 --- Teste ponta a ponta --- administrador**
 - [ ] **D101 --- Teste ponta a ponta --- entregador**
 - [ ] **D102 --- Testes negativos e validações**
