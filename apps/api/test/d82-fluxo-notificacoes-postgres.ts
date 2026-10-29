@@ -5,6 +5,7 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { StatusPedido } from '../src/generated/prisma/enums';
 import { EventoStatusPedido, NotificacoesService } from '../src/notificacoes/notificacoes.service';
 import { PedidosService } from '../src/pedidos/pedidos.service';
+import { TEST_NOTIFICATION_PHONE } from './test-notification-phone';
 
 const textoEsperado: Partial<Record<StatusPedido, (pedido: string) => string>> = {
   [StatusPedido.PAGO]: (pedido) => `Pagamento do pedido ${pedido} aprovado.`,
@@ -52,7 +53,7 @@ async function main() {
     assert.equal(database.name, 'cupcake_d82'); checks++;
     await prisma.usuario.createMany({ data: [
       { id: clienteId, nome: `${marker} cliente`, email: `${marker}-cliente@example.test`,
-        telefone: '(11) 99999-9999', credencialSenha: 'fixture', perfil: 'CLIENTE' },
+        telefone: TEST_NOTIFICATION_PHONE, credencialSenha: 'fixture', perfil: 'CLIENTE' },
       { id: adminId, nome: `${marker} admin`, email: `${marker}-admin@example.test`,
         telefone: '00000000000', credencialSenha: 'fixture', perfil: 'ADMIN' },
       { id: entregadorId, nome: `${marker} entregador`, email: `${marker}-entregador@example.test`,
@@ -72,7 +73,7 @@ async function main() {
 
     const eventoPago: EventoStatusPedido = {
       pedidoId: deliveryId, identificadorNegocio: deliveryBusinessId,
-      telefone: '(11) 99999-9999', status: StatusPedido.PAGO,
+      telefone: TEST_NOTIFICATION_PHONE, status: StatusPedido.PAGO,
     };
     notificacoes.agendarStatusPedido(eventoPago);
     assert.equal((await pedidos.iniciarProducao(deliveryId, adminId)).statusAtual, StatusPedido.EM_PREPARO); checks++;
@@ -86,7 +87,7 @@ async function main() {
     assert.equal((await pedidos.confirmarRetirada(retiradaId, adminId)).statusAtual,
       StatusPedido.RETIRADO); checks++;
     notificacoes.agendarStatusPedido({ pedidoId: deliveryId, identificadorNegocio: deliveryBusinessId,
-      telefone: '(11) 99999-9999', status: StatusPedido.PENDENTE_PAGAMENTO });
+      telefone: TEST_NOTIFICATION_PHONE, status: StatusPedido.PENDENTE_PAGAMENTO });
     await notificacoes.onModuleDestroy();
 
     const historicos = await prisma.historicoStatusPedido.findMany({ where: { pedidoId: { in: pedidoIds } },
@@ -103,7 +104,7 @@ async function main() {
       historicosEsperados.sort(ordenar)); checks++;
     assert.deepEqual(envios.sort((a, b) => a.texto.localeCompare(b.texto)),
       eventosEsperados.map(([status, identificador]) => ({
-        destino: '5511999999999', texto: textoEsperado[status]!(identificador),
+        destino: TEST_NOTIFICATION_PHONE, texto: textoEsperado[status]!(identificador),
       }))
         .sort((a, b) => a.texto.localeCompare(b.texto))); checks++;
     const registros = await prisma.notificacao.findMany({ where: { pedidoId: { in: pedidoIds } },
@@ -111,7 +112,7 @@ async function main() {
     assert.equal(registros.length, eventosEsperados.length); checks++;
     assert.deepEqual(registros.map(({ eventoStatusOriginador, destino, canal, resultado }) =>
       [eventoStatusOriginador, destino, canal, resultado]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
-    eventosEsperados.map(([status]) => [status, '5511999999999', 'WHATSAPP', 'SUCESSO'])
+    eventosEsperados.map(([status]) => [status, TEST_NOTIFICATION_PHONE, 'WHATSAPP', 'SUCESSO'])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0])))); checks++;
   } finally {
     await notificacoes.onModuleDestroy();
