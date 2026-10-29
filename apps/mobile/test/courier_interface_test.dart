@@ -229,6 +229,88 @@ void main() {
     expect(storage.value, isNull);
   });
 
+  testWidgets('jornada ENTREGADOR confirma entrega e atualiza a lista', (
+    tester,
+  ) async {
+    final storage = MemorySessionStorage();
+    final authApi = _CourierAuthApi();
+    final session = CustomerSession(authApi: authApi, storage: storage);
+    const deliveredOrder = CourierOrder(
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      businessNumber: 'PED-42',
+      status: 'ENTREGUE',
+    );
+    final api = _CourierOrdersApi()
+      ..responses.addAll([
+        Future.value(
+          const CourierOrdersResult(
+            CourierOrdersStatus.success,
+            orders: [_assignedOrder],
+          ),
+        ),
+        Future.value(
+          const CourierOrdersResult(
+            CourierOrdersStatus.success,
+            orders: [deliveredOrder],
+          ),
+        ),
+      ])
+      ..detailResponses.add(
+        Future.value(
+          const CourierOrderDetailResult(
+            CourierOrdersStatus.success,
+            detail: _deliveryDetail,
+          ),
+        ),
+      )
+      ..confirmResponses.add(
+        Future.value(
+          CourierDeliveryConfirmationResult(
+            CourierOrdersStatus.success,
+            deliveredAt: DateTime.utc(2026, 10, 29, 15, 30),
+          ),
+        ),
+      );
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomerSessionPage(session: session, courierOrdersApi: api),
+      ),
+    );
+    await _loginFromPage(tester);
+
+    expect(authApi.loginRequests, 1);
+    expect(find.text('Área do entregador'), findsOneWidget);
+    expect(find.text('Pedido PED-42'), findsOneWidget);
+    expect(find.text('Status: Saiu para entrega'), findsOneWidget);
+
+    await tester.tap(find.text('Pedido PED-42'));
+    await tester.pumpAndSettle();
+    expect(find.text('Detalhe da entrega'), findsOneWidget);
+    expect(find.text('Cliente Exemplo'), findsOneWidget);
+    expect(find.text('Telefone: 11999999999'), findsOneWidget);
+    expect(find.text('Rua A, 10'), findsOneWidget);
+    expect(find.text('Confirmar entrega'), findsOneWidget);
+
+    await tester.tap(find.text('Confirmar entrega'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entrega confirmada.'), findsOneWidget);
+    expect(find.textContaining('Confirmada em'), findsOneWidget);
+    expect(find.text('Status: Entregue'), findsOneWidget);
+    expect(find.text('Confirmar entrega'), findsNothing);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Área do entregador'), findsOneWidget);
+    expect(find.text('Pedido PED-42'), findsOneWidget);
+    expect(find.text('Status: Entregue'), findsOneWidget);
+    expect(api.tokens, [session.accessToken, session.accessToken]);
+    expect(api.detailIds, [_assignedOrder.id]);
+    expect(api.confirmIds, [_assignedOrder.id]);
+    expect(storage.value, isNotNull);
+  });
+
   testWidgets(
     'lista atribuída carrega só resumo e atualiza por ação explícita',
     (tester) async {
