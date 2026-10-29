@@ -28,32 +28,34 @@ export default function ConfiguracaoLojaEntregaForm() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [exists,setExists] = useState(false);
+  const [loadError,setLoadError] = useState(false);
+  const canEdit = !loading && !loadError;
   const mounted = useRef(true);
   const lock = useRef(false);
   const load = useCallback(async () => {
-    setLoading(true); setMessage('');
+    setLoading(true); setMessage(''); setLoadError(false);
     try { const result=await adminApi<unknown>(path); if(!isConfiguration(result)) throw new Error('Resposta inválida da API.'); if(mounted.current){setValue(result);setExists(true);} }
-    catch(error) { if(mounted.current) { if(error instanceof AdminApiError && error.status===404){setValue(empty);setExists(false);}else setMessage(error instanceof Error?error.message:'Falha ao consultar configuração.'); } }
+    catch(error) { if(mounted.current) { if(error instanceof AdminApiError && error.status===404){setValue(empty);setExists(false);}else {setLoadError(true);setMessage(error instanceof Error?error.message:'Falha ao consultar configuração.');} } }
     finally { if(mounted.current) setLoading(false); }
   },[]);
   useEffect(()=>{mounted.current=true;void load();return ()=>{mounted.current=false;};},[load]);
   async function save(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if(lock.current) return;
+    event.preventDefault(); if(lock.current || !canEdit || busy) return;
     if(!valid(value)){setMessage('Confira os valores e a precisão de cada campo.');document.getElementById('config-error')?.focus();return;}
     lock.current=true;setBusy(true);setMessage('');
-    try { const saved=await adminApi<unknown>(path,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(value)});if(!isConfiguration(saved)) throw new Error('Resposta inválida da API.');if(mounted.current){setValue(saved);setExists(true);setMessage('Configuração salva.');} }
+    try { const saved=await adminApi<unknown>(path,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(value)});if(!isConfiguration(saved)) throw new Error('Resposta inválida da API.');if(mounted.current){setValue(saved);setExists(true);setLoadError(false);setMessage('Configuração salva.');} }
     catch(error){if(mounted.current)setMessage(error instanceof Error?error.message:'Falha ao salvar configuração.');}
     finally {lock.current=false;if(mounted.current)setBusy(false);}
   }
   return <section className="card"><h1>Configuração de entrega</h1>
-    {loading?<p role="status">Carregando configuração…</p>:<form onSubmit={save} className="form" aria-busy={busy} noValidate>
-      {!exists&&<p role="status">Nenhuma configuração cadastrada.</p>}
+    {loading?<p role="status">Carregando configuração…</p>:<form onSubmit={save} className="form delivery-config-form" aria-busy={busy} noValidate>
+      {!exists&&!loadError&&<p role="status">Nenhuma configuração cadastrada.</p>}
       {message&&<p id="config-error" tabIndex={-1} role={message.endsWith('salva.')?'status':'alert'} className={message.endsWith('salva.')?'notice':'error'}>{message}</p>}
       {(Object.keys(labels) as Array<keyof ConfiguracaoLojaEntrega>).map(key=><div key={key}>
         <label htmlFor={key}>{labels[key]}</label>
-        <input id={key} inputMode="decimal" value={value[key]} disabled={busy} onChange={event=>setValue(current=>({...current,[key]:event.target.value}))}/>
+        <input id={key} inputMode="decimal" value={value[key]} disabled={!canEdit || busy} onChange={event=>setValue(current=>({...current,[key]:event.target.value}))}/>
       </div>)}
-      <div className="form-actions"><button type="submit" disabled={busy}>{busy?'Salvando…':'Salvar configuração'}</button><button type="button" className="secondary" disabled={busy} onClick={()=>void load()}>Recarregar</button></div>
+      <div className="form-actions"><button type="submit" disabled={!canEdit || busy}>{busy?'Salvando…':'Salvar configuração'}</button><button type="button" className="secondary" disabled={busy} onClick={()=>void load()}>Recarregar</button></div>
     </form>}
   </section>;
 }

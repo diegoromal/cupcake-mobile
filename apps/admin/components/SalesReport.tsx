@@ -26,6 +26,28 @@ function formatCurrency(value: string) {
 }
 const dateTime = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' });
 const statusLabel = { ENTREGUE: 'Entregue', RETIRADO: 'Retirado' } as const;
+const modalityLabel = { ENTREGA: 'Delivery', RETIRADA: 'Retirada' } as const;
+const csvHeaders = ['Pedido', 'Data e hora', 'Cliente', 'Modalidade', 'Status', 'Valor total'];
+function csvCell(value: string) {
+  const safeValue = /^[\s\u0000-\u001f]*[=+\-@]/.test(value) ? `'${value}` : value;
+  return `"${safeValue.replaceAll('"', '""')}"`;
+}
+function reportCsv(orders: ReportOrder[]) {
+  const rows = [csvHeaders, ...orders.map(order => [
+    order.identificadorNegocio,
+    order.data,
+    order.cliente,
+    modalityLabel[order.modalidade],
+    statusLabel[order.statusAtual],
+    order.total,
+  ])];
+  return rows.map(row => row.map(csvCell).join(',')).join('\r\n');
+}
+function afterPaint() {
+  return new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
 function isSalesReport(value: unknown): value is SalesReportResult {
   if (typeof value !== 'object' || value === null) return false;
   const report = value as Partial<SalesReportResult>;
@@ -45,7 +67,7 @@ export default function SalesReport() {
   const [fim, setFim] = useState('');
   const [report, setReport] = useState<SalesReportResult | null>(null);
   const [busy, setBusy] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<'pdf' | 'csv' | null>(null);
   const [error, setError] = useState('');
   const invalidPeriod = Boolean(error) && (!inicio || !fim || inicio > fim);
 
@@ -73,26 +95,57 @@ export default function SalesReport() {
     }
   }
 
-  function exportPdf() {
+  async function exportPdf() {
     if (!report || exporting) return;
-    setExporting(true);
-    window.setTimeout(() => {
-      try {
-        window.print();
-      } catch {
-        setError('Não foi possível preparar o PDF. Tente novamente.');
-      } finally {
-        setExporting(false);
-      }
-    }, 0);
+    setExporting('pdf');
+    try {
+      await afterPaint();
+      window.print();
+    } catch {
+      setError('Não foi possível preparar o PDF. Tente novamente.');
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function exportCsv() {
+    if (!report || exporting) return;
+    setExporting('csv');
+    setError('');
+    try {
+      await afterPaint();
+      const blob = new Blob([reportCsv(report.pedidos)], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'relatorio-vendas.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Não foi possível preparar o CSV. Tente novamente.');
+    } finally {
+      setExporting(null);
+    }
   }
 
   return <section className="sales-report">
     <div className="heading"><div><h1>Relatório de vendas</h1><p>Consulte pedidos entregues e retirados por período.</p></div></div>
     <form className="card report-filters" onSubmit={applyPeriod} noValidate aria-busy={busy}>
-      <div><label htmlFor="report-start">Data inicial</label><input id="report-start" type="date" required value={inicio} disabled={busy} aria-invalid={invalidPeriod && (!inicio || inicio > fim)} aria-describedby={invalidPeriod ? 'report-error' : undefined} onChange={event => setInicio(event.target.value)} /></div>
-      <div><label htmlFor="report-end">Data final</label><input id="report-end" type="date" required value={fim} disabled={busy} aria-invalid={invalidPeriod && (!fim || inicio > fim)} aria-describedby={invalidPeriod ? 'report-error' : undefined} onChange={event => setFim(event.target.value)} /></div>
-      <button type="submit" disabled={busy}>{busy ? 'Consultando…' : 'Aplicar período'}</button>
+      <div className="report-filter-fields">
+        <div><label htmlFor="report-start">Data inicial</label><input id="report-start" type="date" required value={inicio} disabled={busy} aria-invalid={invalidPeriod && (!inicio || inicio > fim)} aria-describedby={invalidPeriod ? 'report-error' : undefined} onChange={event => setInicio(event.target.value)} /></div>
+        <div><label htmlFor="report-end">Data final</label><input id="report-end" type="date" required value={fim} disabled={busy} aria-invalid={invalidPeriod && (!fim || inicio > fim)} aria-describedby={invalidPeriod ? 'report-error' : undefined} onChange={event => setFim(event.target.value)} /></div>
+        <button type="submit" disabled={busy}>{busy ? 'Consultando…' : 'Aplicar período'}</button>
+      </div>
+      {report && <div className="report-export">
+        <span>Exportar relatório:</span>
+        <button type="button" onClick={exportPdf} disabled={Boolean(exporting)}>
+          {exporting === 'pdf' ? 'Preparando PDF…' : 'Exportar PDF'}
+        </button>
+        <button type="button" onClick={exportCsv} disabled={Boolean(exporting)}>
+          {exporting === 'csv' ? 'Preparando CSV…' : 'Exportar CSV'}
+        </button>
+        {exporting && <p role="status">Preparando o relatório para salvar como {exporting.toUpperCase()}…</p>}
+      </div>}
     </form>
     {error && <p id="report-error" className="error" role="alert">{error}</p>}
     {busy && <p role="status">Carregando relatório…</p>}
@@ -102,12 +155,6 @@ export default function SalesReport() {
         <article className="card"><h2>Total vendido</h2><p>{formatCurrency(report.totalVendido)}</p></article>
         <article className="card"><h2>Quantidade de pedidos</h2><p>{report.quantidadePedidos}</p></article>
       </div>
-      <div className="report-export">
-        <button type="button" onClick={exportPdf} disabled={exporting}>
-          {exporting ? 'Preparando PDF…' : 'Exportar PDF'}
-        </button>
-        {exporting && <p role="status">Preparando o relatório para salvar como PDF…</p>}
-      </div>
       <h2>Pedidos do período</h2>
       {report.pedidos.length === 0 ? <div className="card">Nenhum pedido finalizado encontrado neste período.</div> :
         <div className="card table-wrap"><table>
@@ -116,7 +163,7 @@ export default function SalesReport() {
             <td><strong>{order.identificadorNegocio}</strong></td>
             <td><time dateTime={order.data}>{dateTime.format(new Date(order.data))}</time></td>
             <td>{order.cliente}</td>
-            <td>{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</td>
+            <td>{modalityLabel[order.modalidade]}</td>
             <td><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span></td>
             <td>{formatCurrency(order.total)}</td>
           </tr>)}</tbody>

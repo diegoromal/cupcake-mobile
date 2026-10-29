@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/core/design/app_theme.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
@@ -165,6 +166,28 @@ Future<void> open(
 }
 
 void main() {
+  testWidgets(
+    'CTA mostra o total calculado pela revisão em formato monetário',
+    (tester) async {
+      final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
+      api.reviewResults.add(
+        OrderResult(OrderStatus.success, value: preview(mode: 'ENTREGA')),
+      );
+
+      await open(tester, sessionValue, api, mode: 'ENTREGA');
+
+      final button = find.byType(FilledButton).last;
+      expect(
+        find.descendant(of: button, matching: find.text('R\$ 23,00')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: button, matching: find.text('Confirmar pedido')),
+        findsOneWidget,
+      );
+    },
+  );
+
   for (final previousMode in ['ENTREGA', 'RETIRADA']) {
     for (final createdBeforeTimeout in [true, false]) {
       testWidgets(
@@ -329,6 +352,12 @@ void main() {
       await tester.pump();
       expect(find.text('Processando pedido…'), findsOneWidget);
       expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Alterar'))
+            .onPressed,
+        isNull,
+      );
+      expect(
         tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
         isNull,
       );
@@ -449,9 +478,9 @@ void main() {
         tester.view.physicalSize = Size(width, 700);
         tester.view.devicePixelRatio = 1;
         final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
-        api.reviewResults.add(
-          OrderResult(OrderStatus.success, value: preview(mode: 'ENTREGA')),
-        );
+        final review = preview(mode: 'ENTREGA');
+        if (width == 320 && scale == 2) review['total'] = '1234567.89';
+        api.reviewResults.add(OrderResult(OrderStatus.success, value: review));
         await tester.pumpWidget(
           MaterialApp(
             theme: AppTheme.light,
@@ -473,6 +502,52 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.ensureVisible(find.text('Confirmar pedido'));
         expect(tester.takeException(), isNull);
+        final cta = find.byType(FilledButton).last;
+        expect(
+          find.descendant(of: cta, matching: find.text('Confirmar pedido')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: cta,
+            matching: find.text(
+              width == 320 && scale == 2 ? 'R\$ 1234567,89' : 'R\$ 23,00',
+            ),
+          ),
+          findsOneWidget,
+        );
+        final totalFinder = find.descendant(
+          of: cta,
+          matching: find.text(
+            width == 320 && scale == 2 ? 'R\$ 1234567,89' : 'R\$ 23,00',
+          ),
+        );
+        final actionFinder = find.descendant(
+          of: cta,
+          matching: find.text('Confirmar pedido'),
+        );
+        final totalRect = tester.getRect(totalFinder);
+        final actionRect = tester.getRect(actionFinder);
+        final separated =
+            totalRect.right <= actionRect.left ||
+            actionRect.right <= totalRect.left ||
+            totalRect.bottom <= actionRect.top ||
+            actionRect.bottom <= totalRect.top;
+        expect(separated, isTrue);
+        if (width == 430 && scale == 1) {
+          expect(totalRect.left, lessThan(actionRect.left));
+          expect(totalRect.right, lessThan(actionRect.left));
+        }
+        if (width == 320 && scale == 2) {
+          expect(totalRect.bottom, lessThanOrEqualTo(actionRect.top));
+          expect(tester.widget<Text>(actionFinder).textAlign, TextAlign.end);
+        }
+        expect(tester.getSize(cta).height, greaterThanOrEqualTo(48));
+        expect(tester.widget<FilledButton>(cta).onPressed, isNotNull);
+        expect(
+          tester.widget<Card>(find.byType(Card).first).color,
+          AppTokens.surface,
+        );
         await tester.pumpWidget(const SizedBox());
       }
     }

@@ -12,7 +12,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Crie sua conta para começar.'), findsOneWidget);
 
-    await tester.tap(find.text('Entrar'));
+    final enterButton = find.widgetWithText(TextButton, 'Entrar');
+    await tester.ensureVisible(enterButton);
+    await tester.pumpAndSettle();
+    await tester.tap(enterButton);
     await tester.pumpAndSettle();
     expect(find.text('Acesse sua conta para continuar.'), findsOneWidget);
   });

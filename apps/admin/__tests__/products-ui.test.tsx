@@ -14,7 +14,7 @@ test('loading, vazio e produtos com categoria, status e imagem',async()=>{
 });
 test('falha de categorias mantém produtos visíveis',async()=>{
  mock.mockImplementation((path:string)=>path.endsWith('categorias')?Promise.reject(new Error('offline')):Promise.resolve([product]));
- render(<ProductList/>);expect(await screen.findByText('Cupcake')).toBeInTheDocument();await waitFor(()=>expect(screen.getAllByText('Categoria indisponível').length).toBeGreaterThan(0));
+ render(<ProductList/>);expect(await screen.findByText('Cupcake')).toBeInTheDocument();await waitFor(()=>expect(screen.getAllByText('Categoria indisponível').length).toBeGreaterThan(0));expect(screen.getByRole('status')).toHaveClass('notice-warning');
 });
 test('erro da lista permite tentar novamente',async()=>{
  mock.mockImplementation((path:string)=>path.endsWith('categorias')?Promise.resolve([]):Promise.reject(new Error('Falha de rede')));

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, adminApi } from '@/lib/client/admin-api';
-import type { EntregadorAdministrativo, PedidoDetalheAdministrativo } from '@/lib/contracts';
+import type { EntregadorAdministrativo, PedidoDetalheAdministrativo, StatusPedido } from '@/lib/contracts';
 import { formatCurrency, formatDate, statusLabel } from '@/lib/order-display';
 
 const actions = {
@@ -15,6 +15,27 @@ const actions = {
     confirmation: 'Confirmar retirada do pedido', target: 'RETIRADO' },
 } as const;
 type Action = keyof typeof actions;
+
+type ProgressStep = { status: StatusPedido; phase: 'completed' | 'current' | 'upcoming' };
+
+function progressSteps(order: PedidoDetalheAdministrativo): ProgressStep[] {
+  let sequence: StatusPedido[];
+  if (order.statusAtual === 'CANCELADO') {
+    sequence = ['PENDENTE_PAGAMENTO', 'PAGO', 'CANCELADO'];
+  } else if (order.statusAtual === 'EXPIRADO') {
+    sequence = ['PENDENTE_PAGAMENTO', 'EXPIRADO'];
+  } else if (order.modalidade === 'ENTREGA') {
+    sequence = ['PENDENTE_PAGAMENTO', 'PAGO', 'EM_PREPARO', 'SAIU_PARA_ENTREGA', 'ENTREGUE'];
+  } else {
+    sequence = ['PENDENTE_PAGAMENTO', 'PAGO', 'EM_PREPARO', 'PRONTO_PARA_RETIRADA', 'RETIRADO'];
+  }
+
+  const currentIndex = sequence.indexOf(order.statusAtual);
+  return sequence.map((status, index) => ({
+    status,
+    phase: index < currentIndex ? 'completed' : index === currentIndex ? 'current' : 'upcoming',
+  }));
+}
 
 function nextAction(order: PedidoDetalheAdministrativo, entregadores: EntregadorAdministrativo[]): Action | null {
   if (order.statusAtual === 'PAGO') return 'iniciar-producao';
@@ -113,15 +134,19 @@ export default function OrderDetail({ id }: { id: string }) {
   </section>;
 
   const action = nextAction(order, entregadores);
+  const steps = progressSteps(order);
+  const currentStepIndex = steps.findIndex((step) => step.phase === 'current');
+  const nextStep = steps.find((step) => step.phase === 'upcoming');
   return <section className="order-detail">
     <div className="page-intro">
-      <h1>Pedido {order.identificadorNegocio}</h1>
-      <p><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span>
-        {' · '}{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</p>
-      <p>Pagamento confirmado: {formatDate(order.confirmacaoPagamento)}</p>
-      {action && <button ref={actionButton} type="button" disabled={submitting || confirming !== null ||
-        (action === 'saiu-para-entrega' && !entregadorUsuarioId)}
-        onClick={() => { setActionError(null); setConfirming(action); }}>{actions[action].label}</button>}
+      <section className="card order-detail-summary" aria-labelledby="order-detail-identification-heading">
+        <div className="order-detail-summary-primary">
+          <h1 id="order-detail-identification-heading">Pedido {order.identificadorNegocio}</h1>
+          <p><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span>
+            {' · '}{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</p>
+        </div>
+        <p className="order-detail-summary-payment">Pagamento confirmado: {formatDate(order.confirmacaoPagamento)}</p>
+      </section>
       {order.modalidade === 'ENTREGA' && order.statusAtual === 'EM_PREPARO' &&
         <label htmlFor="delivery-driver">Entregador
           <select id="delivery-driver" value={entregadorUsuarioId}
@@ -142,6 +167,46 @@ export default function OrderDetail({ id }: { id: string }) {
         <p>Nenhum entregador cadastrado.</p>}
       {actionError && <p className="error" role="alert">{actionError}</p>}
     </div>
+    <section className="card order-progress" aria-labelledby="order-progress-heading">
+      <div className="order-progress-heading">
+        <h2 id="order-progress-heading">Operação e próxima etapa</h2>
+        <span>Etapa {currentStepIndex + 1} de {steps.length}</span>
+      </div>
+      <div className="order-progress-scroll" role="region" tabIndex={0}
+        aria-label="Etapas do pedido. Use as setas esquerda e direita para navegar."
+        onKeyDown={(event) => {
+          const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+          if (!direction || event.currentTarget.scrollWidth <= event.currentTarget.clientWidth) return;
+          event.preventDefault();
+          const distance = Math.max(1, Math.floor(event.currentTarget.clientWidth * 0.8));
+          const maxScroll = event.currentTarget.scrollWidth - event.currentTarget.clientWidth;
+          event.currentTarget.scrollLeft = Math.max(0, Math.min(maxScroll,
+            event.currentTarget.scrollLeft + direction * distance));
+        }}>
+        <ol className="order-progress-steps" aria-label="Etapas do pedido">
+          {steps.map(({ status, phase }, index) => {
+          const next = phase === 'upcoming' && status === nextStep?.status;
+          const phaseText = phase === 'completed' ? 'Concluída' : phase === 'current' ? 'Atual'
+            : next ? 'Próxima' : 'Pendente';
+          return <li key={status} className={`order-progress-step is-${phase}`}
+          aria-label={`Etapa ${phaseText.toLocaleLowerCase('pt-BR')}: ${statusLabel[status]}`}
+          aria-current={phase === 'current' ? 'step' : undefined}>
+          <span className="order-progress-marker" aria-hidden="true">{phase === 'completed' ? '✓' : index + 1}</span>
+          <span className="order-progress-step-copy">
+            <span>{phaseText}</span>
+            <strong>{statusLabel[status]}</strong>
+          </span>
+        </li>;
+          })}
+        </ol>
+      </div>
+      {nextStep && <div className="order-progress-next">
+        <div><span>Próxima etapa</span><strong>{statusLabel[nextStep.status]}</strong></div>
+        {action && <button ref={actionButton} type="button" disabled={submitting || confirming !== null ||
+          (action === 'saiu-para-entrega' && !entregadorUsuarioId)}
+          onClick={() => { setActionError(null); setConfirming(action); }}>{actions[action].label}</button>}
+      </div>}
+    </section>
     {confirming && action === confirming && <section className="card" aria-labelledby="confirm-order-heading"
       aria-describedby="confirm-order-description" aria-busy={submitting}>
       <h2 id="confirm-order-heading" ref={confirmationHeading} tabIndex={-1}>

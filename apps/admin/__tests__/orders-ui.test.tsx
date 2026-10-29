@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import OrderList from '@/components/OrderList';
 import OrderDetail from '@/components/OrderDetail';
 import { AdminApiError, adminApi } from '@/lib/client/admin-api';
+import { formatDate, statusLabel } from '@/lib/order-display';
 
 jest.mock('@/lib/client/admin-api', () => ({
   ...jest.requireActual('@/lib/client/admin-api'), adminApi: jest.fn(),
@@ -20,6 +21,11 @@ test('carrega pedidos com estado de leitura e valores do pedido', async () => {
   render(<OrderList />);
   expect(screen.getByRole('status')).toHaveTextContent('Carregando pedidos');
   expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+    'Pedido', 'Data / Hora', 'Cliente', 'Modalidade', 'Status', 'Total', 'Ação',
+  ]);
+  expect(screen.getByRole('cell', { name: formatDate(order.confirmacaoPagamento) }))
+    .toBeInTheDocument();
   expect(screen.getByText('Ana Silva')).toBeInTheDocument();
   expect(screen.getByText('Retirada')).toBeInTheDocument();
   expect(screen.getByRole('cell', { name: 'Pronto para retirada' })).toBeInTheDocument();
@@ -92,15 +98,107 @@ test('detalhe apresenta campos persistidos, personalização, endereço e valore
   render(<OrderDetail id="order-1" />);
   expect(screen.getByRole('status')).toHaveTextContent('Carregando pedido');
   expect(await screen.findByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
+  const summary = within(screen.getByRole('region', { name: 'Pedido PED-123' }));
+  expect(summary.getByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
+  expect(summary.getByText('Pago')).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Pedido PED-123' })).toHaveTextContent('Delivery');
+  expect(summary.getByText(`Pagamento confirmado: ${formatDate(detail.confirmacaoPagamento)}`))
+    .toBeInTheDocument();
   expect(screen.getByText('2 × Cupcake')).toBeInTheDocument();
   expect(screen.getByText(/Cobertura/)).toBeInTheDocument();
   expect(screen.getByText(/Rua A, 7/)).toBeInTheDocument();
   expect(screen.getByText('R$ 78,50')).toBeInTheDocument();
   expect(screen.getByText('Pix')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Histórico de alterações' })).toBeInTheDocument();
-  expect(screen.getAllByText('Pago')).toHaveLength(2);
+  expect(screen.getAllByText('Pago')).toHaveLength(3);
   expect(screen.getByRole('button', { name: 'Iniciar produção' })).toBeInTheDocument();
   expect(mockApi).toHaveBeenCalledWith('/api/admin/pedidos/order-1');
+});
+
+test('representa a sequência Delivery com Pago atual, Em preparo próximo e ação correspondente', async () => {
+  mockApi.mockResolvedValue(detail);
+  render(<OrderDetail id="order-1" />);
+  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+
+  const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
+  expect(steps.getAllByRole('listitem')).toHaveLength(5);
+  expect(steps.getByRole('listitem', { name: 'Etapa concluída: Pendente de pagamento' }))
+    .toBeInTheDocument();
+  expect(steps.getByRole('listitem', { name: 'Etapa atual: Pago' })).toHaveAttribute('aria-current', 'step');
+  expect(steps.getByRole('listitem', { name: 'Etapa próxima: Em preparo' })).toBeInTheDocument();
+  expect(steps.getByRole('listitem', { name: 'Etapa pendente: Saiu para entrega' })).toBeInTheDocument();
+  expect(steps.getByRole('listitem', { name: 'Etapa pendente: Entregue' })).toBeInTheDocument();
+  expect(screen.getByText('Etapa 2 de 5')).toBeInTheDocument();
+  expect(screen.getByText('Próxima etapa').parentElement).toHaveTextContent('Em preparo');
+  expect(screen.getByRole('button', { name: 'Iniciar produção' })).toBeInTheDocument();
+});
+
+test('permite percorrer o stepper informativo com as setas sem transformar etapas em controles', async () => {
+  mockApi.mockResolvedValue(detail);
+  render(<OrderDetail id="order-1" />);
+  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+
+  const region = screen.getByRole('region', { name: /Etapas do pedido.*setas esquerda e direita/i });
+  const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
+  expect(region).toHaveAttribute('tabindex', '0');
+  expect(steps.getAllByRole('listitem')).toHaveLength(5);
+  expect(steps.getByRole('listitem', { name: 'Etapa atual: Pago' })).toHaveAttribute('aria-current', 'step');
+  expect(steps.getByRole('listitem', { name: 'Etapa pendente: Entregue' })).toBeInTheDocument();
+  expect(steps.queryByRole('button')).not.toBeInTheDocument();
+
+  Object.defineProperties(region, {
+    clientWidth: { configurable: true, value: 233 },
+    scrollWidth: { configurable: true, value: 692 },
+    scrollLeft: { configurable: true, writable: true, value: 0 },
+  });
+  fireEvent.keyDown(region, { key: 'ArrowRight' });
+  expect(region.scrollLeft).toBe(186);
+  fireEvent.keyDown(region, { key: 'ArrowRight' });
+  fireEvent.keyDown(region, { key: 'ArrowRight' });
+  expect(region.scrollLeft).toBe(459);
+  fireEvent.keyDown(region, { key: 'ArrowLeft' });
+  expect(region.scrollLeft).toBe(273);
+  fireEvent.keyDown(region, { key: 'ArrowLeft' });
+  fireEvent.keyDown(region, { key: 'ArrowLeft' });
+  expect(region.scrollLeft).toBe(0);
+});
+
+test('usa a sequência de Retirada e não apresenta etapas de Delivery', async () => {
+  mockApi.mockResolvedValue({ ...detail, modalidade: 'RETIRADA', statusAtual: 'EM_PREPARO',
+    enderecoEntregaSnapshot: null });
+  render(<OrderDetail id="order-1" />);
+  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+
+  const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
+  expect(steps.getByRole('listitem', { name: 'Etapa atual: Em preparo' })).toHaveAttribute('aria-current', 'step');
+  expect(steps.getByRole('listitem', { name: 'Etapa próxima: Pronto para retirada' })).toBeInTheDocument();
+  expect(steps.getByRole('listitem', { name: 'Etapa pendente: Retirado' })).toBeInTheDocument();
+  expect(steps.queryByText('Saiu para entrega')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Marcar como pronto para retirada' })).toBeInTheDocument();
+});
+
+test.each([
+  ['saiu para entrega', { modalidade: 'ENTREGA', statusAtual: 'SAIU_PARA_ENTREGA' }, 'Entregue'],
+  ['pedido entregue', { modalidade: 'ENTREGA', statusAtual: 'ENTREGUE' }, null],
+  ['pedido retirado', { modalidade: 'RETIRADA', statusAtual: 'RETIRADO' }, null],
+  ['pedido cancelado', { modalidade: 'ENTREGA', statusAtual: 'CANCELADO' }, null],
+  ['pedido expirado', { modalidade: 'ENTREGA', statusAtual: 'EXPIRADO' }, null],
+] as const)('%s apresenta somente a progressão compatível e não oferece ação indevida', async (_label, changes, nextLabel) => {
+  mockApi.mockResolvedValue({ ...detail, ...changes });
+  render(<OrderDetail id="order-1" />);
+  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+
+  const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
+  expect(steps.getByRole('listitem', { name: `Etapa atual: ${statusLabel[changes.statusAtual]}` }))
+    .toHaveAttribute('aria-current', 'step');
+  if (nextLabel) {
+    expect(steps.getByRole('listitem', { name: `Etapa próxima: ${nextLabel}` })).toBeInTheDocument();
+    expect(screen.getByText('Próxima etapa').parentElement).toHaveTextContent(nextLabel);
+  } else {
+    expect(screen.queryByText('Próxima etapa')).not.toBeInTheDocument();
+  }
+  expect(screen.queryByRole('button', { name: /Iniciar produção|saiu para entrega|retirada/i }))
+    .not.toBeInTheDocument();
 });
 
 test('confirma início de produção, cancela sem PATCH e impede envio duplicado', async () => {

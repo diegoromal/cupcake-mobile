@@ -246,6 +246,85 @@ void main() {
     expect(tester.state(find.byType(CartPage)), same(oldState));
   });
 
+  testWidgets(
+    'Alterar na revisão retorna à mesma Fulfillment e preserva carrinho e seleção',
+    (tester) async {
+      final userSession = await session(FakeAuth());
+      addTearDown(userSession.dispose);
+      final addressApi = FakeAddressApi();
+      final orderApi = FakeOrderApi();
+      final cart = CustomerCart(
+        id: id,
+        items: [
+          CartItem(
+            id: id,
+            productId: id2,
+            name: 'Cupcake',
+            imageAvailable: false,
+            quantity: 1,
+            personalizations: const [],
+            unitPrice: '10.00',
+            subtotal: '10.00',
+            available: true,
+            reason: null,
+          ),
+        ],
+        subtotal: '10.00',
+        total: '10.00',
+      );
+      await tester.pumpWidget(
+        app(
+          userSession,
+          addressApi,
+          cart: true,
+          contents: cart,
+          orderApi: orderApi,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final cartState = tester.state(find.byType(CartPage));
+      await choose(tester, 'Continuar');
+      final fulfillmentState = tester.state(find.byType(FulfillmentPage));
+      await choose(tester, 'Delivery');
+      await choose(tester, 'Rua das Flores, 123');
+      await choose(tester, 'Continuar');
+
+      expect(find.text('Revisar Pedido'), findsOneWidget);
+      expect(find.text('Alterar'), findsOneWidget);
+      expect(orderApi.reviews, 1);
+      expect(orderApi.confirmations, 0);
+
+      await choose(tester, 'Alterar');
+
+      expect(find.byType(FulfillmentPage), findsOneWidget);
+      expect(
+        tester.state(find.byType(FulfillmentPage)),
+        same(fulfillmentState),
+      );
+      expect(
+        tester
+            .widget<RadioGroup<FulfillmentMode>>(
+              find.byType(RadioGroup<FulfillmentMode>),
+            )
+            .groupValue,
+        FulfillmentMode.delivery,
+      );
+      expect(
+        tester
+            .widget<RadioGroup<String>>(find.byType(RadioGroup<String>))
+            .groupValue,
+        id,
+      );
+      expect(find.text('Entrega disponível. Frete: R\$ 12,34'), findsOneWidget);
+      expect(
+        tester.state(find.byType(CartPage, skipOffstage: false)),
+        same(cartState),
+      );
+      expect(orderApi.reviews, 1);
+      expect(orderApi.confirmations, 0);
+    },
+  );
+
   testWidgets('carrinho vazio bloqueia Continuar', (tester) async {
     final userSession = await session(FakeAuth());
     addTearDown(userSession.dispose);

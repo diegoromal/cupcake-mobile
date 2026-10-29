@@ -11,6 +11,7 @@ abstract final class AppTokens {
   static const border = Color(0xFFF0DDD5);
   static const danger = Color(0xFFA3262F);
 
+  static const spacing8 = 8.0;
   static const spacing12 = 12.0;
   static const spacing16 = 16.0;
   static const spacing24 = 24.0;

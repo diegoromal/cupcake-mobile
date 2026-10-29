@@ -108,6 +108,13 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CustomerSignUpPage()));
     expect(find.text('Criar conta'), findsNWidgets(2));
+    expect(find.text('Cupcake Mobile'), findsOneWidget);
+    final heading = tester.widget<Text>(find.text('Criar conta').first);
+    expect(heading.textAlign, TextAlign.start);
+    expect(heading.style?.fontSize, 24);
+    expect(find.byType(Card), findsOneWidget);
+    expect(find.text('Dados de Acesso'), findsOneWidget);
+    expect(find.text('* Campos obrigatórios'), findsOneWidget);
     expect(find.text('Nome *'), findsOneWidget);
     expect(find.text('E-mail *'), findsOneWidget);
     expect(find.text('Telefone *'), findsOneWidget);

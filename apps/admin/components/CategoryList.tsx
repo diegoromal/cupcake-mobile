@@ -11,6 +11,6 @@ export default function CategoryList(){
     {error&&<p className="error" role="alert">{error} <button onClick={load}>Tentar novamente</button></p>}
     {!error&&items===null&&<p role="status">Carregando categorias...</p>}
     {items?.length===0&&<p className="card">Nenhuma categoria cadastrada.</p>}
-    {!!items?.length&&<div className="card table-wrap"><table><thead><tr><th>Nome</th><th>Descrição</th><th>Ação</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><strong>{item.nome}</strong><small className="item-id">ID: {item.id.slice(0,8)}</small></td><td>{item.descricao||'Sem descrição'}</td><td><Link href={`/categorias/${item.id}`} aria-label={`Ver detalhes de ${item.nome} — ${item.id.slice(0,8)}`}>Ver detalhes →</Link></td></tr>)}</tbody></table></div>}
+    {!!items?.length&&<div className="card table-wrap"><table><thead><tr><th>Nome</th><th>Descrição</th><th>Ação</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><strong>{item.nome}</strong></td><td>{item.descricao||'Sem descrição'}</td><td><Link href={`/categorias/${item.id}`} aria-label={`Ver detalhes de ${item.nome} — ${item.id.slice(0,8)}`}>Ver detalhes →</Link></td></tr>)}</tbody></table></div>}
   </section>;
 }

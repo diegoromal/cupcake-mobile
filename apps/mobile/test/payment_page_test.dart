@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/core/design/app_theme.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
@@ -84,6 +85,66 @@ Map<String, dynamic> _payment(String result, {String method = 'PIX'}) => {
 };
 
 void main() {
+  testWidgets('resultado aprovado usa superfície branca e preserva o estado', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const PaymentResultPage(
+          outcome: PaymentOutcome.approved,
+          orderNumber: 'PED-123',
+          total: '29.50',
+          method: 'Pix',
+        ),
+      ),
+    );
+
+    final card = tester.widget<Card>(find.byType(Card));
+    expect(card.color, AppTokens.surface);
+    expect(find.text('Pagamento aprovado'), findsNWidgets(2));
+    expect(find.text('Total: R\$ 29,50'), findsOneWidget);
+    expect(find.text('Forma de pagamento: Pix'), findsOneWidget);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Ver pedido'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(find.text('Voltar para o início'), findsOneWidget);
+  });
+
+  testWidgets('resumo e opções usam a superfície branca do Design System', (
+    tester,
+  ) async {
+    final session = await _session();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: PaymentPage(
+          session: session,
+          orderId: orderId,
+          orderNumber: 'PED-123',
+          total: '20.00',
+          paymentApi: _PaymentApi(),
+        ),
+      ),
+    );
+
+    final cards = tester.widgetList<Card>(find.byType(Card)).toList();
+    expect(cards, hasLength(2));
+    expect(cards.every((card) => card.color == AppTokens.surface), isTrue);
+    expect(find.text('Pix'), findsOneWidget);
+    expect(find.text('Cartão'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+    session.dispose();
+  });
+
   testWidgets('exige método e mostra aprovação confirmada', (tester) async {
     final session = await _session();
     final api = _PaymentApi()

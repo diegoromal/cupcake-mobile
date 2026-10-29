@@ -221,6 +221,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       itemBuilder: (context, index) {
         final order = _orders[index];
         return Card(
+          color: AppTokens.surface,
           child: ListTile(
             title: Text('Pedido ${order.businessNumber}'),
             subtitle: Text(

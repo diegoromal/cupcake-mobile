@@ -90,6 +90,7 @@ class PaymentResultPage extends StatelessWidget {
                 Text(_message, textAlign: TextAlign.center),
                 const SizedBox(height: AppTokens.spacing24),
                 Card(
+                  color: AppTokens.surface,
                   child: Padding(
                     padding: const EdgeInsets.all(AppTokens.spacing16),
                     child: Column(

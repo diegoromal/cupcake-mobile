@@ -4,7 +4,7 @@ jest.mock('@/lib/client/admin-api',()=>{const real=jest.requireActual('@/lib/cli
 test('lista vínculo indisponível e permite desvincular',async()=>{
  const user=userEvent.setup();const item={id:'2',nome:'Cobertura',descricao:null,disponibilidade:false,ajusteValor:'2.50'};
  mock.mockImplementation((path:string,options?:RequestInit)=>options?.method==='DELETE'?Promise.resolve():Promise.resolve([item]));
- render(<ProductPersonalizations id="1"/>);expect(await screen.findByText(/Cobertura/)).toBeInTheDocument();expect(screen.getAllByText(/Indisponível/).length).toBeGreaterThan(0);
+ render(<ProductPersonalizations id="1"/>);const table=await screen.findByRole('table',{name:'Personalizações vinculadas'});expect(table.parentElement).toHaveClass('table-wrap');expect(screen.getAllByRole('columnheader').map(header=>header.textContent)).toEqual(['Item de personalização','Status','Ajuste de valor','Ação']);expect(screen.getByRole('cell',{name:'Cobertura'})).toBeInTheDocument();expect(screen.getByRole('cell',{name:'Indisponível'})).toBeInTheDocument();expect(screen.getByRole('cell',{name:'+ R$ 2,50'})).toBeInTheDocument();
  await user.click(screen.getByRole('button',{name:'Desvincular Cobertura'}));expect(mock).toHaveBeenCalledWith('/api/admin/produtos/1/personalizacoes/2',{method:'DELETE'});
 });
 test('vincula personalização disponível e mostra 409 da API',async()=>{

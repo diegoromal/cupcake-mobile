@@ -230,7 +230,7 @@ produtos.
 - [x] **D94 --- Wireframes Administrador**
 - [x] **D95 --- Wireframes Entregador**
 - [x] **D96 --- Estados vazios, loading e mensagens de erro**
-- [ ] **D97 --- Revisar protótipo × aplicação real**
+- [x] **D97 --- Revisar protótipo × aplicação real**
 
 **Marco 12:** documentação visual corresponde ao produto implementado.
 

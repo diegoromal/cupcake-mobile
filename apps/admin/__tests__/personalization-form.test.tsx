@@ -21,11 +21,16 @@ test('payload preserva false, null, zero e PATCH parcial',()=>{
 test('exibição distingue null e zero e mantém centavos negativos',()=>{
  expect(displayAdjustment(null)).toBe('Não definido');expect(displayAdjustment('0.00')).toBe('R$ 0,00');expect(displayAdjustment('2.50')).toBe('+ R$ 2,50');expect(displayAdjustment('-0.05')).toBe('− R$ 0,05');
 });
+test('criação indica Nome obrigatório e explica a precisão decimal permitida',()=>{
+ render(<PersonalizationForm/>);const name=screen.getByLabelText(/^Nome/);const adjustment=screen.getByLabelText('Ajuste de valor (R$)');
+ expect(screen.getByText('*')).toHaveAttribute('aria-hidden','true');expect(name).toHaveAttribute('required');expect(name).toHaveAttribute('aria-required','true');expect(name).toHaveAttribute('id','personalization-name');expect(document.querySelector('label[for="personalization-name"]')).toHaveTextContent('Nome');
+ expect(screen.getByText('Use ponto e até duas casas decimais. Valores negativos são permitidos. Deixe vazio para não definir ajuste.')).toHaveAttribute('id','personalization-adjustment-help');expect(adjustment).toHaveAttribute('aria-describedby','personalization-adjustment-help');expect(screen.getByRole('button',{name:'Criar personalização'})).toBeDisabled();
+});
 test('submit inválido foca resumo anunciável e mantém erros específicos associados',()=>{
  render(<PersonalizationForm/>);fireEvent.change(screen.getByLabelText('Ajuste de valor (R$)'),{target:{value:'1e2'}});expect(screen.getByRole('button',{name:'Criar personalização'})).toBeDisabled();fireEvent.submit(screen.getByRole('button',{name:'Criar personalização'}).closest('form')!);
- const summary=screen.getByRole('alert');const name=screen.getByLabelText('Nome');const adjustment=screen.getByLabelText('Ajuste de valor (R$)');
+ const summary=screen.getByRole('alert');const name=screen.getByLabelText(/^Nome/);const adjustment=screen.getByLabelText('Ajuste de valor (R$)');
  expect(summary).toHaveFocus();expect(summary).toHaveAttribute('tabindex','-1');expect(name).toHaveAttribute('aria-invalid','true');expect(name).toHaveAttribute('aria-describedby','personalization-name-error');expect(screen.getByText('Informe o nome.')).toHaveAttribute('id','personalization-name-error');
- expect(adjustment).toHaveAttribute('aria-invalid','true');expect(adjustment).toHaveAttribute('aria-describedby','personalization-adjustment-error');expect(screen.getByText(/Use decimal com ponto/)).toHaveAttribute('id','personalization-adjustment-error');
+ expect(adjustment).toHaveAttribute('aria-invalid','true');expect(adjustment).toHaveAttribute('aria-describedby','personalization-adjustment-help personalization-adjustment-error');expect(screen.getByText('Use ponto e até duas casas decimais. Valores negativos são permitidos. Deixe vazio para não definir ajuste.')).toHaveAttribute('id','personalization-adjustment-help');expect(screen.getByText(/Use decimal com ponto/)).toHaveAttribute('id','personalization-adjustment-error');expect(document.getElementById('personalization-adjustment-help')).toBeInTheDocument();expect(document.getElementById('personalization-adjustment-error')).toBeInTheDocument();
 });
 test.each([['+2.50','2.50'],['0','0.00'],['1.2','1.20'],['0001.20','1.20'],['-0.05','-0.05'],['',null]])('save confirma ajuste %s como %s e segundo save não envia PATCH',async (typed,savedAdjustment)=>{
  const onSaved=jest.fn();mock.mockResolvedValueOnce({...item,ajusteValor:savedAdjustment});render(<PersonalizationForm personalization={item} onSaved={onSaved}/>);
@@ -42,7 +47,7 @@ test('após normalização, disponibilidade, nome e novo ajuste geram PATCHs ind
  fireEvent.change(screen.getByLabelText('Ajuste de valor (R$)'),{target:{value:'+2.50'}});fireEvent.click(screen.getByRole('button',{name:'Salvar alterações'}));await waitFor(()=>expect(screen.getByLabelText('Ajuste de valor (R$)')).toHaveValue('2.50'));
  fireEvent.click(screen.getByLabelText('Disponível'));fireEvent.click(screen.getByRole('button',{name:'Salvar alterações'}));await waitFor(()=>expect(mock).toHaveBeenCalledTimes(2));expect(JSON.parse(mock.mock.calls[1][1].body)).toEqual({disponibilidade:false});
  await waitFor(()=>expect(onSaved).toHaveBeenCalledTimes(2));
- fireEvent.change(screen.getByLabelText('Nome'),{target:{value:'Cobertura nova'}});fireEvent.click(screen.getByRole('button',{name:'Salvar alterações'}));await waitFor(()=>expect(mock).toHaveBeenCalledTimes(3));expect(JSON.parse(mock.mock.calls[2][1].body)).toEqual({nome:'Cobertura nova'});
+ fireEvent.change(screen.getByLabelText(/^Nome/),{target:{value:'Cobertura nova'}});fireEvent.click(screen.getByRole('button',{name:'Salvar alterações'}));await waitFor(()=>expect(mock).toHaveBeenCalledTimes(3));expect(JSON.parse(mock.mock.calls[2][1].body)).toEqual({nome:'Cobertura nova'});
  await waitFor(()=>expect(onSaved).toHaveBeenCalledTimes(3));
  fireEvent.change(screen.getByLabelText('Ajuste de valor (R$)'),{target:{value:'3.00'}});fireEvent.click(screen.getByRole('button',{name:'Salvar alterações'}));await waitFor(()=>expect(mock).toHaveBeenCalledTimes(4));expect(JSON.parse(mock.mock.calls[3][1].body)).toEqual({ajusteValor:'3.00'});
 });

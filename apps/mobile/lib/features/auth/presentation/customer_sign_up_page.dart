@@ -127,6 +127,8 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       backgroundColor: AppTokens.background,
+      centerTitle: false,
+      titleSpacing: AppTokens.spacing12,
       leading: IconButton(
         tooltip: 'Voltar para Entrar',
         onPressed: _submitting
@@ -134,101 +136,174 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
             : () => AppNavigation.returnToLogin(context),
         icon: const Icon(Icons.arrow_back),
       ),
+      title: Semantics(
+        header: true,
+        child: Text(
+          'Cupcake Mobile',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: AppTokens.primaryStrong,
+            fontFamily: 'Georgia',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     ),
     body: SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTokens.spacing24),
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spacing16,
+            AppTokens.spacing8,
+            AppTokens.spacing16,
+            AppTokens.spacing24,
+          ),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: (constraints.maxHeight - AppTokens.spacing24 * 2)
-                  .clamp(0.0, double.infinity)
-                  .toDouble(),
+              minHeight:
+                  (constraints.maxHeight -
+                          AppTokens.spacing8 -
+                          AppTokens.spacing24)
+                      .clamp(0.0, double.infinity)
+                      .toDouble(),
             ),
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 440),
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Semantics(
                         header: true,
                         child: Text(
                           'Criar conta',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                          textAlign: TextAlign.start,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineMedium?.copyWith(fontSize: 24),
                         ),
                       ),
-                      const SizedBox(height: AppTokens.spacing12),
+                      const SizedBox(height: AppTokens.spacing8),
                       const Text(
                         'Crie sua conta para começar.',
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.start,
                       ),
-                      const SizedBox(height: AppTokens.spacing32),
-                      _field(
-                        field: 'nome',
-                        controller: _name,
-                        label: 'Nome *',
-                        textInputAction: TextInputAction.next,
-                        validator: (value) => _error(
-                          'nome',
-                          CustomerSignUpValidation.validateName(value ?? ''),
-                        ),
-                      ),
-                      _field(
-                        field: 'email',
-                        controller: _email,
-                        label: 'E-mail *',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        validator: (value) => _error(
-                          'email',
-                          CustomerSignUpValidation.validateEmail(value ?? ''),
-                        ),
-                      ),
-                      _field(
-                        field: 'telefone',
-                        controller: _phone,
-                        label: 'Telefone *',
-                        keyboardType: TextInputType.phone,
-                        textInputAction: TextInputAction.next,
-                        validator: (value) => _error(
-                          'telefone',
-                          CustomerSignUpValidation.validatePhone(value ?? ''),
-                        ),
-                      ),
-                      _field(
-                        field: 'senha',
-                        controller: _password,
-                        label: 'Senha *',
-                        obscureText: _obscurePassword,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submit(),
-                        validator: (value) => _error(
-                          'senha',
-                          CustomerSignUpValidation.validatePassword(
-                            value ?? '',
+                      const SizedBox(height: AppTokens.spacing24),
+                      Card(
+                        margin: EdgeInsets.zero,
+                        color: AppTokens.surface,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppTokens.radius12,
                           ),
                         ),
-                        suffixIcon: IconButton(
-                          tooltip: _obscurePassword
-                              ? 'Mostrar senha'
-                              : 'Ocultar senha',
-                          onPressed: _submitting
-                              ? null
-                              : () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppTokens.spacing16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Semantics(
+                                      header: true,
+                                      child: Text(
+                                        'Dados de Acesso',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleSmall,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppTokens.spacing12),
+                                  Flexible(
+                                    child: Text(
+                                      '* Campos obrigatórios',
+                                      textAlign: TextAlign.end,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppTokens.spacing16),
+                              _field(
+                                field: 'nome',
+                                controller: _name,
+                                label: 'Nome *',
+                                textInputAction: TextInputAction.next,
+                                validator: (value) => _error(
+                                  'nome',
+                                  CustomerSignUpValidation.validateName(
+                                    value ?? '',
+                                  ),
                                 ),
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
+                              ),
+                              _field(
+                                field: 'email',
+                                controller: _email,
+                                label: 'E-mail *',
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                validator: (value) => _error(
+                                  'email',
+                                  CustomerSignUpValidation.validateEmail(
+                                    value ?? '',
+                                  ),
+                                ),
+                              ),
+                              _field(
+                                field: 'telefone',
+                                controller: _phone,
+                                label: 'Telefone *',
+                                keyboardType: TextInputType.phone,
+                                textInputAction: TextInputAction.next,
+                                validator: (value) => _error(
+                                  'telefone',
+                                  CustomerSignUpValidation.validatePhone(
+                                    value ?? '',
+                                  ),
+                                ),
+                              ),
+                              _field(
+                                field: 'senha',
+                                controller: _password,
+                                label: 'Senha *',
+                                obscureText: _obscurePassword,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => _submit(),
+                                validator: (value) => _error(
+                                  'senha',
+                                  CustomerSignUpValidation.validatePassword(
+                                    value ?? '',
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  tooltip: _obscurePassword
+                                      ? 'Mostrar senha'
+                                      : 'Ocultar senha',
+                                  onPressed: _submitting
+                                      ? null
+                                      : () => setState(
+                                          () => _obscurePassword =
+                                              !_obscurePassword,
+                                        ),
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
