@@ -22,7 +22,7 @@
 - [x] Fase 9 --- Entregador
 - [x] Fase 10 --- WhatsApp
 - [x] Fase 11 --- Histórico e relatórios
-- [ ] Fase 12 --- IHC e documentação visual
+- [x] Fase 12 --- IHC e documentação visual
 - [ ] Fase 13 --- Qualidade
 - [ ] Fase 14 --- Entrega
 
@@ -236,7 +236,7 @@ produtos.
 
 ## 🧪 FASE 13 --- Qualidade
 
-- [ ] **D98 --- Plano geral de testes**
+- [x] **D98 --- Plano geral de testes**
 - [ ] **D99 --- Teste ponta a ponta --- cliente**
 - [ ] **D100 --- Teste ponta a ponta --- administrador**
 - [ ] **D101 --- Teste ponta a ponta --- entregador**
