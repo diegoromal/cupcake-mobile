@@ -405,115 +405,159 @@ class _StorefrontPageState extends State<StorefrontPage> {
     ),
   );
 
-  Widget _productList() {
-    final entries = <_CatalogEntry>[];
-    String? previousCategory;
-    for (final product in _products) {
-      if (product.category.id != previousCategory) {
-        entries.add(_CatalogEntry.heading(product.category.name));
-        previousCategory = product.category.id;
-      }
-      entries.add(_CatalogEntry.product(product));
-    }
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(
-          AppTokens.spacing16,
-          AppTokens.spacing16,
-          AppTokens.spacing16,
-          AppTokens.spacing24,
-        ),
-        itemCount: entries.length + 1,
-        itemBuilder: (context, index) {
-          if (index == entries.length) {
-            if (_error != null) {
-              return _StatusState(
-                label: _error!,
-                actionLabel: 'Tentar carregar novamente',
-                onAction: () => _load(reset: false),
-                error: true,
-              );
-            }
-            if (_loadingMore) {
-              return const _StatusState(
-                label: 'Carregando mais produtos…',
-                loading: true,
-              );
-            }
-            if (_hasMore) {
-              return Center(
+  Widget _productList() => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 360 ? 2 : 1;
+      final entries = _catalogEntries(columns);
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spacing16,
+            AppTokens.spacing16,
+            AppTokens.spacing16,
+            AppTokens.spacing24,
+          ),
+          itemCount: entries.length + 1,
+          itemBuilder: (context, index) {
+            if (index == entries.length) {
+              if (_error != null) {
+                return _StatusState(
+                  label: _error!,
+                  actionLabel: 'Tentar carregar novamente',
+                  onAction: () => _load(reset: false),
+                  error: true,
+                );
+              }
+              if (_loadingMore) {
+                return const _StatusState(
+                  label: 'Carregando mais produtos…',
+                  loading: true,
+                );
+              }
+              if (_hasMore) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTokens.spacing16),
+                    child: OutlinedButton.icon(
+                      onPressed: () => _load(reset: false),
+                      icon: const Icon(Icons.expand_more),
+                      label: const Text('Carregar mais produtos'),
+                    ),
+                  ),
+                );
+              }
+              return Semantics(
+                liveRegion: true,
                 child: Padding(
                   padding: const EdgeInsets.all(AppTokens.spacing16),
-                  child: OutlinedButton.icon(
-                    onPressed: () => _load(reset: false),
-                    icon: const Icon(Icons.expand_more),
-                    label: const Text('Carregar mais produtos'),
+                  child: const Center(
+                    child: Text('Fim dos produtos disponíveis.'),
                   ),
                 ),
               );
             }
-            return Semantics(
-              liveRegion: true,
-              child: Padding(
-                padding: const EdgeInsets.all(AppTokens.spacing16),
-                child: const Center(
-                  child: Text('Fim dos produtos disponíveis.'),
+
+            final entry = entries[index];
+            if (entry.heading != null) {
+              return Padding(
+                padding: const EdgeInsets.only(
+                  top: AppTokens.spacing16,
+                  bottom: AppTokens.spacing12,
                 ),
-              ),
-            );
-          }
-          final entry = entries[index];
-          if (entry.product == null) {
-            return Padding(
-              padding: const EdgeInsets.only(
-                top: AppTokens.spacing16,
-                bottom: AppTokens.spacing12,
-              ),
-              child: Semantics(
-                header: true,
-                child: Text(
-                  entry.heading!,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            );
-          }
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppTokens.spacing12),
-            child: _ProductCard(
-              product: entry.product!,
-              loadImage: _loadImage,
-              onTap: () => Navigator.push<void>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProductDetailPage(
-                    productId: entry.product!.id,
-                    session: widget.session,
-                    api: widget.api,
-                    cartApi: widget.cartApi,
-                    onOpenCart: _openCart,
-                    indeterminateCartAttempts: _indeterminateCartAttempts,
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    entry.heading!,
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppTokens.spacing12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (
+                    var productIndex = 0;
+                    productIndex < entry.products!.length;
+                    productIndex++
+                  ) ...[
+                    if (productIndex > 0)
+                      const SizedBox(width: AppTokens.spacing12),
+                    Expanded(
+                      child: _buildProductCard(entry.products![productIndex]),
+                    ),
+                  ],
+                  if (entry.products!.length < columns)
+                    const Expanded(child: SizedBox.shrink()),
+                ],
               ),
-            ),
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
+    },
+  );
+
+  List<_CatalogEntry> _catalogEntries(int columns) {
+    final entries = <_CatalogEntry>[];
+    var categoryStart = 0;
+    while (categoryStart < _products.length) {
+      final category = _products[categoryStart].category;
+      entries.add(_CatalogEntry.heading(category.name));
+      var categoryEnd = categoryStart + 1;
+      while (categoryEnd < _products.length &&
+          _products[categoryEnd].category.id == category.id) {
+        categoryEnd++;
+      }
+      for (
+        var rowStart = categoryStart;
+        rowStart < categoryEnd;
+        rowStart += columns
+      ) {
+        final rowEnd = math.min(rowStart + columns, categoryEnd);
+        entries.add(
+          _CatalogEntry.products(_products.sublist(rowStart, rowEnd)),
+        );
+      }
+      categoryStart = categoryEnd;
+    }
+    return entries;
   }
+
+  Widget _buildProductCard(CatalogProduct product) => _ProductCard(
+    key: ValueKey(product.id),
+    product: product,
+    loadImage: _loadImage,
+    onTap: () => Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailPage(
+          productId: product.id,
+          session: widget.session,
+          api: widget.api,
+          cartApi: widget.cartApi,
+          onOpenCart: _openCart,
+          indeterminateCartAttempts: _indeterminateCartAttempts,
+        ),
+      ),
+    ),
+  );
 }
 
 class _CatalogEntry {
-  const _CatalogEntry.heading(this.heading) : product = null;
-  const _CatalogEntry.product(this.product) : heading = null;
+  const _CatalogEntry.heading(this.heading) : products = null;
+  const _CatalogEntry.products(this.products) : heading = null;
   final String? heading;
-  final CatalogProduct? product;
+  final List<CatalogProduct>? products;
 }
 
 class _ProductCard extends StatefulWidget {
   const _ProductCard({
+    super.key,
     required this.product,
     required this.loadImage,
     required this.onTap,
@@ -561,16 +605,16 @@ class _ProductCardState extends State<_ProductCard> {
 
   @override
   Widget build(BuildContext context) => Card(
+    color: AppTokens.surface,
     margin: EdgeInsets.zero,
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: widget.onTap,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final horizontal = constraints.maxWidth >= 400;
           final image = SizedBox(
-            width: horizontal ? 112 : double.infinity,
-            height: horizontal ? 112 : 168,
+            width: double.infinity,
+            height: 132,
             child: widget.product.imageAvailable
                 ? FutureBuilder<Uint8List?>(
                     future: _image,
@@ -607,17 +651,10 @@ class _ProductCardState extends State<_ProductCard> {
               ],
             ),
           );
-          return horizontal
-              ? Row(
-                  children: [
-                    image,
-                    Expanded(child: details),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [image, details],
-                );
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [image, details],
+          );
         },
       ),
     ),

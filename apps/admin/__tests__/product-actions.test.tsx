@@ -8,7 +8,7 @@ const product={id:'p1',categoriaId:category,nome:'Cupcake',descricao:null,precoA
 beforeEach(()=>{mock.mockReset();push.mockReset();});
 test('criação valida e envia somente contrato de Produto com preço string',async()=>{
  const user=userEvent.setup();mock.mockImplementation((path:string)=>path.endsWith('categorias')?Promise.resolve([{id:category,nome:'Doces',descricao:null}]):Promise.resolve({...product,id:'created'}));
- render(<ProductForm/>);await screen.findByRole('option',{name:'Doces'});expect(screen.getByRole('button',{name:'Criar produto'})).toBeDisabled();fireEvent.submit(screen.getByRole('button',{name:'Criar produto'}).closest('form')!);expect(screen.getByText('Corrija os campos indicados.')).toBeInTheDocument();
+ render(<ProductForm/>);await screen.findByRole('option',{name:'Doces'});const form=screen.getByRole('button',{name:'Criar produto'}).closest('form')!;expect(Array.from(form.querySelectorAll('input:not([type="checkbox"]), select, textarea')).map(field=>field.id)).toEqual(['nome','categoria','preco','descricao']);expect(screen.getByRole('button',{name:'Criar produto'})).toBeDisabled();fireEvent.submit(form);expect(screen.getByText('Corrija os campos indicados.')).toBeInTheDocument();
  await user.selectOptions(screen.getByLabelText('Categoria'),'11111111-1111-4111-8111-111111111111');await user.type(screen.getByLabelText('Nome do produto'),'Cupcake');await user.type(screen.getByLabelText(/Preço atual/),'12.34');await user.click(screen.getByRole('button',{name:'Criar produto'}));
  await waitFor(()=>expect(push).toHaveBeenCalledWith('/produtos/created'));
  const payload=JSON.parse(mock.mock.calls.find(c=>c[1]?.method==='POST')[1].body);

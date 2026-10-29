@@ -12,6 +12,9 @@
 
 Este diretório é a fonte de referência de UX/UI do Cupcake Mobile.
 
+O resultado e os limites da revisão das referências contra a aplicação atual
+estão em [`PROTOTYPE_IMPLEMENTATION_REVIEW.md`](PROTOTYPE_IMPLEMENTATION_REVIEW.md).
+
 A documentação existe para permitir que um agente ou desenvolvedor implemente as interfaces a partir de artefatos versionados no repositório, sem depender do projeto original no Google Stitch.
 
 Cada tela aprovada deve possuir, quando aplicável:

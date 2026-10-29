@@ -40,6 +40,10 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
   late String _attemptId;
   String get _mode => widget.mode;
   String? get _addressId => widget.addressId;
+  bool get _canChangeSelection =>
+      !_confirming &&
+      _orderId == null &&
+      widget.session.pendingOrderConfirmation == null;
 
   bool _matchesSelection(PendingOrderConfirmation pending) =>
       pending.mode == widget.mode &&
@@ -335,9 +339,21 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppTokens.spacing16),
-        Text(
-          _mode == 'ENTREGA' ? 'Delivery' : 'Retirada',
-          style: Theme.of(context).textTheme.titleMedium,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _mode == 'ENTREGA' ? 'Delivery' : 'Retirada',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            TextButton(
+              onPressed: _canChangeSelection
+                  ? () => Navigator.of(context).pop()
+                  : null,
+              child: const Text('Alterar'),
+            ),
+          ],
         ),
         if (address is Map<String, dynamic>) ...[
           const SizedBox(height: 8),
@@ -357,6 +373,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
             builder: (_) {
               final item = raw as Map<String, dynamic>;
               return Card(
+                color: AppTokens.surface,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -407,9 +424,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
             onPressed: _confirming || _status == OrderStatus.conflict
                 ? null
                 : () => unawaited(_confirm()),
-            child: Text(
-              _confirming ? 'Processando pedido…' : 'Confirmar pedido',
-            ),
+            child: _confirmationButtonContent(review['total'] as String),
           ),
         ],
       ],
@@ -423,9 +438,68 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
     return '$name · R\$ $adjustment';
   }
 
+  String _formatAmount(String value) => value.replaceFirst('.', ',');
+
+  Widget _confirmationButtonContent(String total) {
+    final totalLabel = 'R\$ ${_formatAmount(total)}';
+    final actionLabel = _confirming
+        ? 'Processando pedido…'
+        : 'Confirmar pedido';
+    final textStyle =
+        Theme.of(context).textTheme.labelLarge ??
+        DefaultTextStyle.of(context).style;
+    final textScaler = MediaQuery.textScalerOf(context);
+    final textDirection = Directionality.of(context);
+
+    double textWidth(String text) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: textStyle),
+        textDirection: textDirection,
+        textScaler: textScaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fitsHorizontally =
+            constraints.hasBoundedWidth &&
+            textWidth(totalLabel) +
+                    textWidth(actionLabel) +
+                    AppTokens.spacing12 <=
+                constraints.maxWidth;
+        if (fitsHorizontally) {
+          return Row(
+            children: [Text(totalLabel), const Spacer(), Text(actionLabel)],
+          );
+        }
+        return SizedBox(
+          width: constraints.maxWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(totalLabel),
+              ),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Text(actionLabel, textAlign: TextAlign.end),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Revisão do pedido')),
+    appBar: AppBar(title: const Text('Revisar Pedido')),
     body: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTokens.spacing16),

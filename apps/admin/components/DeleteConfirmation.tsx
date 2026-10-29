@@ -2,12 +2,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi, AdminApiError } from '@/lib/client/admin-api';
-export default function DeleteConfirmation({kind,id,name,lockRef,busy,setBusy}:{kind:'categoria'|'personalizacao';id:string;name:string;lockRef:React.RefObject<boolean>;busy:boolean;setBusy:(value:boolean)=>void}) {
+export default function DeleteConfirmation({kind,id,name,lockRef,busy,deleting,setBusy}:{kind:'categoria'|'personalizacao';id:string;name:string;lockRef:React.RefObject<boolean>;busy:boolean;deleting?:boolean;setBusy:(value:boolean)=>void}) {
   const router=useRouter();const [open,setOpen]=useState(false);const [typed,setTyped]=useState('');const [message,setMessage]=useState('');
   const trigger=useRef<HTMLButtonElement>(null);const input=useRef<HTMLInputElement>(null);
   const mounted=useRef(true);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
-  const plural=kind==='categoria'?'categorias':'personalizacoes';const label=kind==='categoria'?'categoria':'personalização';
+  const plural=kind==='categoria'?'categorias':'personalizacoes';const label=kind==='categoria'?'categoria':'personalização';const isDeleting=deleting??busy;
   async function remove() {
     if (lockRef.current || typed!==name) return;
     lockRef.current=true;setBusy(true);setMessage('');
@@ -21,6 +21,6 @@ export default function DeleteConfirmation({kind,id,name,lockRef,busy,setBusy}:{
     {!open?<button ref={trigger} type="button" className="danger-button" disabled={busy} onClick={()=>{setOpen(true);requestAnimationFrame(()=>input.current?.focus());}}>Excluir {label}</button>:<>
       <p>Digite <strong>{name}</strong> para confirmar.</p><label htmlFor={`${plural}-confirm-name`}>Nome da {label}</label>
       <input ref={input} id={`${plural}-confirm-name`} value={typed} onChange={e=>setTyped(e.target.value)} disabled={busy} onKeyDown={e=>{if(e.key==='Escape'&&!busy)cancel();}} />
-      <div className="actions"><button type="button" className="danger-button" disabled={busy||typed!==name} onClick={remove}>{busy?'Excluindo...':'Confirmar exclusão'}</button><button type="button" className="secondary" disabled={busy} onClick={cancel}>Cancelar</button></div>
+      <div className="actions"><button type="button" className="danger-button" disabled={busy||typed!==name} onClick={remove}>{isDeleting?'Excluindo...':'Confirmar exclusão'}</button><button type="button" className="secondary" disabled={busy} onClick={cancel}>Cancelar</button></div>
     </>}</section>;
 }

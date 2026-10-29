@@ -368,6 +368,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Card(
+                    color: AppTokens.surface,
                     child: Padding(
                       padding: const EdgeInsets.all(AppTokens.spacing16),
                       child: Column(
@@ -404,6 +405,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       if (!locked) _selectMethod(value);
                     },
                     child: Card(
+                      color: AppTokens.surface,
                       child: Column(
                         children: [
                           RadioListTile<String>(

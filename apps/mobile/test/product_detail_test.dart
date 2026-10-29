@@ -248,6 +248,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nome antigo'));
       await tester.pumpAndSettle();
+      expect(find.byType(Card), findsOneWidget);
+      final availabilityBadge = tester.getRect(find.text('Disponível').first);
+      expect(availabilityBadge.top, lessThan(400));
       await tester.ensureVisible(find.text('Cobertura'));
       await tester.tap(find.text('Cobertura'));
       await tester.pumpAndSettle();

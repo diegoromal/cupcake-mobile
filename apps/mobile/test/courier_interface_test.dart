@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cupcake_mobile/core/config/api_config.dart';
+import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/presentation/customer_session_page.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
@@ -260,6 +261,8 @@ void main() {
         const CourierOrdersResult(CourierOrdersStatus.success, orders: [order]),
       );
       await tester.pumpAndSettle();
+      final card = tester.widget<Card>(find.byType(Card));
+      expect(card.color, AppTokens.surface);
       expect(find.text('Pedido PED-42'), findsOneWidget);
       expect(find.text('Status: Saiu para entrega'), findsOneWidget);
       expect(find.textContaining('telefone'), findsNothing);
@@ -470,6 +473,22 @@ void main() {
     expect(find.textContaining('Complemento:'), findsNothing);
     expect(find.textContaining('às'), findsOneWidget);
     expect(find.text('Horário de saída indisponível'), findsNothing);
+    for (final group in ['Cliente', 'Endereço de entrega']) {
+      final cardFinder = find.ancestor(
+        of: find.text(group),
+        matching: find.byType(Card),
+      );
+      expect(cardFinder, findsOneWidget);
+      expect(tester.widget<Card>(cardFinder).color, AppTokens.surface);
+    }
+    expect(
+      find.ancestor(
+        of: find.text('Saída para entrega'),
+        matching: find.byType(Card),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Confirmar entrega'), findsOneWidget);
     expect(api.detailIds, [_assignedOrder.id]);
     expect(api.detailTokens, [session.accessToken]);
     await tester.pageBack();
@@ -808,12 +827,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Pedido PED-42'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Confirmar entrega'));
       await tester.tap(find.text('Confirmar entrega'));
       await tester.pumpAndSettle();
       expect(find.text('Entrega confirmada.'), findsNothing);
       expect(find.text('Confirmar entrega'), findsNothing);
       expect(find.text('Verificar estado'), findsOneWidget);
       expect(api.confirmIds, hasLength(1));
+      await tester.drag(find.byType(ListView).last, const Offset(0, -160));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Verificar estado'));
       await tester.pumpAndSettle();
       expect(find.text('Entrega confirmada.'), findsOneWidget);
@@ -936,6 +958,8 @@ void main() {
       await _loginFromPage(tester);
       await tester.tap(find.text('Pedido PED-42'));
       await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView).last, const Offset(0, -160));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Confirmar entrega'));
       await tester.pumpAndSettle();
       expect(authApi.refreshRequests, 1);
@@ -946,6 +970,8 @@ void main() {
         AuthRequestStatus.success,
         accessToken: _token('access', jti: 'second-refresh'),
       );
+      await tester.drag(find.byType(ListView).last, const Offset(0, -160));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Confirmar entrega'));
       await tester.pumpAndSettle();
       expect(api.confirmIds, hasLength(3));

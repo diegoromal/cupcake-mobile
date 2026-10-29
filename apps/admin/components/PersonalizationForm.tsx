@@ -6,14 +6,15 @@ import { adminApi, AdminApiError } from '@/lib/client/admin-api';
 import { acquireOperation, releaseOperation } from '@/lib/operation-lock';
 import type { Personalizacao } from '@/lib/contracts';
 import { emptyPersonalization, personalizationPayload, PersonalizationFields, validatePersonalization } from '@/lib/personalization-form';
-export default function PersonalizationForm({personalization,onSaved,lockRef:sharedLockRef,busy:sharedBusy,setBusy:setSharedBusy}:{personalization?:Personalizacao;onSaved?:(value:Personalizacao)=>void;lockRef?:React.RefObject<boolean>;busy?:boolean;setBusy?:(value:boolean)=>void}){
+export default function PersonalizationForm({personalization,onSaved,lockRef:sharedLockRef,busy:sharedBusy,saving:sharedSaving,setBusy:setSharedBusy}:{personalization?:Personalizacao;onSaved?:(value:Personalizacao)=>void;lockRef?:React.RefObject<boolean>;busy?:boolean;saving?:boolean;setBusy?:(value:boolean)=>void}){
   const router=useRouter();const localLock=useRef(false);const lockRef=sharedLockRef??localLock;const mounted=useRef(true);
   const [value,setValue]=useState<PersonalizationFields>(personalization?{nome:personalization.nome,descricao:personalization.descricao,disponibilidade:personalization.disponibilidade,ajusteValor:personalization.ajusteValor}:emptyPersonalization);
   const [baseline,setBaseline]=useState<PersonalizationFields|undefined>(personalization?{nome:personalization.nome,descricao:personalization.descricao,disponibilidade:personalization.disponibilidade,ajusteValor:personalization.ajusteValor}:undefined);
-  const [errors,setErrors]=useState<Record<string,string>>({});const [message,setMessage]=useState('');const [localBusy,setLocalBusy]=useState(false);const busy=sharedBusy??localBusy;
+  const [errors,setErrors]=useState<Record<string,string>>({});const [message,setMessage]=useState('');const [localBusy,setLocalBusy]=useState(false);const busy=sharedBusy??localBusy;const saving=sharedSaving??localBusy;
   const summaryRef=useRef<HTMLParagraphElement>(null);
   const hasChanges=!personalization||Object.keys(personalizationPayload(value,baseline)).length>0;
   const valid=!Object.keys(validatePersonalization(value)).length;
+  const adjustmentHelp='Use ponto e até duas casas decimais. Valores negativos são permitidos. Deixe vazio para não definir ajuste.';
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
   useEffect(()=>{if(Object.keys(errors).length)summaryRef.current?.focus();},[errors]);
   async function submit(event:FormEvent){event.preventDefault();if(lockRef.current)return;setMessage('');const next=validatePersonalization(value);setErrors(next);if(Object.keys(next).length)return;
@@ -28,11 +29,11 @@ export default function PersonalizationForm({personalization,onSaved,lockRef:sha
   return <form className="card form" onSubmit={submit} noValidate aria-busy={busy}><h2>Dados da personalização</h2>
     {!!Object.keys(errors).length&&<p ref={summaryRef} id="personalization-errors" className="error" role="alert" tabIndex={-1}>Corrija os campos indicados.</p>}
     {message&&<p role={message.endsWith('salva.')||message.includes('Nenhuma')?'status':'alert'} className={message.endsWith('salva.')?'notice':'error'}>{message}</p>}
-    <label htmlFor="personalization-name">Nome</label><input id="personalization-name" value={value.nome} onChange={e=>setValue(v=>({...v,nome:e.target.value}))} aria-invalid={!!errors.nome} aria-describedby={errors.nome?'personalization-name-error':undefined} disabled={busy}/>{errors.nome&&<small className="error" id="personalization-name-error">{errors.nome}</small>}
+    <label htmlFor="personalization-name">Nome <span aria-hidden="true">*</span></label><input id="personalization-name" required aria-required="true" value={value.nome} onChange={e=>setValue(v=>({...v,nome:e.target.value}))} aria-invalid={!!errors.nome} aria-describedby={errors.nome?'personalization-name-error':undefined} disabled={busy}/>{errors.nome&&<small className="error" id="personalization-name-error">{errors.nome}</small>}
     <label htmlFor="personalization-description">Descrição (opcional)</label><textarea id="personalization-description" value={value.descricao??''} onChange={e=>setValue(v=>({...v,descricao:e.target.value}))} disabled={busy}/>
     <label className="check"><input type="checkbox" checked={value.disponibilidade} onChange={e=>setValue(v=>({...v,disponibilidade:e.target.checked}))} disabled={busy}/> Disponível</label>
-    <label htmlFor="personalization-adjustment">Ajuste de valor (R$)</label><input id="personalization-adjustment" inputMode="decimal" placeholder="0.00" value={value.ajusteValor??''} onChange={e=>setValue(v=>({...v,ajusteValor:e.target.value}))} aria-invalid={!!errors.ajusteValor} aria-describedby={errors.ajusteValor?'personalization-adjustment-error':'personalization-adjustment-help'} disabled={busy}/><small id="personalization-adjustment-help">Use ponto decimal. Deixe vazio para não definir.</small>{errors.ajusteValor&&<small className="error" id="personalization-adjustment-error">{errors.ajusteValor}</small>}
+    <label htmlFor="personalization-adjustment">Ajuste de valor (R$)</label><input id="personalization-adjustment" inputMode="decimal" placeholder="0.00" value={value.ajusteValor??''} onChange={e=>setValue(v=>({...v,ajusteValor:e.target.value}))} aria-invalid={!!errors.ajusteValor} aria-describedby={errors.ajusteValor?'personalization-adjustment-help personalization-adjustment-error':'personalization-adjustment-help'} disabled={busy}/><small id="personalization-adjustment-help">{adjustmentHelp}{personalization&&' Zero continua sendo um valor definido.'}</small>{errors.ajusteValor&&<small className="error" id="personalization-adjustment-error">{errors.ajusteValor}</small>}
     {personalization&&!hasChanges&&<p className="quiet-status">Nenhuma alteração para salvar</p>}
-    <div className="form-actions">{!personalization&&<Link className="secondary button" href="/personalizacoes">Cancelar</Link>}<button disabled={busy||!hasChanges||!valid}>{busy?'Salvando...':personalization?'Salvar alterações':'Criar personalização'}</button></div>
+    <div className="form-actions">{!personalization&&<Link className="secondary button" href="/personalizacoes">Cancelar</Link>}<button disabled={busy||!hasChanges||!valid}>{saving?'Salvando...':personalization?'Salvar alterações':'Criar personalização'}</button></div>
   </form>;
 }

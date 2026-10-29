@@ -36,14 +36,14 @@ export default function ProductForm({ product, onSaved }: { product?: Produto; o
     <h2>{product?'Dados básicos':'Informações principais'}</h2>
     {!!Object.keys(errors).length && <p id="form-errors" className="error" role="alert" tabIndex={-1}>Corrija os campos indicados.</p>}
     {message && <p role={message.endsWith('salvo.')||message.includes('Nenhuma')?'status':'alert'} className={message.endsWith('salvo.')?'notice':'error'}>{message}</p>}
+    <label htmlFor="nome">Nome do produto</label><input id="nome" value={value.nome} onChange={e=>change('nome',e.target.value)} aria-invalid={!!errors.nome} aria-describedby={errors.nome?'nome-error':undefined} disabled={busy}/>{errors.nome && <small id="nome-error" className="error">{errors.nome}</small>}
     <label htmlFor="categoria">Categoria</label>
     {categories===null && !categoryError && <p role="status">Carregando categorias...</p>}
     {categoryError && <p className="error" role="alert">{categoryError} <button type="button" onClick={loadCategories}>Tentar novamente</button></p>}
     {product && categories && !categories.some(c=>c.id===product.categoriaId) && <p className="error" role="alert">A categoria deste produto não está mais disponível. Escolha outra categoria antes de salvar.</p>}
     <select id="categoria" value={value.categoriaId} onChange={e=>change('categoriaId',e.target.value)} aria-invalid={!!errors.categoriaId} aria-describedby={errors.categoriaId?'categoria-error':undefined} disabled={busy||!categories}><option value="">Selecione uma categoria</option>{categories?.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select>{errors.categoriaId && <small id="categoria-error" className="error">{errors.categoriaId}</small>}
-    <label htmlFor="nome">Nome do produto</label><input id="nome" value={value.nome} onChange={e=>change('nome',e.target.value)} aria-invalid={!!errors.nome} aria-describedby={errors.nome?'nome-error':undefined} disabled={busy}/>{errors.nome && <small id="nome-error" className="error">{errors.nome}</small>}
-    <label htmlFor="descricao">Descrição</label><textarea id="descricao" value={value.descricao??''} onChange={e=>change('descricao',e.target.value)} disabled={busy}/>
     <label htmlFor="preco">Preço atual (R$)</label><input id="preco" inputMode="decimal" placeholder="0.00" value={value.precoAtual} onChange={e=>change('precoAtual',e.target.value)} aria-invalid={!!errors.precoAtual} aria-describedby={errors.precoAtual?'preco-error':undefined} disabled={busy}/>{errors.precoAtual && <small id="preco-error" className="error">{errors.precoAtual}</small>}
+    <label htmlFor="descricao">Descrição</label><textarea id="descricao" value={value.descricao??''} onChange={e=>change('descricao',e.target.value)} disabled={busy}/>
     <label className="check"><input type="checkbox" checked={value.ativo} onChange={e=>change('ativo',e.target.checked)} disabled={busy}/> Ativo</label>
     {product&&!hasChanges&&<p className="quiet-status">Nenhuma alteração para salvar</p>}
     <div className="form-actions">{!product&&<Link className="secondary button" href="/produtos">Cancelar</Link>}<button disabled={busy||!hasChanges||!valid}>{busy?'Salvando...':product?'Salvar alterações':'Criar produto'}</button></div>

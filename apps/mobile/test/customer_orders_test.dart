@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cupcake_mobile/core/config/api_config.dart';
+import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
 import 'package:cupcake_mobile/features/orders/data/customer_orders_api.dart';
@@ -53,7 +54,10 @@ void main() {
       );
       await tester.pump();
       expect(api.calls, 1);
+      final card = tester.widget<Card>(find.byType(Card));
+      expect(card.color, AppTokens.surface);
       expect(find.text('Pedido PED-42'), findsOneWidget);
+      expect(find.text('R\$ 42,50'), findsOneWidget);
       expect(find.textContaining('Status: Pago'), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 29));
@@ -114,6 +118,23 @@ void main() {
       session.dispose();
     },
   );
+
+  testWidgets('preserva estado vazio da lista', (tester) async {
+    final session = await _signedInSession();
+    final api = _FakeOrdersApi(orders: const []);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomerOrdersPage(session: session, api: api),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Você ainda não tem pedidos.'), findsOneWidget);
+    expect(find.byType(Card), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    session.dispose();
+  });
 }
 
 Future<CustomerSession> _signedInSession() async {
@@ -137,9 +158,10 @@ class _AuthApi extends CustomerAuthApi {
 }
 
 class _FakeOrdersApi extends CustomerOrdersApi {
-  _FakeOrdersApi({this.firstRequestGate});
+  _FakeOrdersApi({this.firstRequestGate, this.orders});
 
   final Completer<void>? firstRequestGate;
+  final List<CustomerOrder>? orders;
   int calls = 0;
 
   @override
@@ -150,7 +172,7 @@ class _FakeOrdersApi extends CustomerOrdersApi {
     if (calls == 1) await firstRequestGate?.future;
     return CustomerOrdersResult(
       CustomerOrdersStatus.success,
-      orders: [CustomerOrder.parse(_order())!],
+      orders: orders ?? [CustomerOrder.parse(_order())!],
     );
   }
 }

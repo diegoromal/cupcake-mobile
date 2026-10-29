@@ -278,6 +278,32 @@ void main() {
       expect(find.text('Doces especiais e presentes'), findsNWidgets(2));
       expect(find.text('Bolos'), findsNWidgets(2));
       expect(find.text('Cupcake número 1'), findsOneWidget);
+      final firstProductRow = find
+          .ancestor(
+            of: find.text('Cupcake número 1'),
+            matching: find.byType(Row),
+          )
+          .first
+          .evaluate()
+          .single;
+      final secondProductRow = find
+          .ancestor(
+            of: find.text('Cupcake número 2'),
+            matching: find.byType(Row),
+          )
+          .first
+          .evaluate()
+          .single;
+      expect(secondProductRow, same(firstProductRow));
+      final thirdProductRow = find
+          .ancestor(
+            of: find.text('Cupcake número 3'),
+            matching: find.byType(Row),
+          )
+          .first
+          .evaluate()
+          .single;
+      expect(thirdProductRow, isNot(same(firstProductRow)));
       expect(find.text('R\$ 1.234,50'), findsOneWidget);
       expect(find.byIcon(Icons.cake_outlined), findsWidgets);
       expect(

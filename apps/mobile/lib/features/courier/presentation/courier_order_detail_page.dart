@@ -312,30 +312,53 @@ class _CourierOrderDetailPageState extends State<CourierOrderDetailPage> {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppTokens.spacing24),
-        Text('Cliente', style: Theme.of(context).textTheme.titleMedium),
-        Text(detail.customerName),
-        Text('Telefone: ${detail.customerPhone}'),
-        const SizedBox(height: AppTokens.spacing24),
-        Text(
-          'Endereço de entrega',
-          style: Theme.of(context).textTheme.titleMedium,
+        Card(
+          color: AppTokens.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Cliente', style: Theme.of(context).textTheme.titleMedium),
+                Text(detail.customerName),
+                Text('Telefone: ${detail.customerPhone}'),
+              ],
+            ),
+          ),
         ),
-        Text('${address.street}, ${address.number}'),
-        Text('${address.neighborhood} — ${address.city}'),
-        Text('CEP: ${address.postalCode}'),
-        if (address.complement != null && address.complement!.isNotEmpty)
-          Text('Complemento: ${address.complement}'),
-        if (address.reference != null && address.reference!.isNotEmpty)
-          Text('Referência: ${address.reference}'),
         const SizedBox(height: AppTokens.spacing24),
-        Text(
-          'Saída para entrega',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        Text(
-          departure == null
-              ? 'Horário de saída indisponível'
-              : '${localizations.formatFullDate(departure)} às ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(departure))}',
+        Card(
+          color: AppTokens.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Endereço de entrega',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text('${address.street}, ${address.number}'),
+                Text('${address.neighborhood} — ${address.city}'),
+                Text('CEP: ${address.postalCode}'),
+                if (address.complement != null &&
+                    address.complement!.isNotEmpty)
+                  Text('Complemento: ${address.complement}'),
+                if (address.reference != null && address.reference!.isNotEmpty)
+                  Text('Referência: ${address.reference}'),
+                const SizedBox(height: AppTokens.spacing16),
+                Text(
+                  'Saída para entrega',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  departure == null
+                      ? 'Horário de saída indisponível'
+                      : '${localizations.formatFullDate(departure)} às ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(departure))}',
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: AppTokens.spacing24),
         Text(

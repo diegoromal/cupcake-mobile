@@ -13,7 +13,7 @@ export default function ProductList() {
     {error && <div className="error" role="alert">{error} <button onClick={load}>Tentar novamente</button></div>}
     {!error && products === null && <p role="status">Carregando produtos...</p>}
     {products?.length === 0 && <div className="card">Nenhum produto cadastrado.</div>}
-    {categoryError && <p className="notice" role="status">{categoryError} <button onClick={loadCategories}>Tentar novamente</button></p>}
+    {categoryError && <p className="notice notice-warning" role="status">{categoryError} <button onClick={loadCategories}>Tentar novamente</button></p>}
     {!!products?.length && <div className="card table-wrap"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Imagem</th><th>Status</th><th>Ação</th></tr></thead><tbody>{products.map(p=><tr key={p.id}><td><strong>{p.nome}</strong></td><td>{categories ? categories.find(c=>c.id===p.categoriaId)?.nome ?? 'Categoria indisponível' : 'Categoria indisponível'}</td><td>R$ {p.precoAtual.replace('.',',')}</td><td><span className={`badge ${p.imagem?'badge-warning':'badge-muted'}`}>{p.imagem?'Com imagem':'Sem imagem'}</span></td><td><span className={`badge ${p.ativo?'badge-success':'badge-muted'}`}>{p.ativo?'Ativo':'Inativo'}</span></td><td><Link href={`/produtos/${p.id}`}>Ver detalhes →</Link></td></tr>)}</tbody></table></div>}
   </section>;
 }

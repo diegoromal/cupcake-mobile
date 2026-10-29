@@ -43,7 +43,7 @@ export default function OrderList() {
       ? 'Nenhum pedido com este status.' : 'Nenhum pedido para acompanhar.'}</div>}
     {!!visible?.length && <>
       <div className="card table-wrap"><table>
-        <thead><tr><th scope="col">Pedido</th><th scope="col">Pagamento</th><th scope="col">Cliente</th><th scope="col">Modalidade</th><th scope="col">Status</th><th scope="col">Total</th><th scope="col">Ação</th></tr></thead>
+        <thead><tr><th scope="col">Pedido</th><th scope="col">Data / Hora</th><th scope="col">Cliente</th><th scope="col">Modalidade</th><th scope="col">Status</th><th scope="col">Total</th><th scope="col">Ação</th></tr></thead>
         <tbody>{visible.map(order => <tr key={order.id}>
           <td><strong>{order.identificadorNegocio}</strong></td>
           <td>{formatDate(order.confirmacaoPagamento)}</td>

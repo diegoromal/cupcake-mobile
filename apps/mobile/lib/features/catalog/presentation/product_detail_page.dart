@@ -370,22 +370,48 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       children: [
         SizedBox(
           height: 240,
-          child: product.imageAvailable
-              ? FutureBuilder<Uint8List?>(
-                  future: _image,
-                  builder: (context, snapshot) {
-                    final bytes = snapshot.data;
-                    if (bytes == null) return const _ImageFallback();
-                    final provider = _imageProvider ??= MemoryImage(bytes);
-                    return Image(
-                      image: provider,
-                      fit: BoxFit.cover,
-                      semanticLabel: 'Imagem de ${product.name}',
-                      errorBuilder: (_, _, _) => const _ImageFallback(),
-                    );
-                  },
-                )
-              : const _ImageFallback(),
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                product.imageAvailable
+                    ? FutureBuilder<Uint8List?>(
+                        future: _image,
+                        builder: (context, snapshot) {
+                          final bytes = snapshot.data;
+                          if (bytes == null) return const _ImageFallback();
+                          final provider = _imageProvider ??= MemoryImage(
+                            bytes,
+                          );
+                          return Image(
+                            image: provider,
+                            fit: BoxFit.cover,
+                            semanticLabel: 'Imagem de ${product.name}',
+                            errorBuilder: (_, _, _) => const _ImageFallback(),
+                          );
+                        },
+                      )
+                    : const _ImageFallback(),
+                Positioned(
+                  left: AppTokens.spacing12,
+                  bottom: AppTokens.spacing12,
+                  child: Material(
+                    color: AppTokens.surface,
+                    borderRadius: BorderRadius.circular(999),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppTokens.spacing12,
+                        vertical: AppTokens.spacing8,
+                      ),
+                      child: Text('Disponível'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: AppTokens.spacing24),
         Text(
@@ -421,27 +447,37 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         if (product.personalizations.isEmpty)
           const Text('Nenhuma personalização disponível para este produto.'),
         for (final option in product.personalizations)
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _selected.contains(option.id),
-            onChanged: option.available && !_adding
-                ? (_) => _toggle(option)
-                : null,
-            title: Text(option.name),
-            subtitle: Text(
-              [
-                if (option.description != null &&
-                    option.description!.isNotEmpty)
-                  option.description!,
-                option.available
-                    ? (_selected.contains(option.id)
-                          ? 'Selecionada'
-                          : 'Disponível')
-                    : 'Indisponível',
-                'Ajuste: ${option.adjustment == null ? 'sem ajuste' : _formatSignedPrice(option.adjustment!)}',
-              ].join(' · '),
+          Card(
+            color: AppTokens.surface,
+            margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTokens.radius12),
+              side: const BorderSide(color: AppTokens.border),
             ),
-            controlAffinity: ListTileControlAffinity.leading,
+            child: CheckboxListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spacing12,
+              ),
+              value: _selected.contains(option.id),
+              onChanged: option.available && !_adding
+                  ? (_) => _toggle(option)
+                  : null,
+              title: Text(option.name),
+              subtitle: Text(
+                [
+                  if (option.description != null &&
+                      option.description!.isNotEmpty)
+                    option.description!,
+                  option.available
+                      ? (_selected.contains(option.id)
+                            ? 'Selecionada'
+                            : 'Disponível')
+                      : 'Indisponível',
+                  'Ajuste: ${option.adjustment == null ? 'sem ajuste' : _formatSignedPrice(option.adjustment!)}',
+                ].join(' · '),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
           ),
         const SizedBox(height: AppTokens.spacing12),
         if (_priceLoading)
@@ -482,41 +518,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               ),
             ],
           ),
-        const SizedBox(height: AppTokens.spacing16),
-        const Text('Disponível'),
-        const SizedBox(height: AppTokens.spacing16),
-        Text('Quantidade', style: Theme.of(context).textTheme.titleMedium),
-        Row(
-          children: [
-            IconButton(
-              tooltip: 'Diminuir quantidade',
-              onPressed: _adding || _quantity == 1
-                  ? null
-                  : () => _changeQuantity(_quantity - 1),
-              icon: const Icon(Icons.remove),
-            ),
-            Semantics(
-              label: 'Quantidade selecionada: $_quantity',
-              liveRegion: true,
-              child: Text('$_quantity'),
-            ),
-            IconButton(
-              tooltip: 'Aumentar quantidade',
-              onPressed: _adding || _quantity == 2147483647
-                  ? null
-                  : () => _changeQuantity(_quantity + 1),
-              icon: const Icon(Icons.add),
-            ),
-          ],
-        ),
-        if (!_priceLoading && _unitPrice != null)
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              'Subtotal: ${_formatSubtotal(_unitPrice!, _quantity)}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
         if ((_currentIndeterminate ? CartRequestStatus.unavailable : _addStatus)
             case final status?) ...[
           const SizedBox(height: 8),
@@ -553,17 +554,94 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
         ],
         const SizedBox(height: AppTokens.spacing16),
-        FilledButton(
-          onPressed:
-              _adding ||
-                  _currentIndeterminate ||
-                  _priceLoading ||
-                  _unitPrice == null ||
-                  _addStatus == CartRequestStatus.unauthorized ||
-                  _addStatus == CartRequestStatus.forbidden
-              ? null
-              : () => unawaited(_addToCart()),
-          child: Text(_adding ? 'Adicionando…' : 'Adicionar ao carrinho'),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final horizontal =
+                constraints.maxWidth >= 340 &&
+                MediaQuery.textScalerOf(context).scale(16) <= 20;
+            final quantity = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quantidade',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Diminuir quantidade',
+                      onPressed: _adding || _quantity == 1
+                          ? null
+                          : () => _changeQuantity(_quantity - 1),
+                      icon: const Icon(Icons.remove),
+                    ),
+                    Semantics(
+                      label: 'Quantidade selecionada: $_quantity',
+                      liveRegion: true,
+                      child: Text('$_quantity'),
+                    ),
+                    IconButton(
+                      tooltip: 'Aumentar quantidade',
+                      onPressed: _adding || _quantity == 2147483647
+                          ? null
+                          : () => _changeQuantity(_quantity + 1),
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+              ],
+            );
+            final action = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!_priceLoading && _unitPrice != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      'Subtotal: ${_formatSubtotal(_unitPrice!, _quantity)}',
+                      textAlign: horizontal ? TextAlign.end : TextAlign.start,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                const SizedBox(height: AppTokens.spacing8),
+                FilledButton(
+                  onPressed:
+                      _adding ||
+                          _currentIndeterminate ||
+                          _priceLoading ||
+                          _unitPrice == null ||
+                          _addStatus == CartRequestStatus.unauthorized ||
+                          _addStatus == CartRequestStatus.forbidden
+                      ? null
+                      : () => unawaited(_addToCart()),
+                  child: Text(
+                    _adding ? 'Adicionando…' : 'Adicionar ao carrinho',
+                  ),
+                ),
+              ],
+            );
+            return Container(
+              padding: const EdgeInsets.all(AppTokens.spacing12),
+              decoration: BoxDecoration(
+                color: AppTokens.surfaceSoft,
+                borderRadius: BorderRadius.circular(AppTokens.radius12),
+              ),
+              child: horizontal
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        quantity,
+                        const SizedBox(width: AppTokens.spacing12),
+                        Expanded(child: action),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [quantity, action],
+                    ),
+            );
+          },
         ),
         if (_adding)
           Semantics(liveRegion: true, child: LinearProgressIndicator()),

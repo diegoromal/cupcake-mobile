@@ -150,6 +150,7 @@ class _CourierHomePageState extends State<CourierHomePage> {
       itemBuilder: (context, index) {
         final order = _orders[index];
         return Card(
+          color: AppTokens.surface,
           child: ListTile(
             title: Text('Pedido ${order.businessNumber}'),
             subtitle: Text('Status: ${_statusLabel(order.status)}'),
