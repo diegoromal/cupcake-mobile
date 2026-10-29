@@ -238,7 +238,7 @@ produtos.
 
 - [x] **D98 --- Plano geral de testes**
 - [x] **D99 --- Teste ponta a ponta --- cliente**
-- [ ] **D100 --- Teste ponta a ponta --- administrador**
+- [x] **D100 --- Teste ponta a ponta --- administrador**
 - [ ] **D101 --- Teste ponta a ponta --- entregador**
 - [ ] **D102 --- Testes negativos e validações**
 - [ ] **D103 --- Testes de segurança/autorização**
