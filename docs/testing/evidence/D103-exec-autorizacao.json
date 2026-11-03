@@ -1,0 +1,4218 @@
+{
+  "tarefa": "D103 — Testes de segurança/autorização",
+  "geradoEm": "2026-11-03T15:29:46.448Z",
+  "branch": "task/D103-testes-seguranca-autorizacao",
+  "head": "17a66456e9fbfcf786a277ff4233ce937fab2f95",
+  "comando": "cd apps/api && D103_TEST_DATABASE_URL=\"postgresql://<user>:<senha>@localhost:<porta>/cupcake_d103?schema=public\" npx ts-node test/d103-autorizacao-postgres.ts",
+  "banco": {
+    "database": "cupcake_d103",
+    "schema": "public",
+    "tabelasVerificadas": [
+      "Notificacao",
+      "ItemPedidoPersonalizacaoSnapshot",
+      "ReservaEstoque",
+      "MovimentacaoEstoque",
+      "Pagamento",
+      "HistoricoStatusPedido",
+      "ItemPedido",
+      "EnderecoEntregaSnapshot",
+      "Pedido",
+      "ItemCarrinhoPersonalizacao",
+      "ItemCarrinho",
+      "Carrinho",
+      "Endereco",
+      "ConfiguracaoLojaEntrega",
+      "ProdutoPersonalizacao",
+      "Personalizacao",
+      "Estoque",
+      "Produto",
+      "Categoria",
+      "Usuario"
+    ]
+  },
+  "ambiente": {
+    "cwd": "apps/api",
+    "database": "cupcake_d103",
+    "schema": "public",
+    "evolucaoUrlAntesDoCreate": "",
+    "evolucaoKeyAntesDoCreate": "",
+    "evolucaoInstanceAntesDoCreate": "",
+    "geocodeKeyAntesDoCreate": "",
+    "evolucaoUrlDepoisDoCreate": "",
+    "evolucaoKeyDepoisDoCreate": "",
+    "evolucaoInstanceDepoisDoCreate": "",
+    "geocodeKeyDepoisDoCreate": "",
+    "envDoRepositorioAlterado": false
+  },
+  "preflight": {
+    "currentDatabase": "cupcake_d103",
+    "currentSchema": "public",
+    "migrations": [
+      "20260926124031_initial",
+      "20260926180000_d13_bloqueio_login",
+      "20261022120000_d39_d41_endereco_localizacao",
+      "20261023120000_d56_pix_pendente"
+    ],
+    "migrationsPendentes": [],
+    "contagensIniciais": {
+      "Notificacao": 0,
+      "ItemPedidoPersonalizacaoSnapshot": 0,
+      "ReservaEstoque": 0,
+      "MovimentacaoEstoque": 0,
+      "Pagamento": 0,
+      "HistoricoStatusPedido": 0,
+      "ItemPedido": 0,
+      "EnderecoEntregaSnapshot": 0,
+      "Pedido": 0,
+      "ItemCarrinhoPersonalizacao": 0,
+      "ItemCarrinho": 0,
+      "Carrinho": 0,
+      "Endereco": 0,
+      "ConfiguracaoLojaEntrega": 0,
+      "ProdutoPersonalizacao": 0,
+      "Personalizacao": 0,
+      "Estoque": 0,
+      "Produto": 0,
+      "Categoria": 0,
+      "Usuario": 0
+    },
+    "configuracaoUnica": 1,
+    "enviarTextoRejeitou": true,
+    "enviarTextoErro": "ServiceUnavailableException",
+    "fetchCallsNoPreflight": 0,
+    "databaseDoApp": "cupcake_d103",
+    "guardaInstalada": true,
+    "falha": null
+  },
+  "erroFatal": null,
+  "abortoPor": null,
+  "egress": {
+    "tentativas": [],
+    "fetchCalls": 0,
+    "fetchRestaurado": true,
+    "guardaInstalada": true
+  },
+  "casos": [
+    {
+      "id": "D103-AUT-001",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-002",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-003",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-004",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-005",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-006",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-007",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-008",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-009",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-010",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-011",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-012",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-013",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-014",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-015",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-016",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-017",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-018",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-019",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-020",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-021",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-022",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-023",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-024",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-025",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-026",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-027",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-028",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-029",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-030",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-031",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-AUT-032",
+      "categoria": "Autenticação e tokens",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-001",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-002",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-003",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-004",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-005",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-006",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-007",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-008",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-009",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-010",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-011",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-012",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-013",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-014",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-015",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-RBC-016",
+      "categoria": "RBAC entre perfis",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-001",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-002",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-003",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-004",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-005",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-006",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-007",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-008",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-009",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-010",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-011",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-012",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-013",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-014",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-015",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-016",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-017",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-018",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-019",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-020",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-021",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-022",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-023",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-024",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-025",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-026",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-027",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ADM-028",
+      "categoria": "Operações administrativas",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-01",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-02",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-03",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-04",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-05",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-06",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-07",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-08",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-09",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-10",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-11",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-12",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-13",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-14",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-15",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-16",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-17",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-18",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-19",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-20",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-21",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-C-22",
+      "categoria": "Ownership do CLIENTE",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-E-01",
+      "categoria": "Ownership do ENTREGADOR",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-E-02",
+      "categoria": "Ownership do ENTREGADOR",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-E-03",
+      "categoria": "Ownership do ENTREGADOR",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-E-04",
+      "categoria": "Ownership do ENTREGADOR",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-OWN-E-05",
+      "categoria": "Ownership do ENTREGADOR",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ID-01",
+      "categoria": "Acesso direto por ID",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ID-02",
+      "categoria": "Acesso direto por ID",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ID-03",
+      "categoria": "Acesso direto por ID",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ID-04",
+      "categoria": "Acesso direto por ID",
+      "veredito": "PASS"
+    },
+    {
+      "id": "D103-ID-05",
+      "categoria": "Acesso direto por ID",
+      "veredito": "PASS"
+    }
+  ],
+  "resumo": {
+    "total": 108,
+    "pass": 108,
+    "fail": 0,
+    "inconclusivo": 0,
+    "porCategoria": {
+      "Autenticação e tokens": {
+        "total": 32,
+        "pass": 32,
+        "fail": 0,
+        "inconclusivo": 0
+      },
+      "RBAC entre perfis": {
+        "total": 16,
+        "pass": 16,
+        "fail": 0,
+        "inconclusivo": 0
+      },
+      "Operações administrativas": {
+        "total": 28,
+        "pass": 28,
+        "fail": 0,
+        "inconclusivo": 0
+      },
+      "Ownership do CLIENTE": {
+        "total": 22,
+        "pass": 22,
+        "fail": 0,
+        "inconclusivo": 0
+      },
+      "Ownership do ENTREGADOR": {
+        "total": 5,
+        "pass": 5,
+        "fail": 0,
+        "inconclusivo": 0
+      },
+      "Acesso direto por ID": {
+        "total": 5,
+        "pass": 5,
+        "fail": 0,
+        "inconclusivo": 0
+      }
+    }
+  },
+  "requisicoes": [
+    {
+      "caso": "D103-AUT-001",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/health",
+      "condicao": "sem token",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "status": "ok"
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "health.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.712Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-002",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "POST",
+      "rota": "/users",
+      "condicao": "corpo válido, e-mail d103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-aut002@example.test",
+      "fixture": "novo usuário",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 201,
+      "message": null,
+      "resposta": {
+        "id": "ea271132-315f-4059-8dab-86ff551b9855",
+        "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e aut002",
+        "email": "d103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-aut002@example.test",
+        "telefone": "11900000007",
+        "perfil": "CLIENTE"
+      },
+      "estadoAntes": null,
+      "estadoDepois": {
+        "usuarioCriado": "ea271132-315f-4059-8dab-86ff551b9855",
+        "perfil": "CLIENTE"
+      },
+      "fonte": "users.controller.ts; users.service.ts L154-190",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.740Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-003",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "POST",
+      "rota": "/users",
+      "condicao": "corpo válido + perfil:\"ADMIN\"",
+      "fixture": "novo usuário",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 400,
+      "message": [
+        "property perfil should not exist"
+      ],
+      "resposta": {
+        "message": [
+          "property perfil should not exist"
+        ],
+        "error": "Bad Request",
+        "statusCode": 400
+      },
+      "estadoAntes": {
+        "usuariosComEmail": 0
+      },
+      "estadoDepois": {
+        "usuariosComEmail": 0
+      },
+      "fonte": "ValidationPipe forbidNonWhitelisted",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.744Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-004",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "POST",
+      "rota": "/auth/login",
+      "condicao": "e-mail inexistente",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Credenciais inválidas.",
+      "resposta": {
+        "message": "Credenciais inválidas.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "auth.service.ts L22-32",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.749Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-005",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "POST",
+      "rota": "/auth/refresh",
+      "condicao": "refreshToken:\"a.b.c\"",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Refresh token inválido.",
+      "resposta": {
+        "message": "Refresh token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "auth.service.ts L50-59",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.750Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-006",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/catalogo/produtos",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "catalogo.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.751Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-007",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "carrinho.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.752Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-008",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/enderecos",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "enderecos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.753Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-009",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/pedidos",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.754Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-010",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/pix/19cef6c7-44b6-4178-86c9-3f14e0be0c42",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.755Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-011",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.756Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-012",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/categorias",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "categorias.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.756Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-013",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/personalizacoes",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.757Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-014",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/produtos",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "produtos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.757Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-015",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/produtos/7efe2c1c-5c8b-4c06-9840-28de9303fbee/estoque",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "estoque.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.758Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-016",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/produtos/7efe2c1c-5c8b-4c06-9840-28de9303fbee/personalizacoes",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "produto-personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.758Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-017",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/configuracao-loja-entrega",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "configuracao-loja-entrega.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.758Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-018",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/relatorios/vendas",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "relatorios.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.759Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-019",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/pedidos",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "admin-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.759Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-020",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "GET",
+      "rota": "/admin/entregadores",
+      "condicao": "sem header Authorization",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "admin-entregadores.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.760Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-021",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "Bearer a.b.c",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer a.b.c"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L35-41",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.760Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-022",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "JWT HS256 assinado com segredo diferente",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:segredo-diferente"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L43-51",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.761Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-023",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "Authorization: Basic …",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Basic <credencial>"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "BEARER_PATTERN L14",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.761Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-025",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "JWT com type=refresh usado como access",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:type-refresh"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L56",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.762Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-026",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/admin/categorias",
+      "condicao": "access assinado com perfil:\"ADMIN\" para usuário CLIENTE no banco",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:perfil-divergente"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L68-71",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.764Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-028",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "access sem exp",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:sem-exp"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L53-66",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.765Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-029",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "exp = agora-60s; assinatura válida",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A-expirado"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L53-66",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.765Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-030",
+      "categoria": "Autenticação e tokens",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos",
+      "condicao": "exp = agora-60s; assinatura válida",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A-expirado"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L53-66",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.766Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-031",
+      "categoria": "Autenticação e tokens",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/categorias",
+      "condicao": "exp = agora-60s; assinatura válida",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN-expirado"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L53-66",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.766Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-024",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "dois headers Authorization válidos (node:http cru)",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A (duplicado)"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "jwt-auth.guard.ts L26-33",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.767Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-027",
+      "categoria": "Autenticação e tokens",
+      "perfil": "CLIENTE (usuário removido)",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "access válido de usuário removido do banco (F-DEL apagado no caso)",
+      "fixture": "F-DEL",
+      "headers": {
+        "Authorization": "Bearer token:F-DEL"
+      },
+      "status": 401,
+      "message": "Access token inválido.",
+      "resposta": {
+        "message": "Access token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": {
+        "usuarioRemovidoExiste": 0
+      },
+      "fonte": "jwt-auth.guard.ts L68-71",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.776Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-AUT-032",
+      "categoria": "Autenticação e tokens",
+      "perfil": "anônimo",
+      "metodo": "POST",
+      "rota": "/auth/refresh",
+      "condicao": "refresh com exp no passado e iat numérico",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "(ausente)"
+      },
+      "status": 401,
+      "message": "Refresh token inválido.",
+      "resposta": {
+        "message": "Refresh token inválido.",
+        "error": "Unauthorized",
+        "statusCode": 401
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "auth.service.ts L50-80",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.778Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-001",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/catalogo/produtos",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "catalogo.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.779Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-002",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/catalogo/produtos",
+      "condicao": "identidade legítima ENTREGADOR-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "catalogo.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.781Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-003",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "carrinho.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.783Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-004",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "identidade legítima ENTREGADOR-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "carrinho.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.784Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-005",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/enderecos",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "enderecos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.785Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-006",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/enderecos",
+      "condicao": "identidade legítima ENTREGADOR-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "enderecos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.786Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-007",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/pedidos",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.788Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-008",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/pedidos",
+      "condicao": "identidade legítima ENTREGADOR-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.789Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-009",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/pix/19cef6c7-44b6-4178-86c9-3f14e0be0c42",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.790Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-010",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/pix/19cef6c7-44b6-4178-86c9-3f14e0be0c42",
+      "condicao": "identidade legítima ENTREGADOR-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.792Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-011",
+      "categoria": "RBAC entre perfis",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos",
+      "condicao": "identidade legítima CLIENTE-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.793Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-012",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.795Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-013",
+      "categoria": "RBAC entre perfis",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos/e52c1ebf-af9f-46a0-a53a-7b59f9c6e305",
+      "condicao": "identidade legítima CLIENTE-A em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.797Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-014",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos/e52c1ebf-af9f-46a0-a53a-7b59f9c6e305",
+      "condicao": "identidade legítima ADMIN em rota de outro perfil",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.798Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-015",
+      "categoria": "RBAC entre perfis",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/entregador/pedidos/e52c1ebf-af9f-46a0-a53a-7b59f9c6e305/confirmar-entrega",
+      "condicao": "identidade legítima de outro perfil sobre pedido de ENT-A",
+      "fixture": "F-PED-ENT-A-ALHEIO",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "historicos": 2
+      },
+      "estadoDepois": {
+        "statusAtual": "SAIU_PARA_ENTREGA",
+        "historicos": 2
+      },
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.800Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-RBC-016",
+      "categoria": "RBAC entre perfis",
+      "perfil": "ADMIN",
+      "metodo": "PATCH",
+      "rota": "/entregador/pedidos/e52c1ebf-af9f-46a0-a53a-7b59f9c6e305/confirmar-entrega",
+      "condicao": "identidade legítima de outro perfil sobre pedido de ENT-A",
+      "fixture": "F-PED-ENT-A-ALHEIO",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "historicos": 2
+      },
+      "estadoDepois": {
+        "statusAtual": "SAIU_PARA_ENTREGA",
+        "historicos": 2
+      },
+      "fonte": "entregador-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.807Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-001",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/admin/categorias",
+      "condicao": "payload válido de criação de categoria",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "criadas": 0
+      },
+      "estadoDepois": {
+        "criadas": 0
+      },
+      "fonte": "categorias.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.812Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-002",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "POST",
+      "rota": "/admin/categorias",
+      "condicao": "payload válido de criação de categoria",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "criadas": 0
+      },
+      "estadoDepois": {
+        "criadas": 0
+      },
+      "fonte": "categorias.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.815Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-003",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/admin/personalizacoes",
+      "condicao": "payload válido de personalização",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "criadas": 0
+      },
+      "estadoDepois": {
+        "criadas": 0
+      },
+      "fonte": "personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.818Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-004",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "POST",
+      "rota": "/admin/personalizacoes",
+      "condicao": "payload válido de personalização",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "criadas": 0
+      },
+      "estadoDepois": {
+        "criadas": 0
+      },
+      "fonte": "personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.821Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-005",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/admin/produtos",
+      "condicao": "payload válido de produto (categoria F-CAT)",
+      "fixture": "F-CAT",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "criados": 0
+      },
+      "estadoDepois": {
+        "criados": 0
+      },
+      "fonte": "produtos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.824Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-006",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "POST",
+      "rota": "/admin/produtos",
+      "condicao": "payload válido de produto (categoria F-CAT)",
+      "fixture": "F-CAT",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "criados": 0
+      },
+      "estadoDepois": {
+        "criados": 0
+      },
+      "fonte": "produtos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.826Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-007",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/admin/produtos/7efe2c1c-5c8b-4c06-9840-28de9303fbee/estoque",
+      "condicao": "ajuste válido para disponível 7",
+      "fixture": "F-PROD",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0,
+        "movimentacoes": 0
+      },
+      "estadoDepois": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0,
+        "movimentacoes": 0
+      },
+      "fonte": "estoque.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.830Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-008",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "PATCH",
+      "rota": "/admin/produtos/7efe2c1c-5c8b-4c06-9840-28de9303fbee/estoque",
+      "condicao": "ajuste válido para disponível 7",
+      "fixture": "F-PROD",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0,
+        "movimentacoes": 0
+      },
+      "estadoDepois": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0,
+        "movimentacoes": 0
+      },
+      "fonte": "estoque.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.834Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-009",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/admin/produtos/88be0c46-f975-46fb-9532-37648dddcce8/personalizacoes",
+      "condicao": "vínculo válido do par não vinculado F-PROD-ADM ↔ F-PERS-ADM",
+      "fixture": "F-PROD-ADM, F-PERS-ADM",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "vinculosNoPar": 0
+      },
+      "estadoDepois": {
+        "vinculosNoPar": 0
+      },
+      "fonte": "produto-personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.839Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-010",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "POST",
+      "rota": "/admin/produtos/88be0c46-f975-46fb-9532-37648dddcce8/personalizacoes",
+      "condicao": "vínculo válido do par não vinculado F-PROD-ADM ↔ F-PERS-ADM",
+      "fixture": "F-PROD-ADM, F-PERS-ADM",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "vinculosNoPar": 0
+      },
+      "estadoDepois": {
+        "vinculosNoPar": 0
+      },
+      "fonte": "produto-personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.843Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-011",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "PUT",
+      "rota": "/admin/configuracao-loja-entrega",
+      "condicao": "valores distintos de F-CONFIG",
+      "fixture": "F-CONFIG",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "estadoDepois": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "fonte": "configuracao-loja-entrega.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.847Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-012",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "PUT",
+      "rota": "/admin/configuracao-loja-entrega",
+      "condicao": "valores distintos de F-CONFIG",
+      "fixture": "F-CONFIG",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "estadoDepois": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "fonte": "configuracao-loja-entrega.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.850Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-013",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/admin/relatorios/vendas?inicio=2026-11-03&fim=2026-11-03",
+      "condicao": "intervalo válido do dia atual",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "relatorios.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.852Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-014",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/admin/relatorios/vendas?inicio=2026-11-03&fim=2026-11-03",
+      "condicao": "intervalo válido do dia atual",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "relatorios.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.853Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-015",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/admin/pedidos/80fed82c-0f94-4166-a684-27923e77b81a/iniciar-producao",
+      "condicao": "transição válida a partir de PAGO",
+      "fixture": "F-PED-ADM-DENY",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "statusAtual": "PAGO",
+        "historicos": 1
+      },
+      "estadoDepois": {
+        "statusAtual": "PAGO",
+        "historicos": 1,
+        "notificacoes": "verificadas na drenagem final"
+      },
+      "fonte": "admin-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.858Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-016",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "PATCH",
+      "rota": "/admin/pedidos/80fed82c-0f94-4166-a684-27923e77b81a/iniciar-producao",
+      "condicao": "transição válida a partir de PAGO",
+      "fixture": "F-PED-ADM-DENY",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "statusAtual": "PAGO",
+        "historicos": 1
+      },
+      "estadoDepois": {
+        "statusAtual": "PAGO",
+        "historicos": 1,
+        "notificacoes": "verificadas na drenagem final"
+      },
+      "fonte": "admin-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.864Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-017",
+      "categoria": "Operações administrativas",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/admin/entregadores",
+      "condicao": "payload válido com e-mail d103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-deny@example.test",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "usuariosComEmail": 0
+      },
+      "estadoDepois": {
+        "usuariosComEmail": 0
+      },
+      "fonte": "admin-entregadores.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.867Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-018",
+      "categoria": "Operações administrativas",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "POST",
+      "rota": "/admin/entregadores",
+      "condicao": "payload válido com e-mail d103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-deny@example.test",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 403,
+      "message": "Acesso negado.",
+      "resposta": {
+        "message": "Acesso negado.",
+        "error": "Forbidden",
+        "statusCode": 403
+      },
+      "estadoAntes": {
+        "usuariosComEmail": 0
+      },
+      "estadoDepois": {
+        "usuariosComEmail": 0
+      },
+      "fonte": "admin-entregadores.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.870Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-019",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/categorias",
+      "condicao": "controle autorizado",
+      "fixture": "F-CAT",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "bd1e31cf-ce8f-45b1-ba04-edaf113b5b2d",
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e categoria",
+          "descricao": null
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "categorias.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.876Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-020",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/produtos",
+      "condicao": "controle autorizado",
+      "fixture": "F-PROD",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+          "categoriaId": "bd1e31cf-ce8f-45b1-ba04-edaf113b5b2d",
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+          "descricao": null,
+          "precoAtual": "10.00",
+          "imagem": null,
+          "ativo": true
+        },
+        {
+          "id": "88be0c46-f975-46fb-9532-37648dddcce8",
+          "categoriaId": "bd1e31cf-ce8f-45b1-ba04-edaf113b5b2d",
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto adm",
+          "descricao": null,
+          "precoAtual": "10.00",
+          "imagem": null,
+          "ativo": true
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "produtos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.880Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-021",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/pedidos",
+      "condicao": "controle autorizado de listagem",
+      "fixture": "F-PED-ADM-DENY",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "399f414a-d260-4ea0-bcb9-280793e38618",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTB",
+          "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+          "cliente": {
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A"
+          },
+          "modalidade": "ENTREGA",
+          "statusAtual": "SAIU_PARA_ENTREGA",
+          "total": "12"
+        },
+        {
+          "id": "606aeb64-2ef0-44c4-8032-d00f8227d11d",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTACONF",
+          "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+          "cliente": {
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A"
+          },
+          "modalidade": "ENTREGA",
+          "statusAtual": "SAIU_PARA_ENTREGA",
+          "total": "12"
+        },
+        {
+          "id": "80fed82c-0f94-4166-a684-27923e77b81a",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ADMDENY",
+          "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+          "cliente": {
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A"
+          },
+          "modalidade": "RETIRADA",
+          "statusAtual": "PAGO",
+          "total": "10"
+        },
+        {
+          "id": "c945243e-27c6-428f-8dd3-620ecd9eaf0a",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-BPAGO",
+          "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+          "cliente": {
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente B"
+          },
+          "modalidade": "ENTREGA",
+          "statusAtual": "PAGO",
+          "total": "12"
+        },
+        {
+          "id": "cea86f2f-d01e-4e07-ad5d-bd8e69faae4a",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ADMCTL",
+          "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+          "cliente": {
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A"
+          },
+          "modalidade": "RETIRADA",
+          "statusAtual": "PAGO",
+          "total": "10"
+        },
+        {
+          "id": "e52c1ebf-af9f-46a0-a53a-7b59f9c6e305",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTAALH",
+          "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+          "cliente": {
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A"
+          },
+          "modalidade": "ENTREGA",
+          "statusAtual": "SAIU_PARA_ENTREGA",
+          "total": "12"
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "admin-pedidos.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.888Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-022",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/relatorios/vendas?inicio=2026-11-03&fim=2026-11-03",
+      "condicao": "intervalo UTC derivado de data",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "inicio": "2026-11-03",
+        "fim": "2026-11-03",
+        "totalVendido": "0.00",
+        "quantidadePedidos": 0,
+        "pedidos": []
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "relatorios.service.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.894Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-023",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "PATCH",
+      "rota": "/admin/pedidos/cea86f2f-d01e-4e07-ad5d-bd8e69faae4a/iniciar-producao",
+      "condicao": "transição PAGO → EM_PREPARO",
+      "fixture": "F-PED-ADM-CTL",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "id": "cea86f2f-d01e-4e07-ad5d-bd8e69faae4a",
+        "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ADMCTL",
+        "confirmacaoPagamento": "2026-11-03T15:29:46.658Z",
+        "cliente": {
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A"
+        },
+        "entregador": null,
+        "modalidade": "RETIRADA",
+        "statusAtual": "EM_PREPARO",
+        "valorItens": "10.00",
+        "freteAplicado": "0.00",
+        "total": "10.00",
+        "enderecoEntregaSnapshot": null,
+        "formaPagamento": null,
+        "historicoStatus": [
+          {
+            "id": "6d44ea1b-3b23-45f2-961d-aa8935230c15",
+            "status": "PAGO",
+            "dataHora": "2026-11-03T15:29:46.658Z",
+            "responsavel": null
+          },
+          {
+            "id": "98b4184d-5a5a-4ce0-b3a2-5a1805cc71c4",
+            "status": "EM_PREPARO",
+            "dataHora": "2026-11-03T15:29:46.898Z",
+            "responsavel": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e admin"
+          }
+        ],
+        "itens": []
+      },
+      "estadoAntes": {
+        "statusAtual": "PAGO",
+        "egressTentativas": 0
+      },
+      "estadoDepois": {
+        "statusAtual": "EM_PREPARO",
+        "historicos": 2,
+        "egressTentativas": 0
+      },
+      "fonte": "pedidos.service.ts L363-404",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.929Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-024",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/personalizacoes",
+      "condicao": "controle autorizado",
+      "fixture": "F-PERS, F-PERS-ADM",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "0467d074-1402-402a-8d2b-b63beb7583d9",
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e pers",
+          "descricao": null,
+          "disponibilidade": true,
+          "ajusteValor": "1.00"
+        },
+        {
+          "id": "a4748150-89ba-4485-9cd6-b417496dcc20",
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e pers adm",
+          "descricao": null,
+          "disponibilidade": true,
+          "ajusteValor": "2.00"
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "personalizacoes.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.933Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-025",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "PATCH",
+      "rota": "/admin/produtos/88be0c46-f975-46fb-9532-37648dddcce8/estoque",
+      "condicao": "ajuste autorizado para disponível 7",
+      "fixture": "F-PROD-ADM",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "produtoId": "88be0c46-f975-46fb-9532-37648dddcce8",
+        "quantidadeFisica": 7,
+        "quantidadeReservada": 0,
+        "quantidadeDisponivel": 7
+      },
+      "estadoAntes": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0
+      },
+      "estadoDepois": {
+        "quantidadeFisica": 7,
+        "quantidadeReservada": 0,
+        "quantidadeDisponivel": 7,
+        "movimentacoes": 1,
+        "quantidadeMovimentacao": -3
+      },
+      "fonte": "estoque.service.ts L18-40",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.940Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-026",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "POST",
+      "rota": "/admin/produtos/88be0c46-f975-46fb-9532-37648dddcce8/personalizacoes",
+      "condicao": "vínculo autorizado do par F-PROD-ADM ↔ F-PERS",
+      "fixture": "F-PROD-ADM, F-PERS",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 201,
+      "message": null,
+      "resposta": {
+        "produtoId": "88be0c46-f975-46fb-9532-37648dddcce8",
+        "personalizacaoId": "0467d074-1402-402a-8d2b-b63beb7583d9"
+      },
+      "estadoAntes": {
+        "vinculosNoPar": 0
+      },
+      "estadoDepois": {
+        "vinculosNoPar": 1
+      },
+      "fonte": "produto-personalizacoes.service.ts L22-31",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.946Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-027",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "PUT",
+      "rota": "/admin/configuracao-loja-entrega",
+      "condicao": "#1 valores alterados",
+      "fixture": "F-CONFIG",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "latitudeLoja": "-22.900000",
+        "longitudeLoja": "-43.200000",
+        "raioMaximoAtendimento": "15.000",
+        "taxaBase": "7.00",
+        "valorPorQuilometro": "3.00"
+      },
+      "estadoAntes": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "estadoDepois": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-22.900000",
+        "longitudeLoja": "-43.200000",
+        "raioMaximoAtendimento": "15.000",
+        "taxaBase": "7.00",
+        "valorPorQuilometro": "3.00"
+      },
+      "fonte": "configuracao-loja-entrega.service.ts L16-38",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.952Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-027",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "PUT",
+      "rota": "/admin/configuracao-loja-entrega",
+      "condicao": "#2 restauração dos valores originais",
+      "fixture": "F-CONFIG",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "estadoAntes": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-22.900000",
+        "longitudeLoja": "-43.200000",
+        "raioMaximoAtendimento": "15.000",
+        "taxaBase": "7.00",
+        "valorPorQuilometro": "3.00"
+      },
+      "estadoDepois": {
+        "id": "7ee26181-4b59-4003-b216-9220b91a87f6",
+        "latitudeLoja": "-23.500000",
+        "longitudeLoja": "-46.600000",
+        "raioMaximoAtendimento": "10.000",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "fonte": "configuracao-loja-entrega.service.ts L16-38",
+      "requisicao": 2,
+      "momento": "2026-11-03T15:29:46.955Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ADM-028",
+      "categoria": "Operações administrativas",
+      "perfil": "ADMIN",
+      "metodo": "POST",
+      "rota": "/admin/entregadores",
+      "condicao": "criação autorizada com e-mail d103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-entregador@example.test",
+      "fixture": "F-ENT-ADM-EMAIL",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 201,
+      "message": null,
+      "resposta": {
+        "id": "00673aa2-2487-4c5a-bb61-4cc58fe6dbc0",
+        "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e entregador adm",
+        "email": "d103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-entregador@example.test",
+        "telefone": "11900000010",
+        "perfil": "ENTREGADOR"
+      },
+      "estadoAntes": {
+        "usuariosComEmail": 0
+      },
+      "estadoDepois": {
+        "usuarioCriado": "00673aa2-2487-4c5a-bb61-4cc58fe6dbc0",
+        "perfil": "ENTREGADOR"
+      },
+      "fonte": "admin-entregadores.controller.ts; users.service.ts L154-190",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.979Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-01",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/carrinho",
+      "condicao": "listagem do próprio carrinho",
+      "fixture": "F-CART-A/B",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "id": "24d051ff-e485-4259-b199-e07ea8abe8b9",
+        "itens": [
+          {
+            "id": "e5cbfccf-6183-4e59-b9cf-1cf6f4b8c2da",
+            "produtoId": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+            "imagemDisponivel": false,
+            "quantidade": 2,
+            "personalizacoes": [],
+            "precoUnitario": "10.00",
+            "subtotal": "20.00",
+            "disponivel": true,
+            "motivo": null
+          }
+        ],
+        "subtotal": "20.00",
+        "total": "20.00"
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "carrinho.service.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.987Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-02",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/carrinho/itens/b4e0fa6e-eb00-4082-a837-c4f0cce05d5d",
+      "condicao": "quantidade 99 em item de B",
+      "fixture": "F-CART-B",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Item não encontrado.",
+      "resposta": {
+        "message": "Item não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "quantidade": 1
+      },
+      "estadoDepois": {
+        "quantidade": 1
+      },
+      "fonte": "carrinho.service.ts L118-131",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.991Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-03",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "DELETE",
+      "rota": "/carrinho/itens/b4e0fa6e-eb00-4082-a837-c4f0cce05d5d",
+      "condicao": "remoção de item de B",
+      "fixture": "F-CART-B",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Item não encontrado.",
+      "resposta": {
+        "message": "Item não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "itemExiste": 1
+      },
+      "estadoDepois": {
+        "itemExiste": 1
+      },
+      "fonte": "carrinho.service.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:46.994Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-04",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/pedidos",
+      "condicao": "listagem de pedidos do próprio cliente",
+      "fixture": "F-PED-B-*",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "e52c1ebf-af9f-46a0-a53a-7b59f9c6e305",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTAALH",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "ENTREGA",
+          "total": "12.00",
+          "statusAtual": "SAIU_PARA_ENTREGA"
+        },
+        {
+          "id": "cea86f2f-d01e-4e07-ad5d-bd8e69faae4a",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ADMCTL",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "RETIRADA",
+          "total": "10.00",
+          "statusAtual": "EM_PREPARO"
+        },
+        {
+          "id": "9247c451-8520-4b75-8c51-c7738f58ac75",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-APAGREC",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "RETIRADA",
+          "total": "10.00",
+          "statusAtual": "PENDENTE_PAGAMENTO"
+        },
+        {
+          "id": "915bd0e1-74b1-4e8e-b70b-e4e275656481",
+          "identificadorNegocio": "PED-41cbbcca-86ef-495a-8fc3-c3cf6c11298f",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "RETIRADA",
+          "total": "10.00",
+          "statusAtual": "PENDENTE_PAGAMENTO"
+        },
+        {
+          "id": "80fed82c-0f94-4166-a684-27923e77b81a",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ADMDENY",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "RETIRADA",
+          "total": "10.00",
+          "statusAtual": "PAGO"
+        },
+        {
+          "id": "606aeb64-2ef0-44c4-8032-d00f8227d11d",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTACONF",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "ENTREGA",
+          "total": "12.00",
+          "statusAtual": "SAIU_PARA_ENTREGA"
+        },
+        {
+          "id": "399f414a-d260-4ea0-bcb9-280793e38618",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTB",
+          "data": "2026-11-03T15:29:46.658Z",
+          "modalidade": "ENTREGA",
+          "total": "12.00",
+          "statusAtual": "SAIU_PARA_ENTREGA"
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L21-38",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.001Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-05",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/pedidos/c945243e-27c6-428f-8dd3-620ecd9eaf0a/cancelar",
+      "condicao": "cancelamento de pedido de B",
+      "fixture": "F-PED-B-PAGO",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "statusAtual": "PAGO",
+        "historicos": 1,
+        "reservas": 0,
+        "movimentacoes": 0
+      },
+      "estadoDepois": {
+        "statusAtual": "PAGO",
+        "historicos": 1,
+        "reservas": 0,
+        "movimentacoes": 0
+      },
+      "fonte": "pedidos.service.ts L252-258",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.008Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-06",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/enderecos",
+      "condicao": "listagem dos próprios endereços",
+      "fixture": "F-END-A/B",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "e7519441-11e9-44ad-a4f0-ed71accb2fcb",
+          "rua": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e rua A",
+          "numero": "1",
+          "bairro": "Centro",
+          "cidade": "Sao Paulo",
+          "cep": "01001000",
+          "complemento": null,
+          "referencia": null,
+          "latitude": null,
+          "longitude": null
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "enderecos.service.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.013Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-07",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/enderecos/2c63b1de-139b-45d5-9e61-7f076d744e94/geocodificacao",
+      "condicao": "geocodificação de endereço de B",
+      "fixture": "F-END-B",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Endereço não encontrado.",
+      "resposta": {
+        "message": "Endereço não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "latitude": null,
+        "longitude": null
+      },
+      "estadoDepois": {
+        "latitude": null,
+        "longitude": null
+      },
+      "fonte": "geocodificacao.service.ts L12-17",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.015Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-08",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/enderecos/2c63b1de-139b-45d5-9e61-7f076d744e94/cobertura-frete",
+      "condicao": "cobertura de endereço de B",
+      "fixture": "F-END-B",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Endereço não encontrado.",
+      "resposta": {
+        "message": "Endereço não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "cobertura-frete.service.ts L21-27",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.018Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-09",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/pix",
+      "condicao": "nova tentativa em pedido de B",
+      "fixture": "F-PED-B-PEND",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "pagamentos": 2
+      },
+      "estadoDepois": {
+        "pagamentos": 2
+      },
+      "fonte": "pagamentos.service.ts L59-69, L76-78",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.024Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-10",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/pix/19cef6c7-44b6-4178-86c9-3f14e0be0c42",
+      "condicao": "tentativa existente de B",
+      "fixture": "F-PAG-B-PIX",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Tentativa não encontrada.",
+      "resposta": {
+        "message": "Tentativa não encontrada.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.service.ts L229-235",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.028Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-11",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/cartao",
+      "condicao": "nova tentativa em pedido de B",
+      "fixture": "F-PED-B-PEND",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "pagamentos": 2
+      },
+      "estadoDepois": {
+        "pagamentos": 2
+      },
+      "fonte": "pagamentos.service.ts L59-69, L76-78",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.032Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-12",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/cartao/b5ef9597-d6cd-49a6-9fe9-7cfa41ab6b77",
+      "condicao": "tentativa existente de B",
+      "fixture": "F-PAG-B-CARD",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Tentativa não encontrada.",
+      "resposta": {
+        "message": "Tentativa não encontrada.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.service.ts L229-235",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.035Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-13",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "POST",
+      "rota": "/pedidos/revisao",
+      "condicao": "revisão ENTREGA com enderecoId de A",
+      "fixture": "F-CART-B, F-END-A",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 404,
+      "message": "Endereço não encontrado.",
+      "resposta": {
+        "message": "Endereço não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "pedidosDeB": 2
+      },
+      "estadoDepois": {
+        "pedidosDeB": 2
+      },
+      "fonte": "pedidos.service.ts L516-526",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.046Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-14",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "POST",
+      "rota": "/pedidos/revisao",
+      "condicao": "arranjo: recaptura de revisão assinada por B (RETIRADA)",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 201,
+      "message": null,
+      "resposta": {
+        "modalidade": "RETIRADA",
+        "enderecoId": null,
+        "enderecoEntregaSnapshot": null,
+        "itens": [
+          {
+            "produtoId": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+            "quantidade": 1,
+            "precoAplicado": "10.00",
+            "subtotalAplicado": "10.00",
+            "personalizacoes": []
+          }
+        ],
+        "valorItens": "10.00",
+        "freteAplicado": "0.00",
+        "total": "10.00",
+        "revisaoId": "ab75ab69d7a75c7c27593dc2e54d917b1742547964a3c91f21b389ebe1637e59"
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L660-661",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.056Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-14",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "POST",
+      "rota": "/pedidos",
+      "condicao": "caminho persistente com enderecoId de A (abre transação e locks)",
+      "fixture": "F-CART-B, F-END-A",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 404,
+      "message": "Endereço não encontrado.",
+      "resposta": {
+        "message": "Endereço não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "pedidosDeB": 2,
+        "estoqueFisico": 10,
+        "estoqueReservado": 0
+      },
+      "estadoDepois": {
+        "estoqueFisico": 10,
+        "estoqueReservado": 0,
+        "sondas": {
+          "advisoryLivre": true,
+          "carrinhoLinhas": 1,
+          "itensLinhas": 1,
+          "produtoLinhas": 1
+        }
+      },
+      "fonte": "pedidos.service.ts L459, L468-477, L518-521",
+      "requisicao": 2,
+      "momento": "2026-11-03T15:29:47.078Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-15",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/pedidos/revisao",
+      "condicao": "arranjo: recaptura imediata da revisão assinada por A (RETIRADA)",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 201,
+      "message": null,
+      "resposta": {
+        "modalidade": "RETIRADA",
+        "enderecoId": null,
+        "enderecoEntregaSnapshot": null,
+        "itens": [
+          {
+            "produtoId": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+            "quantidade": 2,
+            "precoAplicado": "10.00",
+            "subtotalAplicado": "20.00",
+            "personalizacoes": []
+          }
+        ],
+        "valorItens": "20.00",
+        "freteAplicado": "0.00",
+        "total": "20.00",
+        "revisaoId": "67d451706d41ff032936ebe395aeef23093058d7cd6e0ee5470510250cfd6e1b"
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L660-661",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.091Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-15",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "POST",
+      "rota": "/pedidos",
+      "condicao": "revisão assinada por A reenviada por B",
+      "fixture": "revisão A recapturada",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 409,
+      "message": "Revisão desatualizada. Atualize os valores.",
+      "resposta": {
+        "message": "Revisão desatualizada. Atualize os valores.",
+        "error": "Conflict",
+        "statusCode": 409
+      },
+      "estadoAntes": {
+        "pedidos": 9,
+        "itemBQuantidade": 1
+      },
+      "estadoDepois": {
+        "pedidos": 9,
+        "itemBQuantidade": 1
+      },
+      "fonte": "pedidos.service.ts L603-605",
+      "requisicao": 2,
+      "momento": "2026-11-03T15:29:47.098Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-16",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "POST",
+      "rota": "/pedidos/revisao",
+      "condicao": "arranjo: recaptura imediata da revisão assinada por B (RETIRADA)",
+      "fixture": "-",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 201,
+      "message": null,
+      "resposta": {
+        "modalidade": "RETIRADA",
+        "enderecoId": null,
+        "enderecoEntregaSnapshot": null,
+        "itens": [
+          {
+            "produtoId": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+            "quantidade": 1,
+            "precoAplicado": "10.00",
+            "subtotalAplicado": "10.00",
+            "personalizacoes": []
+          }
+        ],
+        "valorItens": "10.00",
+        "freteAplicado": "0.00",
+        "total": "10.00",
+        "revisaoId": "ab75ab69d7a75c7c27593dc2e54d917b1742547964a3c91f21b389ebe1637e59"
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L660-661",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.103Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-16",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "POST",
+      "rota": "/pedidos",
+      "condicao": "idempotência de A (PED-<F-TENT-A>, caixa idêntica) por B",
+      "fixture": "F-PED-A-TENT",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 409,
+      "message": "Tentativa de confirmação inválida.",
+      "resposta": {
+        "message": "Tentativa de confirmação inválida.",
+        "error": "Conflict",
+        "statusCode": 409
+      },
+      "estadoAntes": {
+        "identificador": "PED-41cbbcca-86ef-495a-8fc3-c3cf6c11298f",
+        "statusAtual": "PENDENTE_PAGAMENTO"
+      },
+      "estadoDepois": {
+        "identificador": "PED-41cbbcca-86ef-495a-8fc3-c3cf6c11298f",
+        "statusAtual": "PENDENTE_PAGAMENTO",
+        "pedidosDeB": 2
+      },
+      "fonte": "pedidos.service.ts L414-425, L441-446",
+      "requisicao": 2,
+      "momento": "2026-11-03T15:29:47.107Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-17",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/catalogo/produtos",
+      "condicao": "controle autorizado de catálogo",
+      "fixture": "F-PROD",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "items": [
+          {
+            "id": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+            "precoAtual": "10.00",
+            "categoria": {
+              "id": "bd1e31cf-ce8f-45b1-ba04-edaf113b5b2d",
+              "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e categoria"
+            },
+            "imagemDisponivel": false
+          },
+          {
+            "id": "88be0c46-f975-46fb-9532-37648dddcce8",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto adm",
+            "precoAtual": "10.00",
+            "categoria": {
+              "id": "bd1e31cf-ce8f-45b1-ba04-edaf113b5b2d",
+              "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e categoria"
+            },
+            "imagemDisponivel": false
+          }
+        ],
+        "page": 1,
+        "limit": 20,
+        "hasMore": false
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "catalogo.controller.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.109Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-18",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/carrinho/itens/e5cbfccf-6183-4e59-b9cf-1cf6f4b8c2da",
+      "condicao": "alteração do próprio item para quantidade 3",
+      "fixture": "F-CART-A",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "id": "24d051ff-e485-4259-b199-e07ea8abe8b9",
+        "itens": [
+          {
+            "id": "e5cbfccf-6183-4e59-b9cf-1cf6f4b8c2da",
+            "produtoId": "7efe2c1c-5c8b-4c06-9840-28de9303fbee",
+            "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e produto",
+            "imagemDisponivel": false,
+            "quantidade": 3,
+            "personalizacoes": [],
+            "precoUnitario": "10.00",
+            "subtotal": "30.00",
+            "disponivel": true,
+            "motivo": null
+          }
+        ],
+        "subtotal": "30.00",
+        "total": "30.00"
+      },
+      "estadoAntes": {
+        "quantidade": 2
+      },
+      "estadoDepois": {
+        "quantidade": 3
+      },
+      "fonte": "carrinho.service.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.114Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-19",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/enderecos/e7519441-11e9-44ad-a4f0-ed71accb2fcb/cobertura-frete",
+      "condicao": "controle autorizado de cobertura",
+      "fixture": "F-END-A",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "situacao": "LOCALIZACAO_INDISPONIVEL",
+        "distanciaKm": null,
+        "raioMaximoKm": null,
+        "frete": null
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "cobertura-frete.service.ts",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.116Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-20",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/pix/19cef6c7-44b6-4178-86c9-3f14e0be0c42",
+      "condicao": "dono lendo a própria tentativa",
+      "fixture": "F-PAG-B-PIX",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "tentativaId": "19cef6c7-44b6-4178-86c9-3f14e0be0c42",
+        "pedidoId": "3840a81f-c58c-40ca-888e-c8093dd1a919",
+        "forma": "PIX",
+        "resultado": "PENDENTE",
+        "valorAplicavel": "12.00",
+        "dataTransacao": null
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.service.ts L229-235",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.118Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-21",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-B",
+      "metodo": "GET",
+      "rota": "/pedidos/3840a81f-c58c-40ca-888e-c8093dd1a919/pagamentos/cartao/b5ef9597-d6cd-49a6-9fe9-7cfa41ab6b77",
+      "condicao": "dono lendo a própria tentativa",
+      "fixture": "F-PAG-B-CARD",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-B"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "tentativaId": "b5ef9597-d6cd-49a6-9fe9-7cfa41ab6b77",
+        "pedidoId": "3840a81f-c58c-40ca-888e-c8093dd1a919",
+        "forma": "CARTAO",
+        "resultado": "PENDENTE",
+        "valorAplicavel": "12.00",
+        "dataTransacao": null
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pagamentos.service.ts L229-235",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.119Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-C-22",
+      "categoria": "Ownership do CLIENTE",
+      "perfil": "CLIENTE-A",
+      "metodo": "POST",
+      "rota": "/pedidos/9247c451-8520-4b75-8c51-c7738f58ac75/pagamentos/pix",
+      "condicao": "dono reenviando tentativa já existente e terminal (RECUSADO)",
+      "fixture": "F-PED-A-PAG-REC",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "tentativaId": "0f1a4d9c-a778-4133-9baa-e96e38b1d74d",
+        "pedidoId": "9247c451-8520-4b75-8c51-c7738f58ac75",
+        "forma": "PIX",
+        "resultado": "RECUSADO",
+        "valorAplicavel": "10.00",
+        "dataTransacao": "2026-11-03T15:29:46.658Z"
+      },
+      "estadoAntes": {
+        "pagamentos": 1,
+        "historicos": 1,
+        "movimentacoes": 0,
+        "notificacoes": 0
+      },
+      "estadoDepois": {
+        "pagamentos": 1,
+        "historicos": 1,
+        "movimentacoes": 0,
+        "notificacoes": 0
+      },
+      "fonte": "pagamentos.service.ts L76-83",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.124Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-E-01",
+      "categoria": "Ownership do ENTREGADOR",
+      "perfil": "ENTREGADOR-B",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos",
+      "condicao": "ENT-B lista apenas os próprios pedidos",
+      "fixture": "F-PED-ENT-B, F-PED-ENT-A-*",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-B"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": [
+        {
+          "id": "399f414a-d260-4ea0-bcb9-280793e38618",
+          "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTB",
+          "statusAtual": "SAIU_PARA_ENTREGA"
+        }
+      ],
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L40-45",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.128Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-E-02",
+      "categoria": "Ownership do ENTREGADOR",
+      "perfil": "ENTREGADOR-B",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos/e52c1ebf-af9f-46a0-a53a-7b59f9c6e305",
+      "condicao": "pedido de ENT-A",
+      "fixture": "F-PED-ENT-A-ALHEIO",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-B"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L47-64",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.133Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-E-03",
+      "categoria": "Ownership do ENTREGADOR",
+      "perfil": "ENTREGADOR-B",
+      "metodo": "PATCH",
+      "rota": "/entregador/pedidos/e52c1ebf-af9f-46a0-a53a-7b59f9c6e305/confirmar-entrega",
+      "condicao": "pedido de ENT-A",
+      "fixture": "F-PED-ENT-A-ALHEIO",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-B"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": {
+        "historicos": 2
+      },
+      "estadoDepois": {
+        "statusAtual": "SAIU_PARA_ENTREGA",
+        "historicos": 2
+      },
+      "fonte": "pedidos.service.ts L204-213",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.136Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-E-04",
+      "categoria": "Ownership do ENTREGADOR",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos/606aeb64-2ef0-44c4-8032-d00f8227d11d",
+      "condicao": "controle autorizado do próprio pedido",
+      "fixture": "F-PED-ENT-A-CONFIRM",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "identificadorNegocio": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e-ENTACONF",
+        "cliente": {
+          "nome": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e cliente A",
+          "telefone": "11900000001"
+        },
+        "enderecoEntregaSnapshot": {
+          "rua": "D103-5a9a735b-d41c-48ad-9ec9-3c5f95919e3e rua B",
+          "numero": "2",
+          "bairro": "Centro",
+          "cidade": "Sao Paulo",
+          "cep": "01001001",
+          "complemento": null,
+          "referencia": null
+        },
+        "dataHoraSaidaParaEntrega": "2026-11-03T15:29:46.658Z"
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L47-71",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.140Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-OWN-E-05",
+      "categoria": "Ownership do ENTREGADOR",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "PATCH",
+      "rota": "/entregador/pedidos/606aeb64-2ef0-44c4-8032-d00f8227d11d/confirmar-entrega",
+      "condicao": "controle autorizado de confirmação de entrega",
+      "fixture": "F-PED-ENT-A-CONFIRM",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 200,
+      "message": null,
+      "resposta": {
+        "statusAtual": "ENTREGUE",
+        "dataHora": "2026-11-03T15:29:47.141Z"
+      },
+      "estadoAntes": {
+        "statusAtual": "SAIU_PARA_ENTREGA",
+        "notificacoes": 0,
+        "egressTentativas": 0
+      },
+      "estadoDepois": {
+        "statusAtual": "ENTREGUE",
+        "historicoEntregue": 1,
+        "notificacoes": 1,
+        "notificacaoResultado": "FALHA",
+        "egressTentativas": 0
+      },
+      "fonte": "pedidos.service.ts L204-250; notificacoes.service.ts L32-68",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.144Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ID-01",
+      "categoria": "Acesso direto por ID",
+      "perfil": "ENTREGADOR-A",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos/85c4ceae-5ae5-4468-9aba-5d94881b1dde",
+      "condicao": "UUID válido sem registro",
+      "fixture": "uuid-d103-inexistente",
+      "headers": {
+        "Authorization": "Bearer token:ENTREGADOR-A"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L47-64",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.150Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ID-02",
+      "categoria": "Acesso direto por ID",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/pedidos/85c4ceae-5ae5-4468-9aba-5d94881b1dde/cancelar",
+      "condicao": "UUID válido sem registro",
+      "fixture": "uuid-d103-inexistente",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L252-258",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.152Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ID-03",
+      "categoria": "Acesso direto por ID",
+      "perfil": "CLIENTE-A",
+      "metodo": "PATCH",
+      "rota": "/carrinho/itens/85c4ceae-5ae5-4468-9aba-5d94881b1dde",
+      "condicao": "UUID válido sem registro",
+      "fixture": "uuid-d103-inexistente",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Item não encontrado.",
+      "resposta": {
+        "message": "Item não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "carrinho.service.ts L118-131",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.154Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ID-04",
+      "categoria": "Acesso direto por ID",
+      "perfil": "CLIENTE-A",
+      "metodo": "GET",
+      "rota": "/enderecos/85c4ceae-5ae5-4468-9aba-5d94881b1dde/cobertura-frete",
+      "condicao": "UUID válido sem registro",
+      "fixture": "uuid-d103-inexistente",
+      "headers": {
+        "Authorization": "Bearer token:CLIENTE-A"
+      },
+      "status": 404,
+      "message": "Endereço não encontrado.",
+      "resposta": {
+        "message": "Endereço não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "cobertura-frete.service.ts L21-27",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.156Z",
+      "veredito": "PASS"
+    },
+    {
+      "caso": "D103-ID-05",
+      "categoria": "Acesso direto por ID",
+      "perfil": "ADMIN",
+      "metodo": "GET",
+      "rota": "/admin/pedidos/85c4ceae-5ae5-4468-9aba-5d94881b1dde",
+      "condicao": "UUID válido sem registro (ADMIN autorizado)",
+      "fixture": "uuid-d103-inexistente",
+      "headers": {
+        "Authorization": "Bearer token:ADMIN"
+      },
+      "status": 404,
+      "message": "Pedido não encontrado.",
+      "resposta": {
+        "message": "Pedido não encontrado.",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "estadoAntes": null,
+      "estadoDepois": null,
+      "fonte": "pedidos.service.ts L101-129",
+      "requisicao": 1,
+      "momento": "2026-11-03T15:29:47.157Z",
+      "veredito": "PASS"
+    }
+  ],
+  "verificacoesFinais": [
+    {
+      "nome": "ADM-015/016: nenhuma Notificacao nova para F-PED-ADM-DENY após a drenagem",
+      "ok": true,
+      "detalhe": "Notificacao=0"
+    },
+    {
+      "nome": "Nenhuma tentativa de egress durante toda a execução",
+      "ok": true,
+      "detalhe": "egressTentativas=0; fetchCalls=0"
+    }
+  ],
+  "cleanup": {
+    "totalPassos": 20,
+    "passos": [
+      {
+        "passo": 1,
+        "tabela": "Notificacao",
+        "erro": null
+      },
+      {
+        "passo": 2,
+        "tabela": "ItemPedidoPersonalizacaoSnapshot",
+        "erro": null
+      },
+      {
+        "passo": 3,
+        "tabela": "ReservaEstoque",
+        "erro": null
+      },
+      {
+        "passo": 4,
+        "tabela": "MovimentacaoEstoque",
+        "erro": null
+      },
+      {
+        "passo": 5,
+        "tabela": "Pagamento",
+        "erro": null
+      },
+      {
+        "passo": 6,
+        "tabela": "HistoricoStatusPedido",
+        "erro": null
+      },
+      {
+        "passo": 7,
+        "tabela": "ItemPedido",
+        "erro": null
+      },
+      {
+        "passo": 8,
+        "tabela": "EnderecoEntregaSnapshot",
+        "erro": null
+      },
+      {
+        "passo": 9,
+        "tabela": "Pedido",
+        "erro": null
+      },
+      {
+        "passo": 10,
+        "tabela": "ItemCarrinhoPersonalizacao",
+        "erro": null
+      },
+      {
+        "passo": 11,
+        "tabela": "ItemCarrinho",
+        "erro": null
+      },
+      {
+        "passo": 12,
+        "tabela": "Carrinho",
+        "erro": null
+      },
+      {
+        "passo": 13,
+        "tabela": "Endereco",
+        "erro": null
+      },
+      {
+        "passo": 14,
+        "tabela": "ConfiguracaoLojaEntrega",
+        "erro": null
+      },
+      {
+        "passo": 15,
+        "tabela": "ProdutoPersonalizacao",
+        "erro": null
+      },
+      {
+        "passo": 16,
+        "tabela": "Personalizacao",
+        "erro": null
+      },
+      {
+        "passo": 17,
+        "tabela": "Estoque",
+        "erro": null
+      },
+      {
+        "passo": 18,
+        "tabela": "Produto",
+        "erro": null
+      },
+      {
+        "passo": 19,
+        "tabela": "Categoria",
+        "erro": null
+      },
+      {
+        "passo": 20,
+        "tabela": "Usuario",
+        "erro": null
+      }
+    ],
+    "cleanupErrors": [],
+    "contagensFinais": {
+      "Notificacao": 0,
+      "ItemPedidoPersonalizacaoSnapshot": 0,
+      "ReservaEstoque": 0,
+      "MovimentacaoEstoque": 0,
+      "Pagamento": 0,
+      "HistoricoStatusPedido": 0,
+      "ItemPedido": 0,
+      "EnderecoEntregaSnapshot": 0,
+      "Pedido": 0,
+      "ItemCarrinhoPersonalizacao": 0,
+      "ItemCarrinho": 0,
+      "Carrinho": 0,
+      "Endereco": 0,
+      "ConfiguracaoLojaEntrega": 0,
+      "ProdutoPersonalizacao": 0,
+      "Personalizacao": 0,
+      "Estoque": 0,
+      "Produto": 0,
+      "Categoria": 0,
+      "Usuario": 0
+    },
+    "snapshotPreflight": {
+      "Notificacao": 0,
+      "ItemPedidoPersonalizacaoSnapshot": 0,
+      "ReservaEstoque": 0,
+      "MovimentacaoEstoque": 0,
+      "Pagamento": 0,
+      "HistoricoStatusPedido": 0,
+      "ItemPedido": 0,
+      "EnderecoEntregaSnapshot": 0,
+      "Pedido": 0,
+      "ItemCarrinhoPersonalizacao": 0,
+      "ItemCarrinho": 0,
+      "Carrinho": 0,
+      "Endereco": 0,
+      "ConfiguracaoLojaEntrega": 0,
+      "ProdutoPersonalizacao": 0,
+      "Personalizacao": 0,
+      "Estoque": 0,
+      "Produto": 0,
+      "Categoria": 0,
+      "Usuario": 0
+    },
+    "criterios": {
+      "cleanupErrorsVazio": true,
+      "contagemZeroNas20Tabelas": true,
+      "igualdadeComSnapshotPreflight": true
+    }
+  },
+  "veredito": "PASS"
+}
