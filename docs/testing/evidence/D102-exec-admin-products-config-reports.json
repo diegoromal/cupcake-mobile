@@ -1,0 +1,3264 @@
+{
+  "cases": [
+    {
+      "id": "D102-ADM-019",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/produtos/a1020000-0000-4000-8000-000000000019",
+      "request": {},
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Informe ao menos um campo para atualizar.",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/produtos/:id`",
+      "precondicao": "Produto existente",
+      "entrada": "Corpo `{}`",
+      "esperado": "HTTP 400; `Informe ao menos um campo para atualizar.`",
+      "efeitoEsperado": "Produto inalterado",
+      "fonte": "`ProdutosController`; `produtos.e2e-spec.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-020",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos",
+      "request": {
+        "categoriaId": "c1020000-0000-4000-8000-000000000301",
+        "nome": "",
+        "precoAtual": "1.00"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "nome should not be empty"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos`",
+      "precondicao": "Categoria válida",
+      "entrada": "`nome` vazio",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum produto criado",
+      "fonte": "DTO/controller e `produtos.e2e-spec.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-028",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos",
+      "request": {
+        "categoriaId": "c1020000-0000-4000-8000-000000000301",
+        "nome": "D102 payload base",
+        "precoAtual": "1.001"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "precoAtual must match /^\\d{1,10}(?:\\.\\d{1,2})?$/ regular expression"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos`",
+      "precondicao": "ADMIN autenticado; categoria existente",
+      "entrada": "Enviar `precoAtual=\"1.001\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum produto/estoque criado",
+      "fonte": "`apps/api/test/produtos.e2e-spec.ts`, teste `rejeita payload` (POST); `create-produto.dto.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-029",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos",
+      "request": {
+        "categoriaId": "c1020000-0000-4000-8000-000000000301",
+        "nome": "D102 payload base",
+        "precoAtual": "1.00",
+        "extra": true
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos`",
+      "precondicao": "ADMIN autenticado; categoria existente",
+      "entrada": "Adicionar `extra=true` ao payload válido",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum produto/estoque criado",
+      "fonte": "`ProdutosController` ValidationPipe; `produtos.e2e-spec.ts`, teste `rejeita payload`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-030",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos",
+      "request": {
+        "categoriaId": "c1020000-0000-4000-8000-000000000030",
+        "nome": "D102 payload base",
+        "precoAtual": "1.00"
+      },
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Categoria não encontrada.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos`",
+      "precondicao": "ADMIN autenticado; categoria existente",
+      "entrada": "Enviar `categoriaId` UUID válido inexistente",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Nenhum produto/estoque criado",
+      "fonte": "`produtos.e2e-spec.ts`, teste `categoria inexistente retorna 404 em POST e PATCH`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-031",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/produtos/a1020000-0000-4000-8000-000000000019",
+      "request": {
+        "precoAtual": "1.001"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "precoAtual must match /^\\d{1,10}(?:\\.\\d{1,2})?$/ regular expression"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/produtos/:id`",
+      "precondicao": "Produto existente; ADMIN autenticado",
+      "entrada": "Enviar `precoAtual=\"1.001\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Produto permanece inalterado",
+      "fonte": "`produtos.e2e-spec.ts`, teste `rejeita payload` (PATCH); `update-produto.dto.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-032",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/produtos/a1020000-0000-4000-8000-000000000032",
+      "request": null,
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Produto não encontrado.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/produtos/a1020000-0000-4000-8000-000000000032`",
+      "precondicao": "ADMIN autenticado; produto com esse ID não existe",
+      "entrada": "Consultar o produto ausente",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Nenhuma mutação",
+      "fonte": "`apps/api/test/produtos.e2e-spec.ts`, teste `GET lista inclusive inativos, sem filtros, e GET por id`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-033",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/produtos/a1020000-0000-4000-8000-000000000033",
+      "request": null,
+      "expectedHttp": 409,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Estoque impede exclusão do produto.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/produtos/:id`",
+      "precondicao": "Produto existente; estoque físico/reservado impede exclusão",
+      "entrada": "Excluir produto com estoque não removível",
+      "esperado": "HTTP 409",
+      "efeitoEsperado": "Produto e estoque permanecem",
+      "fonte": "`produtos.e2e-spec.ts`, teste `DELETE livre retorna 204, inexistente 404, vínculo e estoque 409`; `produtos.service.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-034",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/produtos/a1020000-0000-4000-8000-000000000034",
+      "request": null,
+      "expectedHttp": 409,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Estoque impede exclusão do produto.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/produtos/:id`",
+      "precondicao": "Produto existente com vínculo protegido",
+      "entrada": "Excluir produto vinculado",
+      "esperado": "HTTP 409; `Produto possui vínculos.`",
+      "efeitoEsperado": "Produto e vínculos permanecem",
+      "fonte": "`apps/api/test/produtos.e2e-spec.ts`, teste `DELETE livre retorna 204, inexistente 404, vínculo e estoque 409`; `apps/api/src/produtos/produtos.service.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-035",
+      "perfil": "ADMIN",
+      "operacao": "PUT /admin/configuracao-loja-entrega",
+      "request": {
+        "latitudeLoja": "-25.0",
+        "longitudeLoja": "-49",
+        "raioMaximoAtendimento": "0",
+        "taxaBase": "-1",
+        "valorPorQuilometro": "2.00"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "taxaBase must match /^\\d{1,10}(?:\\.\\d{1,2})?$/ regular expression"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PUT `/admin/configuracao-loja-entrega`",
+      "precondicao": "Configuração existente; payload base `latitudeLoja=\"-25.0\"`, `longitudeLoja=\"-49\"`, `raioMaximoAtendimento=\"0\"`, `taxaBase=\"5.00\"`, `valorPorQuilometro=\"2.00\"`",
+      "entrada": "Substituir `taxaBase` por `\"-1\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Configuração permanece com `taxaBase=5.00`",
+      "fonte": "`apps/api/test/enderecos-configuracao.e2e-spec.ts`, teste do PUT que rejeita taxa negativa; DTO de configuração",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-036",
+      "perfil": "ADMIN",
+      "operacao": "PUT /admin/configuracao-loja-entrega",
+      "request": {
+        "latitudeLoja": "-25.0",
+        "longitudeLoja": "180.000001",
+        "raioMaximoAtendimento": "0",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Coordenadas da loja inválidas.",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PUT `/admin/configuracao-loja-entrega`",
+      "precondicao": "Configuração existente; mesmo payload base válido de ADM-035",
+      "entrada": "Substituir `longitudeLoja` por `\"180.000001\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Configuração permanece inalterada",
+      "fonte": "`apps/api/test/enderecos-configuracao.e2e-spec.ts`, teste do PUT que rejeita `longitudeLoja=180.000001`; `apps/api/src/configuracao-loja-entrega/dto/salvar-configuracao-loja-entrega.dto.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-039",
+      "perfil": "ADMIN",
+      "operacao": "PUT /admin/configuracao-loja-entrega",
+      "request": {
+        "latitudeLoja": "-25.0",
+        "longitudeLoja": "-49",
+        "raioMaximoAtendimento": "0",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00",
+        "extra": true
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PUT `/admin/configuracao-loja-entrega`",
+      "precondicao": "Configuração existente; payload válido `latitudeLoja=\"-25.0\"`, `longitudeLoja=\"-49\"`, `raioMaximoAtendimento=\"0\"`, `taxaBase=\"5.00\"`, `valorPorQuilometro=\"2.00\"`",
+      "entrada": "Adicionar `extra=true`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Configuração permanece inalterada",
+      "fonte": "`apps/api/src/configuracao-loja-entrega/configuracao-loja-entrega.controller.ts` ValidationPipe; `salvar-configuracao-loja-entrega.dto.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-043",
+      "perfil": "ADMIN",
+      "operacao": "PUT /admin/configuracao-loja-entrega",
+      "request": {
+        "latitudeLoja": "-25.0",
+        "raioMaximoAtendimento": "0",
+        "taxaBase": "5.00",
+        "valorPorQuilometro": "2.00"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "longitudeLoja must match /^-?(?:\\d|[1-9]\\d|1[0-7]\\d|180)(?:\\.\\d{1,6})?$/ regular expression",
+            "longitudeLoja must be a string"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PUT `/admin/configuracao-loja-entrega`",
+      "precondicao": "Configuração existente; payload `latitudeLoja=\"-25.0\"`, `longitudeLoja=\"-49\"`, `raioMaximoAtendimento=\"0\"`, `taxaBase=\"5.00\"`, `valorPorQuilometro=\"2.00\"`",
+      "entrada": "Omitir `longitudeLoja`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Configuração permanece inalterada",
+      "fonte": "`apps/api/src/configuracao-loja-entrega/dto/salvar-configuracao-loja-entrega.dto.ts`; controller ValidationPipe",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-040",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos/a1020000-0000-4000-8000-000000000040/imagem",
+      "request": "multipart/form-data, zero fields",
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Envie somente um arquivo no campo imagem.",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos/:id/imagem`",
+      "precondicao": "Produto existente; ADMIN autenticado; requisição multipart sem arquivo",
+      "entrada": "Enviar multipart sem campo/arquivo `imagem`",
+      "esperado": "HTTP 400; `Envie somente um arquivo no campo imagem.`",
+      "efeitoEsperado": "Referência e imagem atuais permanecem; imagem não é substituída",
+      "fonte": "`apps/api/src/produtos/produtos.controller.ts`, validação de `files`; `produto-imagens.service.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-044",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/produtos/nao-uuid",
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/produtos/:id`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "Enviar `id=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma mutação",
+      "fonte": "`apps/api/src/produtos/produtos.controller.ts` (`ParseUUIDPipe`); `apps/api/test/produtos.e2e-spec.ts`, teste `UUID inválido em get/patch/delete retorna 400`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-045",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/produtos/nao-uuid",
+      "request": {
+        "nome": "Novo"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/produtos/nao-uuid`",
+      "precondicao": "ADMIN autenticado; produto existente",
+      "entrada": "Enviar body `{nome:\"Novo\"}`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Produto permanece inalterado",
+      "fonte": "`apps/api/src/produtos/produtos.controller.ts` (`ParseUUIDPipe`); `apps/api/test/produtos.e2e-spec.ts`, teste `UUID inválido em get/patch/delete retorna 400`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-046",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos/a1020000-0000-4000-8000-000000000034/personalizacoes",
+      "request": {
+        "personalizacaoId": "nao-uuid"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "personalizacaoId must be a UUID"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos/:produtoId/personalizacoes`",
+      "precondicao": "ADMIN autenticado; produto e personalização válidos",
+      "entrada": "Enviar `personalizacaoId=\"nao-uuid\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum vínculo criado",
+      "fonte": "`produto-personalizacoes.controller.ts`; `apps/api/test/produto-personalizacoes.e2e-spec.ts`, teste `rejeita personalizacaoId inválido na rota e no body`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-047",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/produtos/a1020000-0000-4000-8000-000000000016/personalizacoes/nao-uuid",
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/produtos/a1020000-0000-4000-8000-000000000016/personalizacoes/nao-uuid`",
+      "precondicao": "ADMIN autenticado; produto existe e tem vínculo com personalização válida",
+      "entrada": "Enviar `personalizacaoId=\"nao-uuid\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Vínculo existente permanece",
+      "fonte": "`apps/api/src/produtos/produto-personalizacoes.controller.ts` (`ParseUUIDPipe`); `apps/api/test/produto-personalizacoes.e2e-spec.ts`, teste `rejeita personalizacaoId inválido na rota e no body`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-023",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/relatorios/vendas?inicio=2026-02-30&fim=2026-03-01",
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "inicio must be a valid ISO 8601 date string"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/relatorios/vendas`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "Query `inicio=2026-02-30&fim=2026-03-01`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Service não consultado; nenhuma mutação",
+      "fonte": "`relatorios.e2e-spec.ts`, teste `rejeita datas inválidas e parâmetros fora do contrato`; `relatorios-vendas-query.dto.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-037",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/relatorios/vendas?inicio=2026-10-01&fim=2026-10-31&exportar=pdf",
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property exportar should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/relatorios/vendas`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "Query `inicio=2026-10-01&fim=2026-10-31&exportar=pdf`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Service não consultado; nenhuma mutação",
+      "fonte": "`apps/api/test/relatorios.e2e-spec.ts`, teste `rejeita datas inválidas e parâmetros fora do contrato`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-042",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/relatorios/vendas?inicio=2026-10-02&fim=2026-10-01",
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "A data inicial deve ser anterior ou igual à data final.",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "estadoDepois": {
+        "products": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Produto 016",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000019",
+            "nome": "D102 Produto Editável",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000033",
+            "nome": "D102 Produto Estoque",
+            "preco": 10,
+            "imagem": null,
+            "stock": [
+              5,
+              0
+            ],
+            "links": 0
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Produto Vínculo",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 1
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000040",
+            "nome": "D102 Produto Imagem",
+            "preco": 10,
+            "imagem": null,
+            "stock": null,
+            "links": 0
+          }
+        ],
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000016",
+            "nome": "D102 Personalização 016"
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000034",
+            "nome": "D102 Personalização Produto"
+          }
+        ],
+        "config": [
+          -25,
+          -49,
+          0,
+          5,
+          2
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/relatorios/vendas`",
+      "precondicao": "ADMIN autenticado; datas em formato válido",
+      "entrada": "Query `inicio=2026-10-02&fim=2026-10-01`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Repositório não consultado; nenhuma mutação",
+      "fonte": "`apps/api/src/relatorios/relatorios.service.spec.ts`, teste `rejeita período invertido antes de consultar o banco`; controller/DTO",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    }
+  ]
+}

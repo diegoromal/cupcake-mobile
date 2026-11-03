@@ -1,0 +1,1142 @@
+{
+  "executedAt": "2026-10-30T21:17:13.885Z",
+  "fixture": {
+    "uid": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+    "pid": "a1020000-0000-4000-8000-000000000024",
+    "custom": "b1020000-0000-4000-8000-000000000024",
+    "item": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+  },
+  "cases": [
+    {
+      "id": "D102-CLI-001",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 0,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "quantidade must not be less than 1"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente",
+      "entrada": "`quantidade=0`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/dto/adicionar-item.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem persistir quantidade inválida nem campo extra`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-002",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": -1,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "quantidade must not be less than 1"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente",
+      "entrada": "`quantidade=-1`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "DTO `adicionar-item.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem persistir quantidade inválida nem campo extra`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-003",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 2147483648,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "quantidade must not be greater than 2147483647"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente",
+      "entrada": "`quantidade=2147483648`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/dto/adicionar-item.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem persistir quantidade inválida nem campo extra`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-004",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "invalid",
+        "quantidade": 1,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "produtoId must be a UUID"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; não há carrinho prévio",
+      "entrada": "`produtoId=\"invalid\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado; service não é chamado",
+      "fonte": "`apps/api/src/carrinho/dto/adicionar-item.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem persistir quantidade inválida nem campo extra`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-005",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "each value in personalizacaoIds must be a UUID",
+            "personalizacaoIds must be an array"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente",
+      "entrada": "Omitir `personalizacaoIds`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`adicionar-item.dto.ts`; `carrinho.e2e-spec.ts`, teste de payloads inválidos",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-006",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": [],
+        "usuarioId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property usuarioId should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente",
+      "entrada": "Adicionar campo `usuarioId`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`CarrinhoController` (ValidationPipe `forbidNonWhitelisted`); `carrinho.e2e-spec.ts`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-007",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": [],
+        "carrinhoId": "c1020000-0000-4000-8000-000000000107"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property carrinhoId should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente",
+      "entrada": "Adicionar campo `carrinhoId`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/carrinho.controller.ts` ValidationPipe; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem gravar quantidade inválida, campo extra, usuarioId ou carrinhoId`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-017",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 401,
+      "response": {
+        "status": 401,
+        "body": {
+          "message": "Access token inválido.",
+          "error": "Unauthorized",
+          "statusCode": 401
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Sem credencial válida",
+      "entrada": "Requisição sem Authorization",
+      "esperado": "HTTP 401; `Access token inválido.`",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/carrinho.controller.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 401 sem token e 403 para ADMIN e ENTREGADOR`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE (não autenticado)",
+      "operacaoMatriz": "CLIENTE (não autenticado); POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-018",
+      "perfil": "ADMIN",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 403,
+      "response": {
+        "status": 403,
+        "body": {
+          "message": "Acesso negado.",
+          "error": "Forbidden",
+          "statusCode": 403
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Token ADMIN válido; produto existente",
+      "entrada": "Enviar POST de item do carrinho como ADMIN",
+      "esperado": "HTTP 403; `Acesso negado.`",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/carrinho.controller.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 401 sem token e 403 para ADMIN e ENTREGADOR`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-019",
+      "perfil": "ENTREGADOR",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 403,
+      "response": {
+        "status": 403,
+        "body": {
+          "message": "Acesso negado.",
+          "error": "Forbidden",
+          "statusCode": 403
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Token ENTREGADOR válido",
+      "entrada": "Executar POST `/carrinho/itens` como ENTREGADOR",
+      "esperado": "HTTP 403; `Acesso negado.`",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`CarrinhoController`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 401 sem token e 403 para ADMIN e ENTREGADOR`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "ENTREGADOR",
+      "operacaoMatriz": "ENTREGADOR; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-022",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "d1020000-0000-4000-8000-000000000022",
+        "quantidade": 1,
+        "personalizacaoIds": []
+      },
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Produto não encontrado.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto `d1020000-0000-4000-8000-000000000022` não existe; não há carrinho prévio",
+      "entrada": "Enviar esse `produtoId`, `quantidade=1`, `personalizacaoIds=[]`",
+      "esperado": "HTTP 404; `Produto não encontrado.`",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/carrinho.service.ts` (`ensureProduto`); `apps/api/src/carrinho/carrinho.controller.ts`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-023",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": [
+          "e1020000-0000-4000-8000-000000000023"
+        ]
+      },
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Personalização não encontrada.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto válido disponível; personalização `e1020000-0000-4000-8000-000000000023` não existe; sem carrinho prévio",
+      "entrada": "Enviar `personalizacaoIds=[\"e1020000-0000-4000-8000-000000000023\"]`",
+      "esperado": "HTTP 404; `Personalização não encontrada.`",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/carrinho.service.ts` (`ensurePersonalizacoes`); `apps/api/src/carrinho/carrinho.controller.ts`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-024",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": [
+          "b1020000-0000-4000-8000-000000000024"
+        ]
+      },
+      "expectedHttp": 409,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Personalização incompatível com o produto.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 0,
+        "items": 0,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto disponível `a1020000-0000-4000-8000-000000000024`; personalização existente `b1020000-0000-4000-8000-000000000024` sem vínculo com esse produto; sem carrinho prévio",
+      "entrada": "Enviar o produto e `personalizacaoIds=[\"b1020000-0000-4000-8000-000000000024\"]`, `quantidade=1`",
+      "esperado": "HTTP 409; `Personalização incompatível com o produto.`",
+      "efeitoEsperado": "Nenhum carrinho/item criado",
+      "fonte": "`apps/api/src/carrinho/carrinho.service.ts` (`ensurePersonalizacoes`); `apps/api/src/carrinho/carrinho.controller.ts`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-008",
+      "perfil": "CLIENTE",
+      "operacao": "PATCH /carrinho/itens/729ae46e-46fc-49e7-8c82-c51627fd758a",
+      "request": {
+        "quantidade": 0
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "quantidade must not be less than 1"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; item próprio existente com quantidade 2",
+      "entrada": "`quantidade=0`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Quantidade permanece 2",
+      "fonte": "`apps/api/src/carrinho/dto/alterar-quantidade.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem gravar quantidade inválida, campo extra, usuarioId ou carrinhoId`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; PATCH `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-009",
+      "perfil": "CLIENTE",
+      "operacao": "PATCH /carrinho/itens/729ae46e-46fc-49e7-8c82-c51627fd758a",
+      "request": {
+        "quantidade": -1
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "quantidade must not be less than 1"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; item próprio existente com quantidade 2",
+      "entrada": "`quantidade=-1`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Quantidade permanece 2",
+      "fonte": "`apps/api/src/carrinho/dto/alterar-quantidade.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem gravar quantidade inválida, campo extra, usuarioId ou carrinhoId`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; PATCH `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-010",
+      "perfil": "CLIENTE",
+      "operacao": "PATCH /carrinho/itens/729ae46e-46fc-49e7-8c82-c51627fd758a",
+      "request": {},
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "quantidade must not be greater than 2147483647",
+            "quantidade must not be less than 1",
+            "quantidade must be an integer number"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; item próprio existente com quantidade 2",
+      "entrada": "Corpo `{}` sem `quantidade`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Quantidade permanece 2",
+      "fonte": "`apps/api/src/carrinho/dto/alterar-quantidade.dto.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 400 sem gravar quantidade inválida, campo extra, usuarioId ou carrinhoId`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; PATCH `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-011",
+      "perfil": "CLIENTE",
+      "operacao": "PATCH /carrinho/itens/nao-uuid",
+      "request": {
+        "quantidade": 1
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado",
+      "entrada": "`itemId=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma alteração",
+      "fonte": "`CarrinhoController` (`ParseUUIDPipe`); `carrinho.e2e-spec.ts`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; PATCH `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-012",
+      "perfil": "CLIENTE",
+      "operacao": "PATCH /carrinho/itens/c1020000-0000-4000-8000-000000000012",
+      "request": {
+        "quantidade": 1
+      },
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Item não encontrado.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; não existe item `c1020000-0000-4000-8000-000000000012` no carrinho do cliente",
+      "entrada": "Enviar `itemId=c1020000-0000-4000-8000-000000000012` e `quantidade=1`",
+      "esperado": "HTTP 404; mensagem `Item não encontrado.`",
+      "efeitoEsperado": "Nenhum item criado/alterado",
+      "fonte": "`apps/api/src/carrinho/carrinho.service.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 404 para item ausente ou de outro usuário`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; PATCH `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-013",
+      "perfil": "CLIENTE",
+      "operacao": "DELETE /carrinho/itens/nao-uuid",
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado",
+      "entrada": "`itemId=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma alteração",
+      "fonte": "`CarrinhoController` (`ParseUUIDPipe`); `carrinho.e2e-spec.ts`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; DELETE `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-014",
+      "perfil": "CLIENTE",
+      "operacao": "DELETE /carrinho/itens/c1020000-0000-4000-8000-000000000014",
+      "request": null,
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Item não encontrado.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; não existe item `c1020000-0000-4000-8000-000000000014` no carrinho do cliente",
+      "entrada": "Enviar `itemId=c1020000-0000-4000-8000-000000000014`",
+      "esperado": "HTTP 404; mensagem `Item não encontrado.`",
+      "efeitoEsperado": "Carrinho permanece sem alteração",
+      "fonte": "`apps/api/src/carrinho/carrinho.service.ts`; `apps/api/test/carrinho.e2e-spec.ts`, teste `responde 404 ao remover item ausente ou de outro usuário`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; DELETE `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-015",
+      "perfil": "CLIENTE",
+      "operacao": "PATCH /carrinho/itens/729ae46e-46fc-49e7-8c82-c51627fd758a",
+      "request": {
+        "quantidade": 4
+      },
+      "expectedHttp": 409,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Quantidade superior à disponibilidade.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Item existente; estoque disponível conhecido",
+      "entrada": "Definir quantidade acima da disponibilidade (disponibilidade 3; enviar 4)",
+      "esperado": "HTTP 409; `Quantidade superior à disponibilidade.`",
+      "efeitoEsperado": "Quantidade permanece 3; sem escrita de estoque/reserva",
+      "fonte": "`carrinho.e2e-spec.ts`, teste de disponibilidade; service de carrinho",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; PATCH `/carrinho/itens/:itemId`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-CLI-016",
+      "perfil": "CLIENTE",
+      "operacao": "POST /carrinho/itens",
+      "request": {
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "quantidade": 1,
+        "personalizacaoIds": [
+          "b1020000-0000-4000-8000-000000000024",
+          "B1020000-0000-4000-8000-000000000024"
+        ]
+      },
+      "expectedHttp": 409,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Seleção de personalizações inválida.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "estadoDepois": {
+        "cart": 1,
+        "items": 1,
+        "stock": [
+          3,
+          0
+        ]
+      },
+      "result": "PASS",
+      "precondicao": "Cliente autenticado; produto existente e disponível",
+      "entrada": "Enviar duas vezes o mesmo UUID de personalização, uma minúscula e outra maiúscula",
+      "esperado": "HTTP 409; `Seleção de personalizações inválida.`",
+      "efeitoEsperado": "Nenhum item criado pela requisição rejeitada",
+      "fonte": "`apps/api/test/carrinho.e2e-spec.ts`, teste `responde 201 com o uuid canônico e 409 para o mesmo uuid em outra caixa`",
+      "fixture": {
+        "marcador": "D102",
+        "clienteId": "89856d38-4cf4-4e12-8f89-adb8c5cf58d1",
+        "produtoId": "a1020000-0000-4000-8000-000000000024",
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000024",
+        "itemId": "729ae46e-46fc-49e7-8c82-c51627fd758a"
+      },
+      "perfilMatriz": "CLIENTE",
+      "operacaoMatriz": "CLIENTE; POST `/carrinho/itens`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    }
+  ]
+}

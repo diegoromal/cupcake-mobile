@@ -1,0 +1,583 @@
+{
+  "cases": [
+    {
+      "id": "D102-ADM-001",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/categorias",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": {
+        "nome": "   "
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "nome should not be empty"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/categorias`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`nome=\"   \"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma categoria criada",
+      "fonte": "`categorias.e2e-spec.ts`, teste `rejeita corpo inválido`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-002",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/categorias",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": {
+        "nome": "D102 tentativa inválida",
+        "extra": true
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/categorias`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "Campo extra `extra=true`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma categoria criada",
+      "fonte": "`CategoriasController` ValidationPipe; `categorias.e2e-spec.ts`, teste de campo extra",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-003",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/categorias/c1020000-0000-4000-8000-000000000101",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": {},
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Informe ao menos um campo para atualizar.",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/categorias/:id`",
+      "precondicao": "Categoria existente",
+      "entrada": "Corpo `{}`",
+      "esperado": "HTTP 400; `Informe ao menos um campo para atualizar.`",
+      "efeitoEsperado": "Categoria inalterada",
+      "fonte": "`CategoriasController`; `categorias.e2e-spec.ts`, corpo inválido",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-004",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/categorias/c1020000-0000-4000-8000-000000000101",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": {
+        "extra": true
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/categorias/:id`",
+      "precondicao": "Categoria existente",
+      "entrada": "Campo extra `extra=true`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Categoria inalterada",
+      "fonte": "`categorias.e2e-spec.ts`, teste de campo extra",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-005",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/categorias/nao-uuid",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": {
+        "nome": "Novo"
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/categorias/:id`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`id=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma alteração",
+      "fonte": "`CategoriasController` (`ParseUUIDPipe`); `categorias.e2e-spec.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-006",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/categorias/c1020000-0000-4000-8000-000000000006",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": null,
+      "expectedHttp": 404,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Categoria não encontrada.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/categorias/:id`",
+      "precondicao": "ADMIN autenticado; categoria `c1020000-0000-4000-8000-000000000006` não existe",
+      "entrada": "Consultar esse ID",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Nenhuma mutação",
+      "fonte": "`apps/api/test/categorias.e2e-spec.ts`, teste `consulta por id e retorna 404 se inexistente`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-007",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/categorias/c1020000-0000-4000-8000-000000000102",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": null,
+      "expectedHttp": 409,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Categoria possui produtos vinculados.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/categorias/:id`",
+      "precondicao": "Categoria com produto vinculado",
+      "entrada": "Excluir categoria vinculada",
+      "esperado": "HTTP 409",
+      "efeitoEsperado": "Categoria e vínculo permanecem",
+      "fonte": "`categorias.e2e-spec.ts`; D23 smoke documentado em `docs/D23-admin-categorias-personalizacoes.md`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-024",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/categorias/nao-uuid",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/categorias/:id`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`id=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma mutação",
+      "fonte": "`CategoriasController` (`ParseUUIDPipe`); `apps/api/test/categorias.e2e-spec.ts`, teste `rejeita UUID inválido em get/patch/delete`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-025",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/categorias/nao-uuid",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": null,
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/categorias/:id`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`id=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma mutação",
+      "fonte": "`apps/api/src/categorias/categorias.controller.ts` (`ParseUUIDPipe`); `apps/api/test/categorias.e2e-spec.ts`, teste `rejeita UUID inválido em get/patch/delete`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-038",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/categorias/c1020000-0000-4000-8000-000000000101",
+      "fixture": {
+        "admin": "a1020000-0000-4000-8000-000000000101",
+        "categories": [
+          "c1020000-0000-4000-8000-000000000101",
+          "c1020000-0000-4000-8000-000000000102"
+        ],
+        "linkedProduct": "a1020000-0000-4000-8000-000000000111"
+      },
+      "request": {
+        "nome": ""
+      },
+      "expectedHttp": 400,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "nome should not be empty"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "estadoDepois": [
+        {
+          "id": "c1020000-0000-4000-8000-000000000101",
+          "nome": "D102 Categoria Editável",
+          "products": 0
+        },
+        {
+          "id": "c1020000-0000-4000-8000-000000000102",
+          "nome": "D102 Categoria Vinculada",
+          "products": 1
+        }
+      ],
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/categorias/:id`",
+      "precondicao": "ADMIN autenticado; categoria existente",
+      "entrada": "Enviar `nome=\"\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Categoria permanece inalterada",
+      "fonte": "`apps/api/src/categorias/dto/update-categoria.dto.ts`; `apps/api/test/categorias.e2e-spec.ts`, teste `rejeita corpo inválido`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    }
+  ]
+}

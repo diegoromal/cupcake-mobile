@@ -1,0 +1,1271 @@
+{
+  "cases": [
+    {
+      "id": "D102-ADM-008",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/personalizacoes",
+      "request": {
+        "nome": ""
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "nome should not be empty"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/personalizacoes`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`nome` vazio",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma personalização criada",
+      "fonte": "`personalizacoes.e2e-spec.ts` e DTO de criação",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-009",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/personalizacoes",
+      "request": {
+        "nome": "Cobertura",
+        "extra": "x"
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/personalizacoes`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "Enviar `{nome:\"Cobertura\", extra:\"x\"}`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma personalização criada",
+      "fonte": "`PersonalizacoesController` ValidationPipe; `apps/api/test/personalizacoes.e2e-spec.ts`, teste `rejeita extras e produtoId em post`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-010",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/personalizacoes/b1020000-0000-4000-8000-000000000210",
+      "request": {},
+      "expectedHttp": 400,
+      "expectedMessage": "Informe ao menos um campo para atualizar.",
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Informe ao menos um campo para atualizar.",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/personalizacoes/:id`",
+      "precondicao": "Personalização existente",
+      "entrada": "Corpo `{}`",
+      "esperado": "HTTP 400; `Informe ao menos um campo para atualizar.`",
+      "efeitoEsperado": "Registro inalterado",
+      "fonte": "`PersonalizacoesController`; `personalizacoes.e2e-spec.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-011",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/personalizacoes/b1020000-0000-4000-8000-000000000210",
+      "request": {
+        "nome": "Cobertura",
+        "extra": "x"
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/personalizacoes/:id`",
+      "precondicao": "Personalização existente",
+      "entrada": "Enviar `{nome:\"Cobertura\", extra:\"x\"}`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Registro inalterado",
+      "fonte": "`PersonalizacoesController` ValidationPipe; `apps/api/test/personalizacoes.e2e-spec.ts`, teste `rejeita extras e produtoId em patch`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-012",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/personalizacoes",
+      "request": {
+        "nome": "D102 decimal inválido",
+        "ajusteValor": "1.234"
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "ajusteValor must match /^[-+]?0*\\d{1,10}(?:\\.\\d{1,2})?$/ regular expression"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/personalizacoes`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`ajusteValor=\"1.234\"`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma personalização criada",
+      "fonte": "DTO e `personalizacoes.e2e-spec.ts`, validação decimal",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-013",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/personalizacoes/nao-uuid",
+      "request": {
+        "nome": "Novo"
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/personalizacoes/:id`",
+      "precondicao": "ADMIN autenticado",
+      "entrada": "`id=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhuma alteração",
+      "fonte": "`PersonalizacoesController` (`ParseUUIDPipe`); `personalizacoes.e2e-spec.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-014",
+      "perfil": "ADMIN",
+      "operacao": "GET /admin/personalizacoes/e1020000-0000-4000-8000-000000000014",
+      "request": null,
+      "expectedHttp": 404,
+      "expectedMessage": null,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Personalização não encontrada.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; GET `/admin/personalizacoes/:id`",
+      "precondicao": "ADMIN autenticado; personalização `e1020000-0000-4000-8000-000000000014` não existe",
+      "entrada": "Consultar esse ID",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Nenhuma mutação",
+      "fonte": "`apps/api/test/personalizacoes.e2e-spec.ts`, teste `consulta por UUID e retorna 404`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-015",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/personalizacoes/b1020000-0000-4000-8000-000000000210",
+      "request": null,
+      "expectedHttp": 409,
+      "expectedMessage": null,
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Personalização possui vínculos protegidos.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/personalizacoes/:id`",
+      "precondicao": "Personalização vinculada a produto",
+      "entrada": "Excluir personalização em uso",
+      "esperado": "HTTP 409",
+      "efeitoEsperado": "Personalização e vínculo permanecem",
+      "fonte": "`personalizacoes.e2e-spec.ts`; D23 smoke em `docs/D23-admin-categorias-personalizacoes.md`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-016",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos/a1020000-0000-4000-8000-000000000016/personalizacoes",
+      "request": {
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000016"
+      },
+      "expectedHttp": 404,
+      "expectedMessage": null,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Personalização não encontrada.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos/a1020000-0000-4000-8000-000000000016/personalizacoes`",
+      "precondicao": "Produto `a1020000-0000-4000-8000-000000000016` existe; personalização `b1020000-0000-4000-8000-000000000016` não existe",
+      "entrada": "Enviar `{personalizacaoId:\"b1020000-0000-4000-8000-000000000016\"}`",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Vínculo não criado",
+      "fonte": "`apps/api/src/produtos/produto-personalizacoes.service.ts`; `apps/api/test/produto-personalizacoes.e2e-spec.ts`, teste `retorna 404 para Personalização inexistente e vínculo inexistente`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-017",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos/a1020000-0000-4000-8000-000000000217/personalizacoes",
+      "request": {
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000217"
+      },
+      "expectedHttp": 409,
+      "expectedMessage": "Personalização já vinculada ao produto.",
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Personalização já vinculada ao produto.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos/:produtoId/personalizacoes`",
+      "precondicao": "Produto e personalização existentes; associação já vinculada",
+      "entrada": "Repetir o vínculo existente",
+      "esperado": "HTTP 409; `Personalização já vinculada ao produto.`",
+      "efeitoEsperado": "Não duplica vínculo",
+      "fonte": "`produto-personalizacoes.service.ts`; `produto-personalizacoes.e2e-spec.ts`, teste de duplicidade",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-018",
+      "perfil": "ADMIN",
+      "operacao": "DELETE /admin/produtos/a1020000-0000-4000-8000-000000000218/personalizacoes/b1020000-0000-4000-8000-000000000218",
+      "request": null,
+      "expectedHttp": 404,
+      "expectedMessage": null,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Vínculo não encontrado.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; DELETE `/admin/produtos/:produtoId/personalizacoes/:personalizacaoId`",
+      "precondicao": "Produto e personalização existentes; vínculo ausente",
+      "entrada": "Remover vínculo inexistente",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Dados de produto/personalização permanecem; nenhum vínculo removido",
+      "fonte": "`produto-personalizacoes.service.spec.ts`; `produto-personalizacoes.e2e-spec.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-026",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos/a1020000-0000-4000-8000-000000000218/personalizacoes",
+      "request": {
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000218",
+        "extra": true
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": [
+            "property extra should not exist"
+          ],
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos/:produtoId/personalizacoes`",
+      "precondicao": "Produto e personalização existentes; ADMIN autenticado",
+      "entrada": "Enviar `{personalizacaoId:<UUID>, extra:true}`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Nenhum vínculo criado",
+      "fonte": "`produto-personalizacoes.controller.ts` ValidationPipe; `apps/api/test/produto-personalizacoes.e2e-spec.ts`, teste `rejeita body ausente, inválido ou com campo extra`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ADM-027",
+      "perfil": "ADMIN",
+      "operacao": "POST /admin/produtos/a1020000-0000-4000-8000-000000000027/personalizacoes",
+      "request": {
+        "personalizacaoId": "b1020000-0000-4000-8000-000000000027"
+      },
+      "expectedHttp": 404,
+      "expectedMessage": null,
+      "response": {
+        "status": 404,
+        "body": {
+          "message": "Produto não encontrado.",
+          "error": "Not Found",
+          "statusCode": 404
+        }
+      },
+      "estadoAntes": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "estadoDepois": {
+        "personalizacoes": [
+          {
+            "id": "b1020000-0000-4000-8000-000000000027",
+            "nome": "D102 Personalização 027",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000210",
+            "nome": "D102 Personalização Patch",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000217",
+            "nome": "D102 Personalização 017",
+            "ajusteValor": 0
+          },
+          {
+            "id": "b1020000-0000-4000-8000-000000000218",
+            "nome": "D102 Personalização 018",
+            "ajusteValor": 0
+          }
+        ],
+        "vinculos": [
+          [
+            "a1020000-0000-4000-8000-000000000016",
+            "b1020000-0000-4000-8000-000000000210"
+          ],
+          [
+            "a1020000-0000-4000-8000-000000000217",
+            "b1020000-0000-4000-8000-000000000217"
+          ]
+        ],
+        "produtos": 3
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; POST `/admin/produtos/a1020000-0000-4000-8000-000000000027/personalizacoes`",
+      "precondicao": "ADMIN autenticado; produto `a1020000-0000-4000-8000-000000000027` não existe; personalização `b1020000-0000-4000-8000-000000000027` existe",
+      "entrada": "Enviar `{personalizacaoId:\"b1020000-0000-4000-8000-000000000027\"}`",
+      "esperado": "HTTP 404",
+      "efeitoEsperado": "Nenhum vínculo criado",
+      "fonte": "`apps/api/test/produto-personalizacoes.e2e-spec.ts`, teste `retorna 404 para Produto em GET, POST e DELETE`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    }
+  ]
+}

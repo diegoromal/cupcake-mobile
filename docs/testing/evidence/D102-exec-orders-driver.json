@@ -1,0 +1,268 @@
+{
+  "cases": [
+    {
+      "id": "D102-ADM-041",
+      "perfil": "ADMIN",
+      "operacao": "PATCH /admin/pedidos/a1020000-0000-4000-8000-000000000041/iniciar-producao",
+      "fixture": {
+        "orderIds": [
+          "a1020000-0000-4000-8000-000000000041",
+          "a1020000-0000-4000-8000-000000000002"
+        ],
+        "adminId": "a1020000-0000-4000-8000-000000000101",
+        "driverId": "a1020000-0000-4000-8000-000000000102"
+      },
+      "expectedHttp": 409,
+      "expectedMessage": "Pedido não pode iniciar a produção neste status.",
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Pedido não pode iniciar a produção neste status.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "orders": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO",
+            "mode": "ENTREGA",
+            "driver": "a1020000-0000-4000-8000-000000000102"
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO",
+            "mode": "RETIRADA",
+            "driver": null
+          }
+        ],
+        "history": [
+          {
+            "id": "f1020000-0000-4000-8000-000000000002",
+            "orderId": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO"
+          },
+          {
+            "id": "f1020000-0000-4000-8000-000000000041",
+            "orderId": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO"
+          }
+        ]
+      },
+      "estadoDepois": {
+        "orders": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO",
+            "mode": "ENTREGA",
+            "driver": "a1020000-0000-4000-8000-000000000102"
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO",
+            "mode": "RETIRADA",
+            "driver": null
+          }
+        ],
+        "history": [
+          {
+            "id": "f1020000-0000-4000-8000-000000000002",
+            "orderId": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO"
+          },
+          {
+            "id": "f1020000-0000-4000-8000-000000000041",
+            "orderId": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO"
+          }
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ADMIN",
+      "operacaoMatriz": "ADMIN; PATCH `/admin/pedidos/a1020000-0000-4000-8000-000000000041/iniciar-producao`",
+      "precondicao": "Pedido `a1020000-0000-4000-8000-000000000041` existe em `EM_PREPARO`, modalidade `RETIRADA`; ADMIN autenticado",
+      "entrada": "Tentar iniciar produção novamente",
+      "esperado": "HTTP 409; `Pedido não pode iniciar a produção neste status.`",
+      "efeitoEsperado": "Pedido permanece em `EM_PREPARO`; nenhum histórico novo",
+      "fonte": "`apps/api/src/pedidos/pedidos.service.ts`; `apps/api/src/pedidos/pedidos.service.spec.ts`, teste `rejeita status diferente de PAGO sem alterar nem registrar histórico`; `apps/api/src/pedidos/admin-pedidos.controller.ts`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ENT-001",
+      "perfil": "ENTREGADOR",
+      "operacao": "GET /entregador/pedidos/nao-uuid",
+      "fixture": {
+        "orderIds": [
+          "a1020000-0000-4000-8000-000000000041",
+          "a1020000-0000-4000-8000-000000000002"
+        ],
+        "adminId": "a1020000-0000-4000-8000-000000000101",
+        "driverId": "a1020000-0000-4000-8000-000000000102"
+      },
+      "expectedHttp": 400,
+      "expectedMessage": null,
+      "response": {
+        "status": 400,
+        "body": {
+          "message": "Validation failed (uuid is expected)",
+          "error": "Bad Request",
+          "statusCode": 400
+        }
+      },
+      "estadoAntes": {
+        "orders": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO",
+            "mode": "ENTREGA",
+            "driver": "a1020000-0000-4000-8000-000000000102"
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO",
+            "mode": "RETIRADA",
+            "driver": null
+          }
+        ],
+        "history": [
+          {
+            "id": "f1020000-0000-4000-8000-000000000002",
+            "orderId": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO"
+          },
+          {
+            "id": "f1020000-0000-4000-8000-000000000041",
+            "orderId": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO"
+          }
+        ]
+      },
+      "estadoDepois": {
+        "orders": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO",
+            "mode": "ENTREGA",
+            "driver": "a1020000-0000-4000-8000-000000000102"
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO",
+            "mode": "RETIRADA",
+            "driver": null
+          }
+        ],
+        "history": [
+          {
+            "id": "f1020000-0000-4000-8000-000000000002",
+            "orderId": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO"
+          },
+          {
+            "id": "f1020000-0000-4000-8000-000000000041",
+            "orderId": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO"
+          }
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ENTREGADOR",
+      "operacaoMatriz": "ENTREGADOR; GET `/entregador/pedidos/:id`",
+      "precondicao": "ENTREGADOR autenticado",
+      "entrada": "Enviar `id=nao-uuid`",
+      "esperado": "HTTP 400",
+      "efeitoEsperado": "Service não chamado; nenhuma mutação",
+      "fonte": "`EntregadorPedidosController` (`ParseUUIDPipe`); `apps/api/test/entregador-pedidos.e2e-spec.ts`, teste `detalhe exige autenticação, perfil e UUID`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    },
+    {
+      "id": "D102-ENT-002",
+      "perfil": "ENTREGADOR",
+      "operacao": "PATCH /entregador/pedidos/a1020000-0000-4000-8000-000000000002/confirmar-entrega",
+      "fixture": {
+        "orderIds": [
+          "a1020000-0000-4000-8000-000000000041",
+          "a1020000-0000-4000-8000-000000000002"
+        ],
+        "adminId": "a1020000-0000-4000-8000-000000000101",
+        "driverId": "a1020000-0000-4000-8000-000000000102"
+      },
+      "expectedHttp": 409,
+      "expectedMessage": "Pedido não pode ser confirmado como entregue neste status.",
+      "response": {
+        "status": 409,
+        "body": {
+          "message": "Pedido não pode ser confirmado como entregue neste status.",
+          "error": "Conflict",
+          "statusCode": 409
+        }
+      },
+      "estadoAntes": {
+        "orders": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO",
+            "mode": "ENTREGA",
+            "driver": "a1020000-0000-4000-8000-000000000102"
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO",
+            "mode": "RETIRADA",
+            "driver": null
+          }
+        ],
+        "history": [
+          {
+            "id": "f1020000-0000-4000-8000-000000000002",
+            "orderId": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO"
+          },
+          {
+            "id": "f1020000-0000-4000-8000-000000000041",
+            "orderId": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO"
+          }
+        ]
+      },
+      "estadoDepois": {
+        "orders": [
+          {
+            "id": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO",
+            "mode": "ENTREGA",
+            "driver": "a1020000-0000-4000-8000-000000000102"
+          },
+          {
+            "id": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO",
+            "mode": "RETIRADA",
+            "driver": null
+          }
+        ],
+        "history": [
+          {
+            "id": "f1020000-0000-4000-8000-000000000002",
+            "orderId": "a1020000-0000-4000-8000-000000000002",
+            "status": "PAGO"
+          },
+          {
+            "id": "f1020000-0000-4000-8000-000000000041",
+            "orderId": "a1020000-0000-4000-8000-000000000041",
+            "status": "EM_PREPARO"
+          }
+        ]
+      },
+      "result": "PASS",
+      "perfilMatriz": "ENTREGADOR",
+      "operacaoMatriz": "ENTREGADOR; PATCH `/entregador/pedidos/a1020000-0000-4000-8000-000000000002/confirmar-entrega`",
+      "precondicao": "Pedido `a1020000-0000-4000-8000-000000000002` existe em `PAGO`, modalidade ENTREGA, atribuído ao entregador autenticado",
+      "entrada": "Confirmar entrega antes de `SAIU_PARA_ENTREGA`",
+      "esperado": "HTTP 409; `Pedido não pode ser confirmado como entregue neste status.`",
+      "efeitoEsperado": "Pedido permanece `PAGO`; histórico não recebe `ENTREGUE`",
+      "fonte": "`apps/api/src/pedidos/pedidos.service.ts`; `apps/api/src/pedidos/pedidos.service.spec.ts`; `apps/api/test/entregador-pedidos.e2e-spec.ts`, teste `confirmação propaga 404 sem revelar existência e 409 para inelegível`",
+      "evidenciaPostgres": "estado antes/depois registrado na mesma linha"
+    }
+  ]
+}
