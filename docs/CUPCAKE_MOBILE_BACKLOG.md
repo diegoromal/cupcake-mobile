@@ -240,7 +240,7 @@ produtos.
 - [x] **D99 --- Teste ponta a ponta --- cliente**
 - [x] **D100 --- Teste ponta a ponta --- administrador**
 - [x] **D101 --- Teste ponta a ponta --- entregador**
-- [ ] **D102 --- Testes negativos e validações**
+- [x] **D102 --- Testes negativos e validações**
 - [ ] **D103 --- Testes de segurança/autorização**
 - [ ] **D104 --- Testes de concorrência/estoque**
 - [ ] **D105 --- Testes com usuários/colegas**

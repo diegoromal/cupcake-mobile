@@ -1,0 +1,72 @@
+[
+  {
+    "id": "D102-CLI-020",
+    "command": "flutter test apps/mobile/test/customer_storefront_test.dart --plain-name 'category failure has specific retry while products remain usable'",
+    "result": "PASS",
+    "observed": "1 test passed",
+    "note": "UI fake/test evidence; no persistence is claimed",
+    "perfilMatriz": "CLIENTE",
+    "operacaoMatriz": "CLIENTE; tela de catálogo",
+    "precondicao": "Produtos carregam; categorias retornam indisponível na primeira chamada e sucesso na segunda",
+    "entrada": "Carregamento de categorias falha; tocar `Tentar categorias novamente`",
+    "esperado": "Exibir `Não foi possível carregar as categorias.`; após retry, mostrar chip `Doces especiais e presentes`; manter produto carregado visível",
+    "efeitoEsperado": "Nenhuma mutação; somente GETs",
+    "fonte": "`apps/mobile/test/customer_storefront_test.dart`, teste `category failure has specific retry while products remain usable`"
+  },
+  {
+    "id": "D102-CLI-021",
+    "command": "flutter test apps/mobile/test/customer_storefront_test.dart --plain-name 'filtered error retries the same category and page'",
+    "result": "PASS",
+    "observed": "1 test passed",
+    "note": "UI fake/test evidence; no persistence is claimed",
+    "perfilMatriz": "CLIENTE",
+    "operacaoMatriz": "CLIENTE; catálogo filtrado",
+    "precondicao": "Categoria `Doces especiais e presentes` selecionada, página 1",
+    "entrada": "GET filtrado retorna indisponível; tocar `Tentar carregar novamente`; GET seguinte tem produto",
+    "esperado": "Exibir `Não foi possível carregar os produtos de Doces especiais e presentes. Tente novamente.`; retry mantém filtro e página 1 e mostra `Cupcake número 1`",
+    "efeitoEsperado": "Nenhuma mutação; somente GETs",
+    "fonte": "`apps/mobile/test/customer_storefront_test.dart`, teste `filtered error retries the same category and page`"
+  },
+  {
+    "id": "D102-CLI-025",
+    "command": "flutter test apps/mobile/test/customer_cart_page_test.dart --plain-name 'erro faz um novo GET e 403 não tenta de novo'",
+    "result": "PASS",
+    "observed": "1 test passed",
+    "note": "UI fake/test evidence; no persistence is claimed",
+    "perfilMatriz": "CLIENTE",
+    "operacaoMatriz": "CLIENTE; tela Carrinho",
+    "precondicao": "Sessão autenticada; GET inicial indisponível; retry retorna linha `Cupcake de festa`",
+    "entrada": "Abrir carrinho com falha; tocar `Tentar novamente`",
+    "esperado": "Mostrar `Não foi possível carregar o carrinho. Tente novamente.`; não mostrar estado vazio; no retry mostrar `Cupcake de festa`",
+    "efeitoEsperado": "Sem mutação; GETs somente leitura",
+    "fonte": "`apps/mobile/test/customer_cart_page_test.dart`, teste `erro faz um novo GET e 403 não tenta de novo`"
+  },
+  {
+    "id": "D102-CLI-026",
+    "command": "flutter test apps/mobile/test/order_review_page_test.dart --plain-name '409 preserva contexto e atualiza revisão'",
+    "result": "PASS",
+    "observed": "1 test passed",
+    "note": "UI fake/test evidence; no persistence is claimed",
+    "perfilMatriz": "CLIENTE",
+    "operacaoMatriz": "CLIENTE; revisão do pedido",
+    "precondicao": "Revisão carregada; primeira confirmação retorna HTTP 409; revisão atualizada disponível",
+    "entrada": "Tocar Confirmar pedido; depois tocar `Atualizar revisão`",
+    "esperado": "Manter contexto do cupcake; mostrar ação de atualizar revisão; após atualizar, permitir nova confirmação e usar novo `revisaoId`",
+    "efeitoEsperado": "Primeira tentativa não cria pedido; segunda tentativa usa nova revisão",
+    "fonte": "`apps/mobile/test/order_review_page_test.dart`, teste `409 preserva contexto e atualiza revisão`"
+  },
+  {
+    "id": "D102-CLI-027",
+    "command": "flutter test apps/mobile/test/order_review_page_test.dart --plain-name '401 renova uma vez; 403, 404, 503, timeout, JSON inválido e conexão mostram erro'",
+    "result": "PASS",
+    "observed": "1 test passed",
+    "note": "UI fake/test evidence; no persistence is claimed",
+    "perfilMatriz": "CLIENTE",
+    "operacaoMatriz": "CLIENTE; revisão do pedido",
+    "precondicao": "Sessão autenticada; API de revisão retorna 403",
+    "entrada": "Abrir revisão com resultado forbidden",
+    "esperado": "Mostrar erro; não exibir ação `Tentar novamente`",
+    "efeitoEsperado": "Nenhum pedido criado",
+    "fonte": "`apps/mobile/test/order_review_page_test.dart`, teste `401 renova uma vez; 403, 404, 503, timeout, JSON inválido e conexão mostram erro`"
+  }
+]
