@@ -83,7 +83,12 @@ void main() {
 
     await tester.tap(find.text('Sair'));
     await tester.pumpAndSettle();
-    expect(find.text('Acesse sua conta para continuar.'), findsOneWidget);
+    expect(
+      find.text(
+        'Acesse sua conta para continuar e fazer pedidos no Cupcake Mobile.',
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('Sua sessão foi encerrada.'), findsNothing);
     expect(session.sessionExpired, isFalse);
     expect(storage.value, isNull);
@@ -124,7 +129,12 @@ void main() {
     expect(session.state, CustomerSessionState.public);
     expect(session.sessionExpired, isTrue);
     expect(storage.value, isNull);
-    expect(find.text('Acesse sua conta para continuar.'), findsOneWidget);
+    expect(
+      find.text(
+        'Acesse sua conta para continuar e fazer pedidos no Cupcake Mobile.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text(message), findsOneWidget);
     expect(
       tester.getSemantics(find.text(message)).flagsCollection.isLiveRegion,

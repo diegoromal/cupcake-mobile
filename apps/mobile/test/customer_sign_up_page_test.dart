@@ -52,6 +52,7 @@ void main() {
 
     final button = find.widgetWithText(FilledButton, 'Criar conta');
     expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+    await tester.ensureVisible(button);
     await tester.tap(button);
     await tester.pumpAndSettle();
 
@@ -108,14 +109,14 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CustomerSignUpPage()));
     expect(find.text('Criar conta'), findsNWidgets(2));
-    expect(find.text('Cupcake Mobile'), findsOneWidget);
+    expect(find.text('Criar Conta'), findsOneWidget);
     final heading = tester.widget<Text>(find.text('Criar conta').first);
     expect(heading.textAlign, TextAlign.start);
     expect(heading.style?.fontSize, 24);
     expect(find.byType(Card), findsOneWidget);
     expect(find.text('Dados de Acesso'), findsOneWidget);
     expect(find.text('* Campos obrigatórios'), findsOneWidget);
-    expect(find.text('Nome *'), findsOneWidget);
+    expect(find.text('Nome completo *'), findsOneWidget);
     expect(find.text('E-mail *'), findsOneWidget);
     expect(find.text('Telefone *'), findsOneWidget);
     expect(find.text('Senha *'), findsOneWidget);
@@ -174,7 +175,12 @@ void main() {
         const RegistrationResult(RegistrationStatus.created),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Acesse sua conta para continuar.'), findsOneWidget);
+      expect(
+        find.text(
+          'Acesse sua conta para continuar e fazer pedidos no Cupcake Mobile.',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.text('Cadastro confirmado. Entre para continuar.'),
         findsOneWidget,
@@ -217,7 +223,12 @@ void main() {
     await tester.ensureVisible(find.text('Entrar').last);
     await tester.tap(find.text('Entrar').last);
     await tester.pumpAndSettle();
-    expect(find.text('Acesse sua conta para continuar.'), findsOneWidget);
+    expect(
+      find.text(
+        'Acesse sua conta para continuar e fazer pedidos no Cupcake Mobile.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('400 associa erro reconhecido sem limpar o formulário', (

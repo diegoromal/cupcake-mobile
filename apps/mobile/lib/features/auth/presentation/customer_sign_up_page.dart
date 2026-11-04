@@ -4,6 +4,7 @@ import '../../../app/navigation/app_navigation.dart';
 import '../../../core/design/app_tokens.dart';
 import '../data/customer_registration_api.dart';
 import 'customer_sign_up_validation.dart';
+import 'auth_brand_mark.dart';
 
 class CustomerSignUpPage extends StatefulWidget {
   const CustomerSignUpPage({super.key, this.registrationApi});
@@ -127,8 +128,10 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       backgroundColor: AppTokens.background,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
       centerTitle: false,
-      titleSpacing: AppTokens.spacing12,
+      titleSpacing: 0,
       leading: IconButton(
         tooltip: 'Voltar para Entrar',
         onPressed: _submitting
@@ -138,13 +141,23 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
       ),
       title: Semantics(
         header: true,
-        child: Text(
-          'Cupcake Mobile',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTokens.primaryStrong,
-            fontFamily: 'Georgia',
-            fontWeight: FontWeight.bold,
-          ),
+        child: Row(
+          children: [
+            const AuthBrandMark(),
+            const SizedBox(width: AppTokens.spacing8),
+            Flexible(
+              child: Text(
+                'Criar Conta',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppTokens.primaryStrong,
+                  fontFamily: 'Georgia',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     ),
@@ -186,12 +199,12 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
                           ).textTheme.headlineMedium?.copyWith(fontSize: 24),
                         ),
                       ),
-                      const SizedBox(height: AppTokens.spacing8),
+                      const SizedBox(height: AppTokens.spacing4),
                       const Text(
-                        'Crie sua conta para começar.',
+                        'Preencha seus dados para criar sua conta e fazer pedidos no Cupcake Mobile.',
                         textAlign: TextAlign.start,
                       ),
-                      const SizedBox(height: AppTokens.spacing24),
+                      const SizedBox(height: AppTokens.spacing16),
                       Card(
                         margin: EdgeInsets.zero,
                         color: AppTokens.surface,
@@ -235,7 +248,10 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
                               _field(
                                 field: 'nome',
                                 controller: _name,
-                                label: 'Nome *',
+                                label: 'Nome completo *',
+                                hint: 'Ex: Ana Carolina Silva',
+                                compactHint: 'Seu nome',
+                                prefixIcon: Icons.badge_outlined,
                                 textInputAction: TextInputAction.next,
                                 validator: (value) => _error(
                                   'nome',
@@ -248,6 +264,9 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
                                 field: 'email',
                                 controller: _email,
                                 label: 'E-mail *',
+                                hint: 'exemplo@email.com',
+                                compactHint: 'E-mail',
+                                prefixIcon: Icons.mail_outline,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
                                 autocorrect: false,
@@ -262,6 +281,9 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
                                 field: 'telefone',
                                 controller: _phone,
                                 label: 'Telefone *',
+                                hint: '(11) 98765-4321',
+                                compactHint: 'Telefone',
+                                prefixIcon: Icons.phone_outlined,
                                 keyboardType: TextInputType.phone,
                                 textInputAction: TextInputAction.next,
                                 validator: (value) => _error(
@@ -275,6 +297,9 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
                                 field: 'senha',
                                 controller: _password,
                                 label: 'Senha *',
+                                hint: 'Digite sua senha',
+                                compactHint: 'Senha',
+                                prefixIcon: Icons.key_outlined,
                                 obscureText: _obscurePassword,
                                 autocorrect: false,
                                 enableSuggestions: false,
@@ -360,14 +385,49 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
                             ),
                       FilledButton(
                         onPressed: _submitting ? null : _submit,
-                        child: const Text('Criar conta'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Criar conta',
+                                textAlign: TextAlign.center,
+                                softWrap: true,
+                              ),
+                            ),
+                            const SizedBox(width: AppTokens.spacing4),
+                            const ExcludeSemantics(
+                              child: Icon(Icons.arrow_forward, size: 18),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: AppTokens.spacing12),
-                      TextButton(
-                        onPressed: _submitting
-                            ? null
-                            : () => AppNavigation.returnToLogin(context),
-                        child: const Text('Entrar'),
+                      const SizedBox(height: AppTokens.spacing8),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            'Já tem uma conta?',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(44, 40),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppTokens.spacing8,
+                                vertical: AppTokens.spacing8,
+                              ),
+                              foregroundColor: AppTokens.primaryStrong,
+                              textStyle: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            onPressed: _submitting
+                                ? null
+                                : () => AppNavigation.returnToLogin(context),
+                            child: const Text('Entrar'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -384,6 +444,9 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
     required String field,
     required TextEditingController controller,
     required String label,
+    required String hint,
+    required String compactHint,
+    required IconData prefixIcon,
     required String? Function(String?) validator,
     TextInputType? keyboardType,
     TextInputAction? textInputAction,
@@ -393,26 +456,51 @@ class _CustomerSignUpPageState extends State<CustomerSignUpPage> {
     Widget? suffixIcon,
     void Function(String)? onFieldSubmitted,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: AppTokens.spacing16),
-    child: Semantics(
-      isRequired: true,
-      child: TextFormField(
-        controller: controller,
-        enabled: !_submitting,
-        decoration: InputDecoration(
-          labelText: label,
-          errorMaxLines: 3,
-          suffixIcon: suffixIcon,
+    padding: const EdgeInsets.only(bottom: AppTokens.spacing12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppTokens.spacing4),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppTokens.text,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        obscureText: obscureText,
-        autocorrect: autocorrect,
-        enableSuggestions: enableSuggestions,
-        validator: validator,
-        onChanged: (_) => _changed(field),
-        onFieldSubmitted: onFieldSubmitted,
-      ),
+        Semantics(
+          label: label,
+          isRequired: true,
+          child: TextFormField(
+            controller: controller,
+            enabled: !_submitting,
+            decoration: InputDecoration(
+              hintText:
+                  MediaQuery.sizeOf(context).width < 360 &&
+                      MediaQuery.textScalerOf(context).scale(1) > 1.3
+                  ? compactHint
+                  : hint,
+              prefixIcon: Icon(prefixIcon, size: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spacing12,
+                vertical: AppTokens.spacing8,
+              ),
+              errorMaxLines: 3,
+              suffixIcon: suffixIcon,
+            ),
+            keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            obscureText: obscureText,
+            autocorrect: autocorrect,
+            enableSuggestions: enableSuggestions,
+            validator: validator,
+            onChanged: (_) => _changed(field),
+            onFieldSubmitted: onFieldSubmitted,
+          ),
+        ),
+      ],
     ),
   );
 }

@@ -10,7 +10,9 @@ abstract final class AppTokens {
   static const textMuted = Color(0xFF75635D);
   static const border = Color(0xFFF0DDD5);
   static const danger = Color(0xFFA3262F);
+  static const disabled = Color(0xFFCDB09C);
 
+  static const spacing4 = 4.0;
   static const spacing8 = 8.0;
   static const spacing12 = 12.0;
   static const spacing16 = 16.0;
