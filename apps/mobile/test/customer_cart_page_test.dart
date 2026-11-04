@@ -359,6 +359,7 @@ void main() {
       expect(find.text('7'), findsNothing);
       expect(find.text(_longName), findsOneWidget);
       expect(find.text(_longOption), findsOneWidget);
+      await reveal(tester, find.text('Cupcake de festa'));
       expect(find.text('Cupcake de festa'), findsOneWidget);
       expect(
         find.text('Quantidade superior à disponibilidade.'),
@@ -753,8 +754,12 @@ void main() {
     expect(find.text('Linha A'), findsOneWidget);
     expect(find.text('Aroma'), findsOneWidget);
     expect(find.text('Linha B'), findsNothing);
-    expect(find.text('Total: R\$ 7,50'), findsOneWidget);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 500));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('ITENS SELECIONADOS (1)'));
     expect(find.text('ITENS SELECIONADOS (1)'), findsOneWidget);
+    await reveal(tester, find.text('Total: R\$ 7,50'));
+    expect(find.text('Total: R\$ 7,50'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
     expect(find.byType(AlertDialog), findsNothing);
     await tapVisible(tester, find.byIcon(Icons.delete_outline));
@@ -846,7 +851,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.remove).first);
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -180));
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.delete_outline).at(1));
+    await tapVisible(tester, find.byIcon(Icons.delete_outline).at(1));
     await tester.pump();
     expect(cartApi.mutations, hasLength(1));
     gate.complete(
@@ -1046,7 +1051,11 @@ void main() {
     expect(find.text('Subtotal do item: R\$ 30,00'), findsNothing);
     expect(find.text('Total: R\$ 30,00'), findsNothing);
     expect(find.text('Total: R\$ 7,11'), findsNothing);
+    await reveal(tester, find.text('Produto indisponível.'));
     expect(find.text('Produto indisponível.'), findsOneWidget);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 500));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.textContaining('Preço unitário'));
     expect(find.textContaining('Preço unitário'), findsOneWidget);
   });
 
@@ -1184,16 +1193,10 @@ void main() {
           expect(find.text('Subtotal do item: R\$ 3.703,68'), findsOneWidget);
           expect(find.textContaining('Frete'), findsNothing);
           expect(tester.takeException(), isNull);
-          await tester.scrollUntilVisible(
-            find.text('Continuar'),
-            400,
-            scrollable: find.byType(Scrollable),
-          );
-          expect(
-            find.text('Total: R\$ 3.703,68', skipOffstage: false),
-            findsOneWidget,
-          );
-          final reason = find.text(_longReason, skipOffstage: false);
+          await reveal(tester, find.text('Total: R\$ 3.703,68'));
+          expect(find.text('Total: R\$ 3.703,68'), findsOneWidget);
+          final reason = find.text(_longReason);
+          await reveal(tester, reason);
           expect(reason, findsOneWidget);
           expect(tester.widget<Text>(reason).data, _longReason);
           expect(tester.widget<Text>(reason).style?.color, isNotNull);

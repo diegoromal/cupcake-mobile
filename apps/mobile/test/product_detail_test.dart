@@ -202,6 +202,19 @@ Widget app(
   ),
 );
 
+Future<void> scrollToContent(WidgetTester tester, Finder target) async {
+  final scrollable = find.byType(Scrollable).last;
+  final bottom =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio - 190;
+  for (var attempt = 0; attempt < 12; attempt++) {
+    if (target.evaluate().isNotEmpty && tester.getCenter(target).dy <= bottom) {
+      return;
+    }
+    await tester.drag(scrollable, const Offset(0, -160));
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   testWidgets(
     'detalhe envia seleção e quantidade uma vez, confirma e carrinho lê linha',
@@ -251,7 +264,7 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
       final availabilityBadge = tester.getRect(find.text('Disponível').first);
       expect(availabilityBadge.top, lessThan(400));
-      await tester.ensureVisible(find.text('Cobertura'));
+      await scrollToContent(tester, find.text('Cobertura'));
       await tester.tap(find.text('Cobertura'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byTooltip('Aumentar quantidade'));
@@ -259,7 +272,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('2'), findsOneWidget);
       expect(find.text('Subtotal: R\$ 26,60'), findsOneWidget);
-      await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+      await tester.pump(); // CTA permanece fixo no rodapé.
       await tester.tap(find.text('Adicionar ao carrinho'));
       await tester.pump();
       expect(cart.additions, hasLength(1));
@@ -279,7 +292,7 @@ void main() {
       pending.complete(const CartResult(CartRequestStatus.success));
       await tester.pumpAndSettle();
       expect(find.text('Item adicionado ao carrinho.'), findsOneWidget);
-      expect(find.text('Detalhes do cupcake'), findsOneWidget);
+      expect(find.text('Detalhes do Produto'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Carrinho'));
@@ -316,12 +329,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nome antigo'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.pump(); // CTA permanece fixo no rodapé.
     await tester.tap(find.text('Adicionar ao carrinho'));
     await tester.pumpAndSettle();
+    await scrollToContent(
+      tester,
+      find.textContaining('O item pode ter sido criado'),
+    );
     expect(find.textContaining('O item pode ter sido criado'), findsOneWidget);
     expect(find.text('Item adicionado ao carrinho.'), findsNothing);
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 100);
+    await tester.pump(); // CTA permanece fixo no rodapé.
     await tester.pumpAndSettle();
     expect(
       tester
@@ -334,7 +351,7 @@ void main() {
     await tester.tap(find.text('Adicionar ao carrinho'));
     await tester.pumpAndSettle();
     expect(cart.additions, hasLength(1));
-    await tester.ensureVisible(find.text('Abrir carrinho'));
+    await scrollToContent(tester, find.text('Abrir carrinho'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Abrir carrinho'));
     await tester.pumpAndSettle();
@@ -342,7 +359,7 @@ void main() {
     expect(cart.cartReads, 1);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('Detalhes do cupcake'), findsOneWidget);
+    expect(find.text('Detalhes do Produto'), findsOneWidget);
     expect(
       tester
           .widget<FilledButton>(
@@ -357,7 +374,7 @@ void main() {
     await tester.tap(find.byTooltip('Aumentar quantidade'));
     await tester.pumpAndSettle();
     expect(find.text('2'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 100);
+    await tester.pump(); // CTA permanece fixo no rodapé.
     expect(
       tester
           .widget<FilledButton>(
@@ -374,7 +391,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Diminuir quantidade'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 100);
+    await tester.pump(); // CTA permanece fixo no rodapé.
+    await scrollToContent(
+      tester,
+      find.textContaining('O item pode ter sido criado'),
+    );
     expect(find.textContaining('O item pode ter sido criado'), findsOneWidget);
     expect(
       tester
@@ -416,7 +437,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nome antigo'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.pump(); // CTA permanece fixo no rodapé.
     await tester.tap(find.text('Adicionar ao carrinho'));
     await tester.pumpAndSettle();
     expect(cart.additions, hasLength(1));
@@ -424,7 +445,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nome antigo'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.pump(); // CTA permanece fixo no rodapé.
+    await scrollToContent(
+      tester,
+      find.textContaining('O item pode ter sido criado'),
+    );
     expect(find.textContaining('O item pode ter sido criado'), findsOneWidget);
     expect(find.text('Abrir carrinho'), findsOneWidget);
     expect(
@@ -470,12 +495,16 @@ void main() {
       );
     await tester.pumpWidget(app(active, catalog, cartApi: cart));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Adicionar ao carrinho'), 250);
+    await tester.pump(); // CTA permanece fixo no rodapé.
     await tester.tap(find.text('Adicionar ao carrinho'));
     await tester.pumpAndSettle();
+    await scrollToContent(
+      tester,
+      find.text('Quantidade superior à disponibilidade.'),
+    );
     expect(find.text('Quantidade superior à disponibilidade.'), findsOneWidget);
     expect(find.text('Item adicionado ao carrinho.'), findsNothing);
-    await tester.ensureVisible(find.text('Atualizar produto'));
+    await scrollToContent(tester, find.text('Atualizar produto'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Atualizar produto'));
     await tester.pumpAndSettle();
@@ -519,7 +548,7 @@ void main() {
     ]);
     await tester.pumpWidget(app(active, api));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Desconto'));
+    await scrollToContent(tester, find.text('Desconto'));
     await tester.tap(find.text('Desconto'));
     await tester.pumpAndSettle();
     expect(auth.refreshCalls, 1);
@@ -586,7 +615,7 @@ void main() {
         find.text('Nenhuma personalização disponível para este produto.'),
         findsNothing,
       );
-      await tester.ensureVisible(find.text('Cobertura'));
+      await scrollToContent(tester, find.text('Cobertura'));
       await tester.tap(find.text('Cobertura'));
       await tester.pump();
       expect(
@@ -606,8 +635,10 @@ void main() {
       expect(find.textContaining('99,00'), findsNothing);
       expect(find.textContaining('Não foi possível calcular'), findsOneWidget);
       expect(find.textContaining('Subtotal:'), findsNothing);
+      await scrollToContent(tester, find.text('Tentar novamente'));
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
+      await scrollToContent(tester, find.text('Preço unitário: R\$ 11,25'));
       expect(find.text('Preço unitário: R\$ 11,25'), findsOneWidget);
       expect(api.previewSelections, [
         [option.id],
@@ -678,6 +709,7 @@ void main() {
     ]);
     await tester.pumpWidget(app(active, api, scale: 1.5));
     await tester.pumpAndSettle();
+    await scrollToContent(tester, find.text(longName));
     expect(find.text(longName), findsOneWidget);
     await tester.scrollUntilVisible(find.text(longDescription), 300);
     expect(find.text(longDescription), findsOneWidget);
@@ -782,6 +814,7 @@ void main() {
       await tester.pumpWidget(app(active, api, scale: 1.5));
       await tester.pumpAndSettle();
       expect(find.text('Cupcake atual'), findsOneWidget);
+      await scrollToContent(tester, find.text('R\$ 12,30'));
       expect(find.text('R\$ 12,30'), findsOneWidget);
       expect(find.text('Chocolate'), findsOneWidget);
       expect(
@@ -838,7 +871,7 @@ void main() {
     await active.signOut();
     await tester.pumpAndSettle();
     expect(find.text('Cupcake atual'), findsNothing);
-    expect(find.text('Detalhes do cupcake'), findsNothing);
+    expect(find.text('Detalhes do Produto'), findsNothing);
   });
 
   testWidgets('404, retry and stale response after dispose', (tester) async {

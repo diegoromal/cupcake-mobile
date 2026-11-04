@@ -58,7 +58,7 @@ void main() {
       expect(card.color, AppTokens.surface);
       expect(find.text('Pedido PED-42'), findsOneWidget);
       expect(find.text('R\$ 42,50'), findsOneWidget);
-      expect(find.textContaining('Status: Pago'), findsOneWidget);
+      expect(find.text('Pago'), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 29));
       expect(api.calls, 1);

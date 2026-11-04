@@ -289,8 +289,13 @@ void main() {
         await tester.pumpAndSettle();
         expect(api.attemptIds, [api.attemptIds.first, api.attemptIds.first]);
         expect(api.reservations, 1);
+        final orderNumber = 'PED-${api.attemptIds.first}';
+        final visibleOrderNumber = orderNumber.length > 16
+            ? '${orderNumber.substring(0, 8)}…${orderNumber.substring(orderNumber.length - 4)}'
+            : orderNumber;
+        expect(find.text('Pedido $visibleOrderNumber'), findsNWidgets(2));
         expect(
-          find.text('Pedido PED-${api.attemptIds.first}'),
+          find.byTooltip('Identificador completo: $orderNumber'),
           findsNWidgets(2),
         );
         expect(sessionValue.pendingOrderConfirmation, isNull);
