@@ -1,5 +1,5 @@
 import { GatewayTimeoutException, Logger } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client';
+import { Pagamento, Prisma } from '../generated/prisma/client';
 import { StatusPedido } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
@@ -119,7 +119,10 @@ describe('espera e consulta Pix', () => {
 });
 
 describe('ordem de locks na conclusão do pagamento (R-04)', () => {
-  it('bloqueia Produto antes de Estoque antes de registrar a venda', async () => {
+  it.each([
+    { caso: 'aprovação', falhaNaLimpeza: false },
+    { caso: 'erro na limpeza', falhaNaLimpeza: true },
+  ])('bloqueia Produto antes de Estoque em $caso', async ({ falhaNaLimpeza }) => {
     const usuarioId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
     const pedidoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
     const tentativaId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -127,6 +130,7 @@ describe('ordem de locks na conclusão do pagamento (R-04)', () => {
     const reservaId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
     const agora = new Date('2026-11-04T12:00:00.000Z');
     const ordem: string[] = [];
+    const falha = new Error('falha na limpeza');
 
     const pagamentoPendente = {
       id: tentativaId, pedidoId, forma: 'PIX', resultado: 'PENDENTE',
@@ -177,25 +181,72 @@ describe('ordem de locks na conclusão do pagamento (R-04)', () => {
         ordem.push('Movimentacao');
         return {};
       }) },
-      historicoStatusPedido: { create: jest.fn().mockResolvedValue({}) },
+      historicoStatusPedido: { create: jest.fn(async () => { ordem.push('Historico'); return {}; }) },
+      itemCarrinho: { deleteMany: jest.fn(async () => {
+        ordem.push('LimpezaCarrinho');
+        if (falhaNaLimpeza) throw falha;
+        return { count: 1 };
+      }) },
     };
     const prisma = { $transaction: jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback(tx)) };
+    const agendarStatusPedido = jest.fn().mockResolvedValue(undefined);
     const service = new PagamentosService(
       prisma as unknown as PrismaService,
       { simular: jest.fn().mockResolvedValue('APROVADO') } as unknown as PagamentoSimuladorService,
-      { agendarStatusPedido: jest.fn().mockResolvedValue(undefined) } as unknown as NotificacoesService,
+      { agendarStatusPedido } as unknown as NotificacoesService,
     );
 
-    await expect(service.iniciarPix(usuarioId, pedidoId, tentativaId)).resolves.toMatchObject({
-      pagamento: { resultado: 'APROVADO' },
-    });
+    if (falhaNaLimpeza) {
+      await expect(service.iniciarPix(usuarioId, pedidoId, tentativaId)).rejects.toBe(falha);
+      expect(agendarStatusPedido).not.toHaveBeenCalled();
+    } else {
+      await expect(service.iniciarPix(usuarioId, pedidoId, tentativaId)).resolves.toMatchObject({
+        pagamento: { resultado: 'APROVADO' },
+      });
+      expect(agendarStatusPedido).toHaveBeenCalledTimes(1);
+    }
 
-    expect(ordem).toEqual(['Produto', 'Estoque', 'Movimentacao']);
+    expect(ordem).toEqual(['Produto', 'Estoque', 'Movimentacao', 'Historico', 'LimpezaCarrinho']);
     const queriesDeProduto = queryRaw.mock.calls.filter(([sql]) => sql.join('').includes('FROM "Produto"'));
     expect(queriesDeProduto).toHaveLength(1);
     expect(queriesDeProduto[0][0].join('')).toContain('FOR UPDATE');
     expect(tx.movimentacaoEstoque.create).toHaveBeenCalledWith({ data: expect.objectContaining({
       produtoId, pedidoId, quantidade: -1, motivoOrigem: 'VENDA_PEDIDO',
     }) });
+    expect(tx.itemCarrinho.deleteMany).toHaveBeenCalledWith({
+      where: { carrinho: { usuarioId } },
+    });
   });
+});
+
+it('recusa pagamento sem limpar o carrinho', async () => {
+  const pedidoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const usuarioId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  const tentativaId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab';
+  const pendente = { id: tentativaId, pedidoId, forma: 'PIX', resultado: 'PENDENTE',
+    dataTransacao: null, valorAplicavel: new Prisma.Decimal('12.34') };
+  const recusado = { ...pendente, resultado: 'RECUSADO', dataTransacao: new Date() };
+  const tx = {
+    $queryRaw: jest.fn(async (strings: TemplateStringsArray) => {
+      if (strings.join('').includes('JOIN "Usuario"')) return [{ id: pedidoId }];
+      return [];
+    }),
+    $executeRaw: jest.fn().mockResolvedValue(1),
+    pagamento: {
+      findUnique: jest.fn().mockResolvedValue(pendente),
+      findUniqueOrThrow: jest.fn().mockResolvedValue(recusado),
+    },
+    itemCarrinho: { deleteMany: jest.fn() },
+  };
+  const prisma = { $transaction: jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback(tx)) };
+  const agendarStatusPedido = jest.fn();
+  const service = new PagamentosService(
+    prisma as unknown as PrismaService,
+    { simular: jest.fn().mockResolvedValue('RECUSADO') } as unknown as PagamentoSimuladorService,
+    { agendarStatusPedido } as unknown as NotificacoesService,
+  );
+
+  await expect(service['concluir'](usuarioId, pendente as unknown as Pagamento)).resolves.toEqual(recusado);
+  expect(tx.itemCarrinho.deleteMany).not.toHaveBeenCalled();
+  expect(agendarStatusPedido).not.toHaveBeenCalled();
 });

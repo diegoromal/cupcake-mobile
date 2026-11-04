@@ -217,6 +217,7 @@ export class PagamentosService {
       await db.historicoStatusPedido.create({ data: {
         pedidoId: pagamento.pedidoId, statusRegistrado: StatusPedido.PAGO, dataHora: agora,
       } });
+      await db.itemCarrinho.deleteMany({ where: { carrinho: { usuarioId } } });
       return {
         pagamento: await db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } }),
         evento: {
