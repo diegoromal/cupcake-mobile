@@ -407,7 +407,9 @@ class _StorefrontPageState extends State<StorefrontPage> {
 
   Widget _productList() => LayoutBuilder(
     builder: (context, constraints) {
-      final columns = constraints.maxWidth >= 360 ? 2 : 1;
+      final columns = constraints.maxWidth >= 360 && _products.length > 1
+          ? 2
+          : 1;
       final entries = _catalogEntries(columns);
       return RefreshIndicator(
         onRefresh: _refresh,

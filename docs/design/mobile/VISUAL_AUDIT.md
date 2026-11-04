@@ -211,3 +211,28 @@ Todas as capturas são screenshots integrais do simulador, sem recorte ou ediç�
 ### Integridade
 
 Foram alterados somente este relatório e as capturas PNG em `evidence/visual-audit/auth-runtime/`. Nenhum arquivo de código, configuração, API, banco local ou asset de produção foi alterado pelo repositório. Os dados sintéticos persistidos foram criados pelas telas normais de cadastro/endereço/pedido da API de staging conforme o escopo desta auditoria. Nenhum teste automatizado foi executado.
+
+## Acompanhamento das correções — `task/corrigir-visual-auth-runtime`
+
+### Resultado por finding
+
+| Finding | Estado | Alteração / evidência | Limitação residual |
+|---|---|---|---|
+| F-RT-03 | PARCIALMENTE RESOLVIDO | Card passa a ocupar a largura disponível quando só há um produto; categorias e dados reais permanecem visíveis. Comparação: referência, `auth-runtime/01-catalogo.png`, `auth-runtime-fixed/01-catalogo-fixed.png`. | Busca, destaque e seleção de modalidade não existem na capacidade/estado atual. O mapa de navegação define carrinho, pedidos e endereços como atalhos da vitrine, não destinos inferiores; não foi criada barra fictícia. |
+| F-RT-04 | RESOLVIDO | Imagem e hierarquia do título serifado mantidas; quantidade e CTA movidos para faixa fixa inferior com safe area. Comparação: referência, `auth-runtime/02-produto-detalhe.png`, `auth-runtime-fixed/02-produto-detalhe-fixed.png`. Nenhuma personalização foi adicionada. | A imagem continua com margens laterais do conteúdo; não há corte ou CTA encoberto no viewport validado. |
+| F-RT-05 | PARCIALMENTE RESOLVIDO | Resumo agrupado em cartão branco e CTA fixado na área inferior. Comparação: referência, `auth-runtime/04-carrinho.png`, `auth-runtime-fixed/03-carrinho-fixed.png`. | O endpoint do carrinho não fornece modalidade/endereço ou frete; esses dados são obtidos na etapa seguinte. Nenhuma regra ou valor foi inventado. |
+| F-RT-06 | RESOLVIDO | Itens e totais agrupados em cartões, com modalidade e confirmação em faixa inferior segura. Comparação: referência, `auth-runtime/13-checkout-revisao.png`, `auth-runtime-fixed/04-checkout-revisao-fixed.png`. Runtime usou Retirada, como a auditoria anterior. | Retirada em vez de Delivery é a modalidade escolhida, não divergência visual. |
+| F-RT-07 | RESOLVIDO | Identificador compacto no cartão e rodapé; ID completo acessível pelo tooltip. Comparação: referência, `auth-runtime/14-pagamento.png`, `auth-runtime-fixed/05-pagamento-fixed.png`. Testes verificam o ID completo nos tooltips. | Backend e identificador não foram alterados. O pagamento aprovado não foi repetido; o provedor recusou as tentativas da auditoria anterior. |
+| F-RT-08 | PARCIALMENTE RESOLVIDO | Identificação compacta, estado em badge, modalidade, data e valor agrupados no card. Comparação: referência, `auth-runtime/17-pedidos.png`, `auth-runtime-fixed/06-pedidos-fixed.png`. | “Ver pedido” não foi criado: `NAVIGATION.md` confirma que a rota de detalhe não existe. |
+
+### Validação pós-alteração
+
+- `flutter analyze`: PASS.
+- Suíte `flutter test`: PASS (250 testes). Testes mantêm assertions de inclusão/quantidade, resumo e checkout; o estado da lista é verificado como badge; a revisão verifica ID compacto e ID completo pelo tooltip.
+- `flutter analyze`: PASS.
+- Runtime: app compilado e executado no iPhone Air Simulator iOS 27.0, 420 × 912 pt, contra `https://api-staging.qosit.cloud`. Conta sintética criada pelo formulário normal e usada para percorrer catálogo, produto, carrinho, Retirada, revisão, pagamento e lista de pedidos. Senha não foi registrada no relatório nem no repositório.
+- Screenshots integrais: `evidence/visual-audit/auth-runtime-fixed/01-catalogo-fixed.png`, `02-produto-detalhe-fixed.png`, `03-carrinho-fixed.png`, `04-checkout-revisao-fixed.png`, `05-pagamento-fixed.png` e `06-pedidos-fixed.png`.
+- Comparação visual BEFORE → referência → AFTER realizada nos seis findings. Login e Cadastro não tiveram código alterado; o cadastro foi usado apenas para criar a sessão sintética.
+- Uma tentativa de pagamento sintético foi submetida nesta continuação e recusada pelo simulador de staging. Não houve nova tentativa; o pedido permaneceu pendente e o item continuou no carrinho. A suíte focada do serviço de pagamentos passou (9 testes), incluindo a cobertura de limpeza do carrinho em aprovação e preservação em recusa; a limpeza após aprovação não foi confirmada no runtime.
+
+F-RT-03, F-RT-05 e F-RT-08 permanecem parciais pelas limitações de capacidade e rota descritas acima; os demais foram confirmados visualmente no runtime. O detalhe do pedido continua fora do escopo por não haver rota implementada.

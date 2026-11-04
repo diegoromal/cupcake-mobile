@@ -222,13 +222,43 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final order = _orders[index];
         return Card(
           color: AppTokens.surface,
-          child: ListTile(
-            title: Text('Pedido ${order.businessNumber}'),
-            subtitle: Text(
-              '${_dateLabel(order.date)} · ${order.fulfillment == 'ENTREGA' ? 'Entrega' : 'Retirada'}\nStatus: ${_statusLabel(order.status)}',
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Tooltip(
+                        message:
+                            'Identificador completo: ${order.businessNumber}',
+                        child: Text(
+                          'Pedido ${_compactId(order.businessNumber)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppTokens.spacing8),
+                    _OrderStatusBadge(label: _statusLabel(order.status)),
+                  ],
+                ),
+                const SizedBox(height: AppTokens.spacing12),
+                Text(order.fulfillment == 'ENTREGA' ? 'Delivery' : 'Retirada'),
+                const SizedBox(height: AppTokens.spacing4),
+                Text(_dateLabel(order.date)),
+                const Divider(height: AppTokens.spacing24),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Text(
+                    'R\$ ${order.total.replaceAll('.', ',')}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
             ),
-            isThreeLine: true,
-            trailing: Text('R\$ ${order.total.replaceAll('.', ',')}'),
           ),
         );
       },
@@ -261,6 +291,27 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         ),
       ),
     ),
+  );
+}
+
+String _compactId(String value) => value.length > 16
+    ? '${value.substring(0, 3)}…${value.substring(value.length - 4)}'
+    : value;
+
+class _OrderStatusBadge extends StatelessWidget {
+  const _OrderStatusBadge({required this.label});
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppTokens.spacing12,
+      vertical: AppTokens.spacing8,
+    ),
+    decoration: BoxDecoration(
+      color: AppTokens.surfaceSoft,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(label, style: Theme.of(context).textTheme.labelMedium),
   );
 }
 

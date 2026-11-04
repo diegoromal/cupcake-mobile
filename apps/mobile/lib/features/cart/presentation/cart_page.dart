@@ -435,6 +435,20 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Carrinho')),
+    bottomNavigationBar:
+        _status == CartRequestStatus.success &&
+            _cart != null &&
+            _cart!.items.isNotEmpty
+        ? SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.spacing16),
+              child: _ContinueButton(
+                onPressed: _canContinue ? _openFulfillment : null,
+              ),
+            ),
+          )
+        : null,
     body: SafeArea(child: _content()),
   );
 
@@ -492,11 +506,25 @@ class _CartPageState extends State<CartPage> {
           ),
           const SizedBox(height: AppTokens.spacing12),
         ],
-        Text('Subtotal: ${_formatPrice(cart.subtotal)}'),
-        const SizedBox(height: AppTokens.spacing12),
-        Text('Total: ${_formatPrice(cart.total)}'),
+        Card(
+          color: AppTokens.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Subtotal: ${_formatPrice(cart.subtotal)}'),
+                const SizedBox(height: AppTokens.spacing8),
+                const Divider(),
+                Text(
+                  'Total: ${_formatPrice(cart.total)}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: AppTokens.spacing16),
-        _ContinueButton(onPressed: _canContinue ? _openFulfillment : null),
       ],
     );
   }
@@ -641,6 +669,7 @@ class _CartLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
+    color: AppTokens.surface,
     margin: EdgeInsets.zero,
     clipBehavior: Clip.antiAlias,
     semanticContainer: false,
