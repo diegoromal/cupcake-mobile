@@ -81,7 +81,11 @@ export class ProdutosService {
   async remove(id: string): Promise<void> {
     try {
       const previousImage = await this.prisma.$transaction(async (tx) => {
-        const produto = await tx.produto.findUnique({ where: { id }, select: { id: true, imagem: true } });
+        // Ordem global de locks: Produto antes de Estoque. A exclusão remove a linha
+        // de Estoque e depois o Produto; sem o lock prévio, um ajuste concorrente
+        // (Produto → Estoque) pode formar ciclo com esta transação (Estoque → Produto).
+        const [produto] = await tx.$queryRaw<Array<{ id: string; imagem: string | null }>>`
+          SELECT id, imagem FROM "Produto" WHERE id = ${id}::uuid FOR UPDATE`;
         if (!produto) throw new NotFoundException('Produto não encontrado.');
         const deleted = await tx.estoque.deleteMany({
           where: { produtoId: id, quantidadeFisica: 0, quantidadeReservada: 0 },

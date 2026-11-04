@@ -1,0 +1,149 @@
+{
+  "task": "D105",
+  "kind": "environment-readiness",
+  "date": "2026-11-03",
+  "branch": "task/D105-testes-com-usuarios",
+  "head": "4452c0c73cc1042fc62426124fed4fa1877fdee0",
+  "host": "macOS",
+  "tooling": {
+    "node": "v22.22.0",
+    "npm": "11.11.0",
+    "flutter": "3.47.6",
+    "dart": "3.13.5",
+    "channel": "stable"
+  },
+  "components": {
+    "postgres": {
+      "mode": "container efemero dedicado",
+      "container": "cupcake-d105-postgres",
+      "image": "postgres:16-alpine",
+      "endpoint": "127.0.0.1:55432",
+      "database": "cupcake_d105",
+      "migrations": "4/4 aplicadas",
+      "production_data": false,
+      "named_volume": false
+    },
+    "api": {
+      "status": "ok",
+      "url": "http://127.0.0.1:3100",
+      "health": "{\"status\":\"ok\"}",
+      "database": "cupcake_d105"
+    },
+    "admin": {
+      "status": "ok",
+      "url": "http://localhost:3001",
+      "login_page": "HTTP 200; HTML contem E-mail, Senha e Entrar (sem screenshot)",
+      "session_proxy_login": "HTTP 200",
+      "admin_orders_proxy": "HTTP 200",
+      "mutation_without_origin": "HTTP 403 Origem nao permitida (esperado)"
+    },
+    "mobile": {
+      "status": "ok",
+      "device": "iPhone Air 06DF0D09-813E-458C-9295-1C5D6D2FF741",
+      "api_base_url": "http://127.0.0.1:3100",
+      "observed_screen": "login (Cupcake Mobile / Entrar / E-mail / Senha / Criar conta / Acesso do entregador)",
+      "screenshot_temp": "/private/var/folders/80/lngzgq9x4691l3csm9knr9kw0000gn/T/opencode/d105-dry-run/mobile-login.png"
+    }
+  },
+  "checks": [
+    {
+      "check": "migrations no banco dedicado",
+      "result": "PASS",
+      "evidence": "prisma migrate deploy 4/4"
+    },
+    {
+      "check": "health da API",
+      "result": "PASS",
+      "evidence": "GET /health 200"
+    },
+    {
+      "check": "provisionamento de ADMIN sintetico",
+      "result": "PASS",
+      "evidence": "admin:provision-first"
+    },
+    {
+      "check": "criacao de entregador via API",
+      "result": "PASS",
+      "evidence": "POST /admin/entregadores 201"
+    },
+    {
+      "check": "criacao de categoria/produto/estoque",
+      "result": "PASS",
+      "evidence": "POST /admin/categorias, POST /admin/produtos, PATCH estoque"
+    },
+    {
+      "check": "configuracao de entrega",
+      "result": "PASS",
+      "evidence": "PUT /admin/configuracao-loja-entrega"
+    },
+    {
+      "check": "cadastro/login do cliente",
+      "result": "PASS",
+      "evidence": "POST /users, POST /auth/login"
+    },
+    {
+      "check": "endereco sintetico e coordenadas",
+      "result": "PASS",
+      "evidence": "POST /enderecos + UPDATE de latitude/longitude"
+    },
+    {
+      "check": "Admin renderiza login",
+      "result": "PASS",
+      "evidence": "GET /login 200"
+    },
+    {
+      "check": "Mobile renderiza login",
+      "result": "PASS",
+      "evidence": "flutter run no simulador + screenshot"
+    },
+    {
+      "check": "script de fixtures ponta a ponta",
+      "result": "PASS",
+      "evidence": "D105-fixture-script-run.json; carrinho 0"
+    },
+    {
+      "check": "nenhum dado de producao usado",
+      "result": "PASS",
+      "evidence": "banco/container efemero dedicado"
+    }
+  ],
+  "limitations": [
+    "O dry-run tecnico nao e teste de usabilidade com participante.",
+    "A API foi exercitada por HTTP; a UI Mobile/Admin nao foi percorrida integralmente por um participante.",
+    "Quatro pedidos adicionais de processo concorrente apareceram no banco dedicado durante o dry-run; ver D105-dry-run.json."
+  ],
+  "ui_verification": {
+    "admin": {
+      "viewport": "1280x801",
+      "login_rendered": true,
+      "login_flow": "PASS",
+      "orders_list": "PASS",
+      "order_detail": "PASS (acao acessivel apos rolagem horizontal)",
+      "admin_action_with_confirmation": "PASS",
+      "screenshot": "docs/testing/evidence/D105/screenshots/admin-pedidos-1280.png"
+    },
+    "mobile": {
+      "cliente_flow": "PASS (login, vitrine, detalhe, carrinho, retirada, revisao, pix, meus pedidos)",
+      "entregador_flow": "PASS (acesso do entregador, lista, detalhe, confirmar entrega)",
+      "screenshots": [
+        "docs/testing/evidence/D105/screenshots/app-login.png",
+        "docs/testing/evidence/D105/screenshots/entregador-lista.png",
+        "docs/testing/evidence/D105/screenshots/entregador-detalhe-entregue.png"
+      ]
+    },
+    "executor": "moderador (agente); nao houve participante"
+  },
+  "final_state": {
+    "date": "2026-11-03",
+    "database_reset": true,
+    "users": 3,
+    "orders": 2,
+    "order_item_counts": {
+      "PAGO_RETIRADA": 1,
+      "SAIU_PARA_ENTREGA": 1
+    },
+    "stock": "48 fisica / 0 reservada",
+    "customer_cart": 0,
+    "session_ready": true
+  }
+}

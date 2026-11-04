@@ -20,6 +20,7 @@
     "test:d71:postgres": "ts-node test/d71-atribuir-entregador-postgres.ts",
     "test:d81:postgres": "ts-node test/d81-notificacoes-postgres.ts",
     "test:d82:postgres": "ts-node test/d82-fluxo-notificacoes-postgres.ts",
+    "test:d106:postgres": "ts-node test/d106-f04-concorrencia-estoque-postgres.ts",
     "test:catalogo:postgres": "ts-node test/d29-catalogo-postgres.ts",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",

@@ -1,0 +1,254 @@
+{
+  "tarefa": "D105",
+  "tipo": "dry-run tecnico do roteiro (nao e sessao com participante)",
+  "executadoEm": "2026-11-03T21:05:37Z",
+  "head": "4452c0c73cc1042fc62426124fed4fa1877fdee0",
+  "ambiente": {
+    "api": "http://127.0.0.1:3100",
+    "banco": "cupcake_d105",
+    "isolado": true
+  },
+  "pedidoExercitado": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+  "statusAposSairParaEntrega": "SAIU_PARA_ENTREGA",
+  "verificacaoBancoAposEntrega": "ENTREGUE|true|2026-11-03 21:05:37.475+00",
+  "passos": [
+    {
+      "id": "V01",
+      "perfil": "ADMIN",
+      "tarefa": "autenticar",
+      "metodo": "POST",
+      "rota": "/auth/login",
+      "http": "200",
+      "detalhe": {
+        "autenticado": true
+      }
+    },
+    {
+      "id": "V02",
+      "perfil": "CLIENTE",
+      "tarefa": "autenticar",
+      "metodo": "POST",
+      "rota": "/auth/login",
+      "http": "200",
+      "detalhe": {
+        "autenticado": true
+      }
+    },
+    {
+      "id": "V03",
+      "perfil": "ENTREGADOR",
+      "tarefa": "autenticar",
+      "metodo": "POST",
+      "rota": "/auth/login",
+      "http": "200",
+      "detalhe": {
+        "autenticado": true
+      }
+    },
+    {
+      "id": "V04",
+      "perfil": "CLIENTE",
+      "tarefa": "localizar produto",
+      "metodo": "GET",
+      "rota": "/catalogo/produtos?page=1&limit=20",
+      "http": "200",
+      "detalhe": {
+        "id": "5b3a167b-97a8-45fd-bc00-af22c0ea0eaf",
+        "nome": "D105 Cupcake",
+        "precoAtual": "12.50"
+      }
+    },
+    {
+      "id": "V05",
+      "perfil": "CLIENTE",
+      "tarefa": "abrir detalhe do produto",
+      "metodo": "GET",
+      "rota": "/catalogo/produtos/5b3a167b-97a8-45fd-bc00-af22c0ea0eaf",
+      "http": "200",
+      "detalhe": {
+        "id": "5b3a167b-97a8-45fd-bc00-af22c0ea0eaf",
+        "nome": "D105 Cupcake",
+        "precoAtual": "12.50"
+      }
+    },
+    {
+      "id": "V06",
+      "perfil": "CLIENTE",
+      "tarefa": "listar enderecos",
+      "metodo": "GET",
+      "rota": "/enderecos",
+      "http": "200",
+      "detalhe": "b6c3ca6e-20c9-4eab-9f62-b77de9662792"
+    },
+    {
+      "id": "V07",
+      "perfil": "CLIENTE",
+      "tarefa": "adicionar item ao carrinho",
+      "metodo": "POST",
+      "rota": "/carrinho/itens",
+      "http": "201",
+      "detalhe": {}
+    },
+    {
+      "id": "V08",
+      "perfil": "CLIENTE",
+      "tarefa": "revisar pedido",
+      "metodo": "POST",
+      "rota": "/pedidos/revisao",
+      "http": "201",
+      "detalhe": {
+        "revisaoId": "c67f4a837e54198b2dc521aa1f145894aec520538edc12aafd06905cd5ef85d6",
+        "total": "117.58",
+        "freteAplicado": "5.08"
+      }
+    },
+    {
+      "id": "V09",
+      "perfil": "CLIENTE",
+      "tarefa": "criar pedido",
+      "metodo": "POST",
+      "rota": "/pedidos",
+      "http": "201",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "PENDENTE_PAGAMENTO",
+        "total": "117.58"
+      }
+    },
+    {
+      "id": "V10",
+      "perfil": "CLIENTE",
+      "tarefa": "pagar pedido (pix simulado)",
+      "metodo": "POST",
+      "rota": "/pedidos/df4ff122-73ec-422b-ae9c-b098f411a7e7/pagamentos/pix",
+      "http": "201",
+      "detalhe": {
+        "resultado": "APROVADO",
+        "criado": null
+      }
+    },
+    {
+      "id": "V11",
+      "perfil": "CLIENTE",
+      "tarefa": "consultar meus pedidos",
+      "metodo": "GET",
+      "rota": "/pedidos",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "PAGO"
+      }
+    },
+    {
+      "id": "V12",
+      "perfil": "ADMIN",
+      "tarefa": "listar pedidos",
+      "metodo": "GET",
+      "rota": "/admin/pedidos",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "PAGO"
+      }
+    },
+    {
+      "id": "V13",
+      "perfil": "ADMIN",
+      "tarefa": "abrir detalhe do pedido",
+      "metodo": "GET",
+      "rota": "/admin/pedidos/df4ff122-73ec-422b-ae9c-b098f411a7e7",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "PAGO",
+        "modalidade": "ENTREGA"
+      }
+    },
+    {
+      "id": "V14",
+      "perfil": "ADMIN",
+      "tarefa": "executar acao valida (iniciar producao)",
+      "metodo": "PATCH",
+      "rota": "/admin/pedidos/df4ff122-73ec-422b-ae9c-b098f411a7e7/iniciar-producao",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "EM_PREPARO"
+      }
+    },
+    {
+      "id": "V15",
+      "perfil": "ADMIN",
+      "tarefa": "atribuir entregador ao sair para entrega",
+      "metodo": "PATCH",
+      "rota": "/admin/pedidos/df4ff122-73ec-422b-ae9c-b098f411a7e7/saiu-para-entrega",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "SAIU_PARA_ENTREGA"
+      }
+    },
+    {
+      "id": "V16",
+      "perfil": "ENTREGADOR",
+      "tarefa": "listar entregas atribuidas",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "SAIU_PARA_ENTREGA"
+      }
+    },
+    {
+      "id": "V17",
+      "perfil": "ENTREGADOR",
+      "tarefa": "consultar informacoes da entrega",
+      "metodo": "GET",
+      "rota": "/entregador/pedidos/df4ff122-73ec-422b-ae9c-b098f411a7e7",
+      "http": "200",
+      "detalhe": {
+        "identificadorNegocio": "PED-c9745517-ede5-4b89-ae17-413f9aae7020-2d08327866d37e29574e5579484a635dedac2088354155ec492ecd7c62c4cd9b",
+        "statusAtual": null,
+        "modalidade": null,
+        "temCliente": true,
+        "temEndereco": true
+      }
+    },
+    {
+      "id": "V18",
+      "perfil": "ENTREGADOR",
+      "tarefa": "confirmar entrega",
+      "metodo": "PATCH",
+      "rota": "/entregador/pedidos/df4ff122-73ec-422b-ae9c-b098f411a7e7/confirmar-entrega",
+      "http": "200",
+      "detalhe": {
+        "statusAtual": "ENTREGUE",
+        "temDataHora": true
+      }
+    },
+    {
+      "id": "V19",
+      "perfil": "CLIENTE",
+      "tarefa": "reconsultar pedido apos entrega",
+      "metodo": "GET",
+      "rota": "/pedidos",
+      "http": "200",
+      "detalhe": {
+        "id": "df4ff122-73ec-422b-ae9c-b098f411a7e7",
+        "statusAtual": "ENTREGUE"
+      }
+    }
+  ],
+  "estoque": {
+    "antes": "19|0",
+    "depois": "10|0"
+  },
+  "cleanup": {
+    "pedidosPendentesPagamento": 0,
+    "quantidadeReservadaTotal": 0,
+    "pedidosNoBanco": 8
+  },
+  "note": "Fluxo HTTP de 19 passos executado pelo moderador no dry-run, antes da recriacao do banco. IDs e saldos referem-se ao estado daquele momento.",
+  "participant_data": false
+}

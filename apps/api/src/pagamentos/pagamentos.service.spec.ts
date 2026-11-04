@@ -117,3 +117,85 @@ describe('espera e consulta Pix', () => {
     expect(prisma.$executeRaw).not.toHaveBeenCalled();
   });
 });
+
+describe('ordem de locks na conclusão do pagamento (R-04)', () => {
+  it('bloqueia Produto antes de Estoque antes de registrar a venda', async () => {
+    const usuarioId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    const pedidoId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const tentativaId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const produtoId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+    const reservaId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+    const agora = new Date('2026-11-04T12:00:00.000Z');
+    const ordem: string[] = [];
+
+    const pagamentoPendente = {
+      id: tentativaId, pedidoId, forma: 'PIX', resultado: 'PENDENTE',
+      dataTransacao: null, valorAplicavel: new Prisma.Decimal('12.34'),
+    };
+    const pedidoPendente = {
+      id: pedidoId, clienteUsuarioId: usuarioId, statusAtual: 'PENDENTE_PAGAMENTO',
+      data: agora, total: new Prisma.Decimal('12.34'),
+    };
+
+    // Executa as queries reais do serviço e registra apenas os locks de interesse.
+    const queryRaw = jest.fn(async (strings: TemplateStringsArray) => {
+      const sql = strings.join('?');
+      if (sql.includes('FROM "Pedido" p')) {
+        return [{ id: pedidoId, statusAtual: 'PENDENTE_PAGAMENTO', data: agora,
+          identificadorNegocio: 'PED-1', telefone: '11999999999' }];
+      }
+      if (sql.includes('SELECT id FROM "Pedido"')) return [{ id: pedidoId }];
+      if (sql.includes('FROM "Produto"')) { ordem.push('Produto'); return [{ id: produtoId }]; }
+      if (sql.includes('FROM "Estoque"')) { ordem.push('Estoque'); return [{ produtoId }]; }
+      if (sql.includes('FROM "ReservaEstoque"') && sql.includes('FOR UPDATE')) {
+        return [{ id: reservaId, produtoId, quantidade: 1,
+          momentoExpiracaoValidade: new Date(agora.getTime() + 10 * 60 * 1000) }];
+      }
+      if (sql.includes('FROM "ReservaEstoque"')) return [{ id: reservaId, produtoId }];
+      if (sql.includes('clock_timestamp')) return [{ agora }];
+      return [];
+    });
+
+    const tx = {
+      $queryRaw: queryRaw,
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      pedido: {
+        findUnique: jest.fn().mockResolvedValue(pedidoPendente),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      pagamento: {
+        findUnique: jest.fn().mockResolvedValueOnce(null).mockResolvedValue(pagamentoPendente),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          ...pagamentoPendente, resultado: 'APROVADO', dataTransacao: agora,
+        }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue(pagamentoPendente),
+      },
+      estoque: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      reservaEstoque: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      movimentacaoEstoque: { create: jest.fn(async () => {
+        ordem.push('Movimentacao');
+        return {};
+      }) },
+      historicoStatusPedido: { create: jest.fn().mockResolvedValue({}) },
+    };
+    const prisma = { $transaction: jest.fn(async (callback: (db: unknown) => Promise<unknown>) => callback(tx)) };
+    const service = new PagamentosService(
+      prisma as unknown as PrismaService,
+      { simular: jest.fn().mockResolvedValue('APROVADO') } as unknown as PagamentoSimuladorService,
+      { agendarStatusPedido: jest.fn().mockResolvedValue(undefined) } as unknown as NotificacoesService,
+    );
+
+    await expect(service.iniciarPix(usuarioId, pedidoId, tentativaId)).resolves.toMatchObject({
+      pagamento: { resultado: 'APROVADO' },
+    });
+
+    expect(ordem).toEqual(['Produto', 'Estoque', 'Movimentacao']);
+    const queriesDeProduto = queryRaw.mock.calls.filter(([sql]) => sql.join('').includes('FROM "Produto"'));
+    expect(queriesDeProduto).toHaveLength(1);
+    expect(queriesDeProduto[0][0].join('')).toContain('FOR UPDATE');
+    expect(tx.movimentacaoEstoque.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      produtoId, pedidoId, quantidade: -1, motivoOrigem: 'VENDA_PEDIDO',
+    }) });
+  });
+});

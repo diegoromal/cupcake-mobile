@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, adminApi } from '@/lib/client/admin-api';
 import type { PedidoAdministrativo, StatusFila } from '@/lib/contracts';
 import { formatCurrency, formatDate, statusFila, statusLabel } from '@/lib/order-display';
@@ -9,6 +9,8 @@ export default function OrderList() {
   const [orders, setOrders] = useState<PedidoAdministrativo[] | null>(null);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFila | ''>('');
+  const [scrollable, setScrollable] = useState(false);
+  const tableWrap = useRef<HTMLDivElement>(null);
   const load = useCallback(async () => {
     setError('');
     setOrders(null);
@@ -22,6 +24,16 @@ export default function OrderList() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const element = tableWrap.current;
+    if (!element) return;
+    const update = () => setScrollable(element.scrollWidth > element.clientWidth + 1);
+    update();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(element);
+    window.addEventListener('resize', update);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', update); };
+  }, [orders, statusFilter]);
   const visible = orders?.filter((order) => !statusFilter || order.statusAtual === statusFilter);
 
   return <section>
@@ -42,10 +54,10 @@ export default function OrderList() {
     {visible?.length === 0 && <div className="card">{statusFilter
       ? 'Nenhum pedido com este status.' : 'Nenhum pedido para acompanhar.'}</div>}
     {!!visible?.length && <>
-      <div className="card table-wrap"><table>
+      <div className="card table-wrap order-table-wrap" ref={tableWrap}><table className="order-table">
         <thead><tr><th scope="col">Pedido</th><th scope="col">Data / Hora</th><th scope="col">Cliente</th><th scope="col">Modalidade</th><th scope="col">Status</th><th scope="col">Total</th><th scope="col">Ação</th></tr></thead>
         <tbody>{visible.map(order => <tr key={order.id}>
-          <td><strong>{order.identificadorNegocio}</strong></td>
+          <td className="order-id"><strong>{order.identificadorNegocio}</strong></td>
           <td>{formatDate(order.confirmacaoPagamento)}</td>
           <td>{order.cliente.nome}</td>
           <td>{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</td>
@@ -54,6 +66,7 @@ export default function OrderList() {
           <td><Link href={`/pedidos/${order.id}`} aria-label={`Ver detalhes do pedido ${order.identificadorNegocio}`}>Ver detalhes</Link></td>
         </tr>)}</tbody>
       </table></div>
+      {scrollable && <p className="table-scroll-hint" role="note">↔ Role para ver toda a tabela</p>}
     </>}
   </section>;
 }

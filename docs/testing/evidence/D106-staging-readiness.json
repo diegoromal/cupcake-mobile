@@ -1,0 +1,60 @@
+{
+  "tarefa": "D106 — prontidao do staging para as sessoes humanas da D105",
+  "geradoEm": "2026-11-04T01:10:26.694Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "shaImplantado": "028c605bf8a5114c8927de5991a2d5806a0c069c",
+  "candidatoD106": "HEAD 66e653b + fixes F-04/F-01 nao commitados (nao deployado)",
+  "criteriosDoPlano": "PLAN §7.6",
+  "perfis": {
+    "ADMIN": {
+      "classificacao": "PARTIAL",
+      "acesso": "READY: login real refeito no reteste; /pedidos carrega 2 pedidos; filtro Pago reduz para 1; detalhe abre com \"Iniciar producao\"",
+      "bloqueio": "build 028c605 e anterior ao candidato: F-01 ainda reproduz em 1280 (Status/Total/Acao fora da area, sem hint)",
+      "evidencia": [
+        "docs/testing/evidence/D106-staging-admin-detalhe.png",
+        "docs/testing/evidence/D106-admin-f01-1280-antes.png"
+      ]
+    },
+    "CLIENTE": {
+      "classificacao": "BLOCKED",
+      "motivo": "API nao publica: api-staging.qosit.cloud sem DNS, 45.231.133.145:3000 inacessivel externamente; app exige API_BASE_URL em tempo de build",
+      "evidencia": [
+        "dig +short @1.1.1.1 api-staging.qosit.cloud -> vazio",
+        "curl https://api-staging.qosit.cloud/health -> nao resolve",
+        "curl http://45.231.133.145:3000/health -> timeout 6s"
+      ]
+    },
+    "ENTREGADOR": {
+      "classificacao": "BLOCKED",
+      "motivo": "mesma dependencia de API publica do CLIENTE; conta existe no banco, mas o app fisico nao alcanca a API",
+      "evidencia": [
+        "mesmas verificacoes de DNS/conectividade acima"
+      ]
+    }
+  },
+  "classificacaoGlobal": "BLOCKED para sessoes humanas D106",
+  "bloqueios": [
+    "D-01 nao autorizado: staging em 028c605, sem os fixes D106",
+    "API nao publica (D-02 nao autorizado): CLIENTE/ENTREGADOR fisicos inalcancaveis",
+    "Sessoes humanas exigem o candidato implantado; fixtures e contas estao prontas"
+  ],
+  "observacoes": [
+    "O ADMIN sintetico e aditivo; o ADMIN existente diego@qosit.cloud foi preservado.",
+    "A sessao do portal foi encerrada (Sair do Sistema) ao final; nenhuma mutacao de pedido foi feita no staging.",
+    "Credencial runtime retida em /home/deploy/.config/cupcake/d106-staging.env (0600) para as proximas sessoes."
+  ],
+  "resultado": "PARTIAL/BLOCKED",
+  "retesteTEST": {
+    "data": "2026-11-04T01:10:26.694Z",
+    "execucao3": "reset+seed repetido; contagens 4/2/2/2/3; carrinho 0; estoque 48/0",
+    "credencial": "/home/deploy/.config/cupcake/d106-staging.env (0600, retida; conteudo fora da evidencia)",
+    "adminLogin": "PASS — login real com d106-admin@example.test, /pedidos (2 pedidos), filtro Pago (1), detalhe aberto; sessao encerrada (logout)",
+    "shaImplantado": "028c605bf8a5114c8927de5991a2d5806a0c069c (inalterado; nada deployado)",
+    "bloqueios": [
+      "D-01 nao autorizado: staging em 028c605, sem os fixes D106",
+      "API nao publica (D-02 nao autorizado): CLIENTE/ENTREGADOR fisicos inalcancaveis",
+      "Sessoes humanas exigem o candidato implantado; fixtures e contas estao prontas"
+    ]
+  }
+}

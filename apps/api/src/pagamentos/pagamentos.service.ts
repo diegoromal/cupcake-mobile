@@ -153,6 +153,13 @@ export class PagamentosService {
         ORDER BY "produtoId", id`;
       if (!candidatas.length) throw new ConflictException('Pedido sem reserva ativa de estoque.');
 
+      // Ordem global de locks: Produto antes de Estoque. A inserção de
+      // MovimentacaoEstoque exige FOR KEY SHARE em Produto (FK) depois do Estoque;
+      // a criação de pedido faz Produto → Estoque. Manter a mesma ordem evita a
+      // inversão de locks (mesma classe do F-04).
+      for (const produtoId of [...new Set(candidatas.map((r) => r.produtoId))].sort()) {
+        await db.$queryRaw`SELECT id FROM "Produto" WHERE id = ${produtoId}::uuid FOR UPDATE`;
+      }
       for (const produtoId of [...new Set(candidatas.map((r) => r.produtoId))].sort()) {
         const [estoque] = await db.$queryRaw<Array<{ produtoId: string }>>`
           SELECT "produtoId" FROM "Estoque" WHERE "produtoId" = ${produtoId}::uuid FOR UPDATE`;

@@ -1,0 +1,333 @@
+{
+  "tarefa": "D106 — regressao tecnica dos tres perfis (CLIENTE, ADMIN, ENTREGADOR) e seguranca",
+  "geradoEm": "2026-11-04T00:57:38.152Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "ambiente": {
+    "tipo": "stack local dedicado (nao staging)",
+    "postgres": "container cupcake-d105-postgres, 127.0.0.1:55432, banco cupcake_d105",
+    "api": "http://127.0.0.1:3100 (NestJS, npm run start)",
+    "admin": "http://localhost:3001 (next dev, API_BASE_URL=http://127.0.0.1:3100)",
+    "fixtures": "scripts/d105-demo-fixtures.sh (3 contas .test, produto D105, O1 PAGO/Retirada, O2 SAIU_PARA_ENTREGA/Delivery)",
+    "segurancaBanco": "cupcake_d103 no mesmo PostgreSQL dedicado (container de teste)"
+  },
+  "cliente": {
+    "executado": true,
+    "metodo": "HTTP real via scripts de regressao (curl) contra a API local",
+    "passos": [
+      {
+        "nome": "login d105-cliente@example.test",
+        "metodo": "POST",
+        "caminho": "/auth/login",
+        "status": "200",
+        "esperado": "2xx",
+        "ok": true,
+        "detalhe": ""
+      },
+      {
+        "nome": "catálogo: categorias",
+        "metodo": "GET",
+        "caminho": "/catalogo/categorias",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "1 categorias"
+      },
+      {
+        "nome": "catálogo: produtos",
+        "metodo": "GET",
+        "caminho": "/catalogo/produtos",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "4 produtos"
+      },
+      {
+        "nome": "catálogo: detalhe do produto",
+        "metodo": "GET",
+        "caminho": "/catalogo/produtos/:id",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "D105 Cupcake"
+      },
+      {
+        "nome": "carrinho: adicionar item",
+        "metodo": "POST",
+        "caminho": "/carrinho/itens",
+        "status": "201",
+        "esperado": "201",
+        "ok": true,
+        "detalhe": "0 itens"
+      },
+      {
+        "nome": "pedido: revisão (Retirada)",
+        "metodo": "POST",
+        "caminho": "/pedidos/revisao",
+        "status": "201",
+        "esperado": "201",
+        "ok": true,
+        "detalhe": "revisaoId=presente"
+      },
+      {
+        "nome": "pedido: criar (Retirada)",
+        "metodo": "POST",
+        "caminho": "/pedidos",
+        "status": "201",
+        "esperado": "201",
+        "ok": true,
+        "detalhe": "id=presente status=PENDENTE_PAGAMENTO"
+      },
+      {
+        "nome": "pagamento: Pix aprovado",
+        "metodo": "POST",
+        "caminho": "/pedidos/:id/pagamentos/pix",
+        "status": "201",
+        "esperado": "201",
+        "ok": true,
+        "detalhe": "resultado=APROVADO"
+      },
+      {
+        "nome": "Meus Pedidos: consulta",
+        "metodo": "GET",
+        "caminho": "/pedidos",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "pedido=f5008ba6-069a-4896-a6fb-d2875122eb81 status=PAGO"
+      },
+      {
+        "nome": "carrinho: estado após pedido",
+        "metodo": "GET",
+        "caminho": "/carrinho",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "itens=1 (OBS-D105-07: itens não são removidos pelo POST /pedidos)"
+      },
+      {
+        "nome": "carrinho: limpeza pós-regressão",
+        "metodo": "GET",
+        "caminho": "/carrinho",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "itens=0"
+      }
+    ],
+    "resultado": "PASS"
+  },
+  "adminApi": {
+    "executado": true,
+    "metodo": "HTTP real via curl",
+    "passos": [
+      {
+        "nome": "login d105-admin@example.test",
+        "metodo": "POST",
+        "caminho": "/auth/login",
+        "status": "200",
+        "esperado": "2xx",
+        "ok": true,
+        "detalhe": ""
+      },
+      {
+        "nome": "admin: listar pedidos",
+        "metodo": "GET",
+        "caminho": "/admin/pedidos",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "total=3"
+      },
+      {
+        "nome": "admin: detalhe do pedido",
+        "metodo": "GET",
+        "caminho": "/admin/pedidos/:id",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "status=PAGO"
+      },
+      {
+        "nome": "admin: iniciar produção (O1)",
+        "metodo": "PATCH",
+        "caminho": "/admin/pedidos/:id/iniciar-producao",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "status=EM_PREPARO"
+      },
+      {
+        "nome": "admin: pronto para retirada (O1)",
+        "metodo": "PATCH",
+        "caminho": "/admin/pedidos/:id/pronto-para-retirada",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "status=PRONTO_PARA_RETIRADA"
+      },
+      {
+        "nome": "admin: confirmar retirada (O1)",
+        "metodo": "PATCH",
+        "caminho": "/admin/pedidos/:id/confirmar-retirada",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "status=RETIRADO"
+      }
+    ],
+    "resultado": "PASS"
+  },
+  "adminUi": {
+    "executado": true,
+    "metodo": "portal Maestri (navegador real)",
+    "passos": [
+      {
+        "nome": "login em /login",
+        "resultado": "PASS",
+        "detalhe": "redirecionou para /produtos"
+      },
+      {
+        "nome": "produtos",
+        "resultado": "PASS",
+        "detalhe": "lista com 1 produto (D105 Cupcake)"
+      },
+      {
+        "nome": "pedidos",
+        "resultado": "PASS",
+        "detalhe": "3 pedidos listados"
+      },
+      {
+        "nome": "filtro status=Pago",
+        "resultado": "PASS",
+        "detalhe": "select PAGO reduz para 1 pedido"
+      },
+      {
+        "nome": "detalhe do pedido",
+        "resultado": "PASS",
+        "detalhe": "/pedidos/f5008ba6-...; etapas e acao \"Iniciar producao\""
+      },
+      {
+        "nome": "dialogo de confirmacao",
+        "resultado": "PASS",
+        "detalhe": "h2 \"Confirmar início da produção\" focado; botoes Voltar/Confirmar"
+      },
+      {
+        "nome": "acao administrativa + mudanca de estado",
+        "resultado": "PASS",
+        "detalhe": "PAGO -> EM_PREPARO; historico com responsavel D105 Admin; nova acao \"Marcar como pronto para retirada\""
+      }
+    ],
+    "evidencia": [
+      "docs/testing/evidence/D106-regressao-admin.png"
+    ],
+    "resultado": "PASS"
+  },
+  "entregador": {
+    "executado": true,
+    "metodo": "HTTP real via curl",
+    "passos": [
+      {
+        "nome": "login d105-entregador@example.test",
+        "metodo": "POST",
+        "caminho": "/auth/login",
+        "status": "200",
+        "esperado": "2xx",
+        "ok": true,
+        "detalhe": ""
+      },
+      {
+        "nome": "entregador: lista atribuída",
+        "metodo": "GET",
+        "caminho": "/entregador/pedidos",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "pedidos=1 contémO2=1"
+      },
+      {
+        "nome": "entregador: detalhe (cliente/endereço/horário)",
+        "metodo": "GET",
+        "caminho": "/entregador/pedidos/:id",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "cliente=presente endereco=presente horarioSaida=presente"
+      },
+      {
+        "nome": "entregador: confirmar entrega",
+        "metodo": "PATCH",
+        "caminho": "/entregador/pedidos/:id/confirmar-entrega",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "status=ENTREGUE dataHora=presente"
+      },
+      {
+        "nome": "entregador: estado final",
+        "metodo": "GET",
+        "caminho": "/entregador/pedidos/:id",
+        "status": "200",
+        "esperado": "200",
+        "ok": true,
+        "detalhe": "status=ENTREGUE dataHoraSaida=presente"
+      }
+    ],
+    "resultado": "PASS"
+  },
+  "seguranca": {
+    "executado": true,
+    "comando": "cd apps/api && D103_TEST_DATABASE_URL=postgresql://<user>:<senha>@localhost:5432/cupcake_d103?schema=public npx ts-node test/d103-autorizacao-postgres.ts",
+    "resultado": "PASS",
+    "resumo": {
+      "total": 108,
+      "pass": 108,
+      "fail": 0,
+      "inconclusivo": 0,
+      "porCategoria": {
+        "Autenticação e tokens": {
+          "total": 32,
+          "pass": 32,
+          "fail": 0,
+          "inconclusivo": 0
+        },
+        "RBAC entre perfis": {
+          "total": 16,
+          "pass": 16,
+          "fail": 0,
+          "inconclusivo": 0
+        },
+        "Operações administrativas": {
+          "total": 28,
+          "pass": 28,
+          "fail": 0,
+          "inconclusivo": 0
+        },
+        "Ownership do CLIENTE": {
+          "total": 22,
+          "pass": 22,
+          "fail": 0,
+          "inconclusivo": 0
+        },
+        "Ownership do ENTREGADOR": {
+          "total": 5,
+          "pass": 5,
+          "fail": 0,
+          "inconclusivo": 0
+        },
+        "Acesso direto por ID": {
+          "total": 5,
+          "pass": 5,
+          "fail": 0,
+          "inconclusivo": 0
+        }
+      }
+    },
+    "evidencia": "docs/testing/evidence/D103-exec-autorizacao.json (reexecutado nesta fase; sobrescrito pelo harness)"
+  },
+  "naoExecutado": [
+    "Sessao humana / usabilidade (fora do escopo D106)",
+    "Mobile em simulador iOS (o fluxo CLIENTE foi provado pela API real; nao foi necessario)",
+    "Staging para os fluxos de regressao (stack local dedicado, conforme handoff)"
+  ]
+}

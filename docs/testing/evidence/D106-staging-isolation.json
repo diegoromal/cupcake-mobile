@@ -1,0 +1,100 @@
+{
+  "tarefa": "D106 — staging existente: evidência read-only de isolamento",
+  "geradoEm": "2026-11-04T01:03:05.808Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "ambiente": {
+    "host": "45.231.133.145",
+    "porta": 30322,
+    "usuario": "deploy",
+    "chave": "~/.ssh/cupcake_staging_deploy",
+    "acesso": "SSH somente leitura (docker compose ps/port/psql); nenhuma escrita"
+  },
+  "shaImplantado": "028c605bf8a5114c8927de5991a2d5806a0c069c",
+  "shaImplantadoObservacao": "NAO e o candidato D106 (HEAD 66e653b + fixes no working tree). Deploy D-01 nao autorizado.",
+  "servicos": [
+    {
+      "nome": "cupcake-staging-admin-1",
+      "servico": "admin",
+      "estado": "Up 8 days (healthy)",
+      "portas": "10.60.60.30:3001->3001/tcp"
+    },
+    {
+      "nome": "cupcake-staging-api-1",
+      "servico": "api",
+      "estado": "Up 8 days (healthy)",
+      "portas": "3000/tcp (expose, sem publicacao)"
+    },
+    {
+      "nome": "cupcake-staging-postgres-1",
+      "servico": "postgres",
+      "estado": "Up 4 weeks (healthy)",
+      "portas": "5432/tcp (sem publicacao)"
+    }
+  ],
+  "health": {
+    "apiInterno": "{\"status\":\"ok\"} (fetch 127.0.0.1:3000/health dentro do container api)",
+    "adminInterno": "HTTP 200 (fetch 127.0.0.1:3001/login dentro do container admin)",
+    "adminPublico": "HTTP 200 https://app-staging.qosit.cloud/login (TLS verify 0)"
+  },
+  "banco": {
+    "nome": "cupcake_staging",
+    "migrationsAplicadas": 4,
+    "migrationsPendentes": 0,
+    "migrations": [
+      "20260926124031_initial",
+      "20260926180000_d13_bloqueio_login",
+      "20261022120000_d39_d41_endereco_localizacao",
+      "20261023120000_d56_pix_pendente"
+    ]
+  },
+  "portasPublicas": {
+    "admin": "10.60.60.30:3001 -> 3001/tcp",
+    "api": "nenhuma publicacao (docker port vazio; ss sem 3000 do container)",
+    "postgres": "nenhuma publicacao (docker port vazio)",
+    "observacao": "O host tem 0.0.0.0:3000 publicado por qflow-api-1 e casamento-site, servicos alheios ao cupcake; curl externo a 45.231.133.145:3000 expira e nao alcanca a API do staging."
+  },
+  "dns": {
+    "app-staging.qosit.cloud": [
+      "45.231.133.145"
+    ],
+    "api-staging.qosit.cloud": [],
+    "metodo": "dig +short @1.1.1.1"
+  },
+  "tls": {
+    "host": "app-staging.qosit.cloud",
+    "subject": "CN=app-staging.qosit.cloud",
+    "issuer": "C=US, O=Let's Encrypt, CN=YE2",
+    "notBefore": "Sep 29 18:12:43 2026 GMT",
+    "notAfter": "Dec 28 18:12:42 2026 GMT",
+    "verifyResult": 0
+  },
+  "storage": {
+    "bucket": "cupcake-staging-images",
+    "endpoint": "https://api.s3.qosit.cloud",
+    "region": "us-east-1"
+  },
+  "notificacoes": {
+    "evolution": "ausente (printenv sem EVOLUTION_*)"
+  },
+  "volume": {
+    "nome": "cupcake_staging_postgres_data",
+    "driver": "local",
+    "preservado": true
+  },
+  "imagens": {
+    "admin": "ghcr.io/diegoromal/cupcake-admin@sha256:5b8eb5f4aa22d6acaafc49ea8ae9a0ec9da19ab0f58f70c8e27fc7152c1a38bd",
+    "api": "ghcr.io/diegoromal/cupcake-api@sha256:3f973f1405306023e20307a9b084ff74a75a30c6941d0a6371c670f8b97143f3"
+  },
+  "contagensPosFixtures": {
+    "usuariosTotal": 4,
+    "usuariosD106": 3,
+    "usuariosNaoD106": 1,
+    "adminExistentePreservado": "diego@qosit.cloud",
+    "produtos": 2,
+    "categorias": 2,
+    "pedidos": 2,
+    "configuracoesLojaEntrega": 0
+  },
+  "resultado": "PARTIAL (verificacoes read-only OK; staging sem o candidato D106)"
+}

@@ -15,3 +15,22 @@
 @media print{@page{size:A4 portrait;margin:16mm}body{background:#fff!important;color:#000!important}body *{visibility:hidden!important}.sales-report,.sales-report *{visibility:visible!important}.sales-report{position:absolute;inset:0 auto auto 0;width:100%;display:block;color:#000!important;font:10pt Arial,Helvetica,sans-serif}.sales-report .heading{margin-bottom:18pt}.sales-report h1,.sales-report h2{color:#000!important}.sales-report h1{font-size:20pt}.sales-report h2{font-size:12pt;margin:16pt 0 8pt}.sales-report .heading p,.applied-period{color:#333!important}.report-filters,.report-export,.error,[role=status]{display:none!important}.report-summary{display:grid;grid-template-columns:1fr 1fr;gap:10pt;margin:14pt 0}.report-summary .card{padding:10pt;border:1px solid #aaa;box-shadow:none}.report-summary h2{font-size:9pt}.report-summary p{color:#000!important;font-size:15pt} .table-wrap{overflow:visible;border:0;padding:0;box-shadow:none}.table-wrap:after{display:none}table{min-width:0;width:100%;font-size:8pt}td,th{padding:6pt 4pt;border-color:#bbb}th{white-space:normal;color:#333!important}tr{break-inside:avoid}}
 
 .order-detail-summary{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 20px}.order-detail-summary-primary{display:grid;gap:8px;min-width:0}.order-detail-summary h1{margin:0;font-size:clamp(1.35rem,2vw,1.75rem);line-height:1.2;overflow-wrap:anywhere}.order-detail-summary p{margin:0}.order-detail-summary-payment{text-align:right;white-space:normal}@media(max-width:900px){.order-detail-summary{align-items:flex-start;flex-direction:column;gap:10px}.order-detail-summary-payment{text-align:left}}
+
+/* D106 — lista de pedidos: mantém todas as colunas críticas no cenário-base 1280–1440 px.
+   O identificador longo (~90 caracteres) quebra em vez de empurrar Status/Total/Ação para fora. */
+.order-table-wrap:after{display:none}
+table.order-table{table-layout:fixed;width:100%}
+.order-table th{white-space:normal}
+.order-table th:nth-child(1),.order-table td:nth-child(1){width:23%}
+.order-table th:nth-child(2),.order-table td:nth-child(2){width:15%}
+.order-table th:nth-child(3),.order-table td:nth-child(3){width:11%}
+.order-table th:nth-child(4),.order-table td:nth-child(4){width:12%}
+.order-table th:nth-child(5),.order-table td:nth-child(5){width:14%}
+.order-table th:nth-child(6),.order-table td:nth-child(6){width:11%}
+.order-table th:nth-child(7),.order-table td:nth-child(7){width:14%}
+/* O badge de status usa nowrap global; na tabela de pedidos ele pode quebrar para
+   não transbordar a coluna em 1280–1440 px nem em larguras menores. */
+.order-table .badge{white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+.order-table td{overflow-wrap:anywhere}
+.order-id{overflow-wrap:anywhere;word-break:break-word}
+.table-scroll-hint{margin:10px 0 0;color:var(--muted);font-size:.75rem}

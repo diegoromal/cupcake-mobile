@@ -17,6 +17,11 @@ export class EstoqueService {
 
   async ajustar(produtoId: string, quantidadeDisponivel: number) {
     return this.prisma.$transaction(async (tx) => {
+      // Ordem global de locks: Produto antes de Estoque. A criação de pedido bloqueia
+      // Produto e depois Estoque, e a inserção em MovimentacaoEstoque também exige
+      // FOR KEY SHARE na linha de Produto (FK). Adquirir o Produto primeiro impede a
+      // inversão que causava o deadlock 40P01 (F-04).
+      await tx.$queryRaw`SELECT id FROM "Produto" WHERE id = ${produtoId}::uuid FOR UPDATE`;
       // Serializa ajustes e futuras reservas sobre a mesma linha de estoque.
       const [saldo] = await tx.$queryRaw<Saldo[]>`
         SELECT "produtoId", "quantidadeFisica", "quantidadeReservada"

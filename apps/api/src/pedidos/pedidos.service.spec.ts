@@ -281,11 +281,15 @@ describe('PedidosService', () => {
     };
 
     it('cancela somente pedido PAGO do cliente e registra o ator no histórico', async () => {
+      const produtoIdsOrdenados = [produtoId, outroProdutoId].sort();
       const { service, queryRaw, updatePedido, updateEstoque, updateReserva,
         createHistory, createMovement } = setup([
         [{ statusAtual: 'PAGO' }],
         reservas.map(({ id, produtoId: itemProdutoId, estado }) => ({ id, produtoId: itemProdutoId, estado })),
-        [{ produtoId }], [{ produtoId: outroProdutoId }], reservas, [{ agora }],
+        // Ordem global de locks (F-04): Produto antes de Estoque, por produto ordenado.
+        [{ id: produtoIdsOrdenados[0] }], [{ id: produtoIdsOrdenados[1] }],
+        [{ produtoId: produtoIdsOrdenados[0] }], [{ produtoId: produtoIdsOrdenados[1] }],
+        reservas, [{ agora }],
       ]);
 
       await expect(service.cancelarComoCliente(usuarioId, enderecoId)).resolves.toEqual({
@@ -293,9 +297,12 @@ describe('PedidosService', () => {
       });
       expect(queryRaw.mock.calls[0][0].join('')).toContain('"clienteUsuarioId" = ');
       expect(queryRaw.mock.calls[0].slice(1)).toEqual([usuarioId, enderecoId]);
-      const produtoIdsOrdenados = [produtoId, outroProdutoId].sort();
+      expect(queryRaw.mock.calls[2][0].join('')).toContain('FROM "Produto"');
       expect(queryRaw.mock.calls[2].slice(1)).toEqual([produtoIdsOrdenados[0]]);
+      expect(queryRaw.mock.calls[3][0].join('')).toContain('FROM "Produto"');
       expect(queryRaw.mock.calls[3].slice(1)).toEqual([produtoIdsOrdenados[1]]);
+      expect(queryRaw.mock.calls[4].slice(1)).toEqual([produtoIdsOrdenados[0]]);
+      expect(queryRaw.mock.calls[5].slice(1)).toEqual([produtoIdsOrdenados[1]]);
       expect(updateEstoque).toHaveBeenNthCalledWith(1, {
         where: { produtoId: produtoIdsOrdenados[0], quantidadeFisica: { lte: 2_147_483_644 } },
         data: { quantidadeFisica: { increment: 3 } },

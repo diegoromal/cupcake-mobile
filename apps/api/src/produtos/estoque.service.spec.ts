@@ -38,6 +38,11 @@ describe('EstoqueService', () => {
       produtoId, quantidade: -3, motivoOrigem: 'AJUSTE_ADMINISTRATIVO', data: expect.any(Date),
     } });
     expect(transaction).toHaveBeenCalledTimes(1);
+    // Ordem global de locks (F-04): Produto antes de Estoque.
+    expect(queryRaw.mock.calls[0][0].join('')).toContain('FROM "Produto"');
+    expect(queryRaw.mock.calls[0][0].join('')).toContain('FOR UPDATE');
+    expect(queryRaw.mock.calls[1][0].join('')).toContain('FROM "Estoque"');
+    expect(queryRaw.mock.calls[1][0].join('')).toContain('FOR UPDATE');
   });
 
   it('no-op não grava saldo ou movimentação', async () => {
@@ -48,6 +53,7 @@ describe('EstoqueService', () => {
 
   it('rejeita estouro de inteiro e estoque ausente dentro da transação', async () => {
     await expect(service.ajustar(produtoId, 2147483645)).rejects.toBeInstanceOf(BadRequestException);
+    queryRaw.mockResolvedValueOnce([{ id: produtoId }]);
     queryRaw.mockResolvedValueOnce([]);
     await expect(service.ajustar(produtoId, 1)).rejects.toBeInstanceOf(NotFoundException);
     expect(create).not.toHaveBeenCalled();

@@ -1,0 +1,204 @@
+{
+  "task": "D105",
+  "kind": "technical-dry-run",
+  "date": "2026-11-03",
+  "branch": "task/D105-testes-com-usuarios",
+  "head": "4452c0c73cc1042fc62426124fed4fa1877fdee0",
+  "environment": {
+    "database": "cupcake_d105 (container efemero dedicado)",
+    "api": "http://127.0.0.1:3100",
+    "admin": "http://localhost:3001",
+    "mobile": "iPhone Air 06DF0D09-813E-458C-9295-1C5D6D2FF741"
+  },
+  "accounts": {
+    "customer": "d105-cliente@example.test",
+    "admin": "d105-admin@example.test",
+    "courier": "d105-entregador@example.test",
+    "password": "<runtime-only>"
+  },
+  "fixtures": {
+    "categoryId": "835f41b2-5e9a-4c64-ad6a-82090942d21f",
+    "productId": "5b3a167b-97a8-45fd-bc00-af22c0ea0eaf",
+    "addressId": "b6c3ca6e-20c9-4eab-9f62-b77de9662792",
+    "courierId": "98237457-ab4c-405a-8856-370b150b2301",
+    "customerId": "788842f2-1c53-421d-bb21-367e5d226efc",
+    "orders": {
+      "o1_pago_retirada_admin": "a7b783a9-5033-4141-8740-91f5c865ec80",
+      "o2_saiu_para_entrega_entregador": "de8e3109-5e9a-41d5-8a8a-57981b99d3bf",
+      "o3_acao_admin_iniciar_producao": "72c83166-cabb-4432-bd58-b639caa3fa69",
+      "o4_confirmacao_entrega": "007e0842-71b4-41d6-8be9-08dd8c4072f1"
+    },
+    "order_origins": {
+      "o1": "dry-run: create_paid_order RETIRADA 02",
+      "o2": "dry-run: create_paid_order ENTREGA 04",
+      "o3": "dry-run: pedido extra para validar a acao 'iniciar producao'",
+      "o4": "dry-run: pedido extra para validar a confirmacao de entrega"
+    },
+    "customer_order_list_snapshot": {
+      "moment": "antes de criar O4",
+      "count": 3,
+      "ids": [
+        "a7b783a9-5033-4141-8740-91f5c865ec80",
+        "de8e3109-5e9a-41d5-8a8a-57981b99d3bf",
+        "72c83166-cabb-4432-bd58-b639caa3fa69"
+      ]
+    },
+    "script_fixtures": {
+      "script_creates_only": [
+        "O1 (PAGO/Retirada)",
+        "O2 (SAIU_PARA_ENTREGA/Delivery)"
+      ],
+      "script_end_to_end_evidence": "docs/testing/evidence/D105/D105-fixture-script-run.json"
+    }
+  },
+  "flows": [
+    {
+      "profile": "CLIENTE",
+      "task": "localizar produto / comprar / consultar pedidos",
+      "technical_result": "PASS (API/DB)",
+      "observed": "Cliente autenticou, consultou o catalogo via API, criou pedidos de Retirada e Delivery, pagou via PIX simulado (APROVADO) e listou 3 pedidos proprios.",
+      "not_equivalent_to": "sessao de usabilidade com participante"
+    },
+    {
+      "profile": "ADMIN",
+      "task": "localizar pedido / executar acao administrativa",
+      "technical_result": "PASS (API/DB/Admin proxy)",
+      "observed": "Admin autenticou no proxy do Next, listou pedidos, abriu o detalhe de O1 (PAGO) e executou 'iniciar producao' em O3 (PAGO -> EM_PREPARO).",
+      "not_equivalent_to": "sessao de usabilidade com participante"
+    },
+    {
+      "profile": "ENTREGADOR",
+      "task": "localizar entrega / consultar informacoes / confirmar entrega",
+      "technical_result": "PASS (API/DB)",
+      "observed": "Entregador autenticou, listou O2 (SAIU_PARA_ENTREGA), abriu o detalhe com cliente/telefone/endereco/saida e confirmou O4 (SAIU_PARA_ENTREGA -> ENTREGUE).",
+      "not_equivalent_to": "sessao de usabilidade com participante"
+    }
+  ],
+  "targeted_automated_tests": [
+    {
+      "suite": "apps/mobile",
+      "command": "flutter test test/customer_journey_test.dart test/courier_interface_test.dart",
+      "result": "PASS",
+      "tests": 19
+    },
+    {
+      "suite": "apps/mobile",
+      "command": "flutter test test/customer_orders_test.dart test/customer_storefront_test.dart test/product_detail_test.dart",
+      "result": "PASS",
+      "tests": 47
+    },
+    {
+      "suite": "apps/admin",
+      "command": "npm test -- --runInBand __tests__/orders-ui.test.tsx __tests__/admin-navigation.test.tsx",
+      "result": "PASS",
+      "tests": 25
+    }
+  ],
+  "targeted_tests_total": 91,
+  "admin_security_check": {
+    "login_proxy": "HTTP 200",
+    "orders_proxy": "HTTP 200",
+    "mutation_without_origin": "HTTP 403 Origem nao permitida (esperado)"
+  },
+  "contamination_observation": {
+    "id": "OBS-D105-01",
+    "description": "Quatro pedidos adicionais foram criados no banco dedicado por processo concorrente entre 21:04:58 e 21:05:37 UTC, sem relacao com os IDs registrados pela D105.",
+    "impact": "Risco de contaminacao entre sessoes; exige ambiente exclusivo por sessao.",
+    "not_a_product_finding": true
+  },
+  "not_executed": [
+    "Nenhuma sessao com participante humano.",
+    "Nenhuma observacao de usabilidade real.",
+    "Nenhuma correcao de codigo ou finding."
+  ],
+  "conclusion": "Fluxos tecnicamente percorriveis no ambiente isolado; a D105 permanece INCONCLUSIVO/BLOQUEADO ate as sessoes humanas.",
+  "ui_dry_run": {
+    "moderator": true,
+    "participant": false,
+    "note": "Percurso executado pelo moderador, com dados sinteticos; nao e sessao de usabilidade.",
+    "cliente": {
+      "viewport": "iPhone Air (simulador iOS 27.0)",
+      "steps": [
+        "login cliente -> PASS",
+        "vitrine lista D105 Cupcake -> PASS",
+        "detalhe + adicionar ao carrinho -> PASS",
+        "carrinho 1 item, total R$ 12,50 -> PASS",
+        "retirada, frete R$ 0,00 -> PASS",
+        "revisar pedido + confirmar -> PASS",
+        "pix + pagar agora -> Pagamento aprovado -> PASS",
+        "meus pedidos lista o pedido como Pago -> PASS"
+      ]
+    },
+    "entregador": {
+      "viewport": "iPhone Air (simulador iOS 27.0)",
+      "steps": [
+        "logout + Acesso do entregador -> PASS",
+        "area do entregador lista entrega atribuida -> PASS",
+        "detalhe com cliente, telefone, endereco e saida -> PASS",
+        "confirmar entrega -> Entrega confirmada + horario, status Entregue -> PASS"
+      ]
+    },
+    "admin": {
+      "viewport": "1280x801",
+      "steps": [
+        "/login renderiza E-mail, Senha e Entrar -> PASS",
+        "login -> /produtos -> PASS",
+        "navegacao Pedidos, filtro Pago -> PASS",
+        "Ver detalhes abre /pedidos/<id> apos rolagem horizontal -> PASS (D105-F01)",
+        "Iniciar producao abre dialogo de confirmacao -> PASS",
+        "confirmar -> etapa atual Em preparo -> PASS"
+      ]
+    }
+  },
+  "objective_finding_ids": [
+    "D105-F01"
+  ],
+  "screenshots": [
+    "docs/testing/evidence/D105/screenshots/app-login.png",
+    "docs/testing/evidence/D105/screenshots/admin-pedidos-1280.png",
+    "docs/testing/evidence/D105/screenshots/entregador-lista.png",
+    "docs/testing/evidence/D105/screenshots/entregador-detalhe-entregue.png"
+  ],
+  "fixture_script_fix": {
+    "file": "scripts/d105-demo-fixtures.sh",
+    "problem": "O1 e O2 eram criados sem limpar o carrinho entre eles; como POST /pedidos nao remove ItemCarrinho, O2 nascia com 2 itens (R$ 25,00) e o estoque ficava em 47 em vez de 48.",
+    "fix": "Limpeza do carrinho antes de cada pedido e ao final, com validacao CART_COUNT=0.",
+    "verified_after_reset": {
+      "orders": {
+        "PAGO_RETIRADA": {
+          "itens": 1,
+          "valorItens": "12.50"
+        },
+        "SAIU_PARA_ENTREGA": {
+          "itens": 1,
+          "valorItens": "12.50"
+        }
+      },
+      "estoque": "48 fisica / 0 reservada",
+      "carrinhoCliente": 0
+    },
+    "is_product_code": false
+  },
+  "post_dry_run_reset": {
+    "executed": true,
+    "result": "Banco recriado, migrations aplicadas e fixtures reaplicadas; ambiente pronto para sessoes.",
+    "users": 3,
+    "orders": 2,
+    "stock": "48/0",
+    "customerCart": 0
+  },
+  "reexecution": {
+    "date": "2026-11-03",
+    "flutter": {
+      "command": "flutter test test/customer_journey_test.dart test/courier_interface_test.dart test/customer_orders_test.dart test/customer_storefront_test.dart test/product_detail_test.dart",
+      "result": "PASS",
+      "tests": 66
+    },
+    "admin": {
+      "command": "npm test -- --runInBand __tests__/orders-ui.test.tsx __tests__/admin-navigation.test.tsx",
+      "result": "PASS",
+      "tests": 25
+    },
+    "total": 91
+  }
+}

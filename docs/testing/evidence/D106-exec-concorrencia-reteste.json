@@ -1,0 +1,2562 @@
+{
+  "tarefa": "D106 — Testes de concorrência de estoque",
+  "geradoEm": "2026-11-04T01:08:59.149Z",
+  "runLabel": "reteste-exec2",
+  "runId": "d106_57401491-d6fc-4ab7-966f-89a32251d21c",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "dirty": true,
+  "workingTree": {
+    "modificados": [
+      "apps/admin/__tests__/orders-ui.test.tsx",
+      "apps/admin/app/globals.css",
+      "apps/admin/components/OrderList.tsx",
+      "apps/api/package.json",
+      "apps/api/src/pagamentos/pagamentos.service.ts",
+      "apps/api/src/pedidos/pedidos.service.spec.ts",
+      "apps/api/src/pedidos/pedidos.service.ts",
+      "apps/api/src/produtos/estoque.service.spec.ts",
+      "apps/api/src/produtos/estoque.service.ts",
+      "docs/testing/D105-AMBIENTE.md",
+      "docs/testing/D105-VALIDACAO.md",
+      "docs/testing/evidence/D105/D105-dry-run.json",
+      "docs/testing/evidence/D105/D105-environment.json"
+    ],
+    "naoRastreados": [
+      ".maestri/",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "apps/api/scripts/d106-staging-fixtures.mjs",
+      "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts",
+      "docs/testing/D106-CONCORRENCIA-VALIDACAO.md",
+      "docs/testing/D106-PLAN.md",
+      "docs/testing/D106-STAGING-AMBIENTE.md",
+      "docs/testing/D106-VALIDACAO.md",
+      "docs/testing/evidence/D106-admin-f01-1280-antes.png",
+      "docs/testing/evidence/D106-admin-f01-1280.png",
+      "docs/testing/evidence/D106-admin-f01-1440.png",
+      "docs/testing/evidence/D106-admin-f01-320.png",
+      "docs/testing/evidence/D106-admin-f01-768.png",
+      "docs/testing/evidence/D106-admin-f01-layout.json",
+      "docs/testing/evidence/D106-evidencias.json",
+      "docs/testing/evidence/D106-exec-concorrencia-antes.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-1.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-2.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-3.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-1.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-2.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-3.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-antes.json",
+      "docs/testing/evidence/D106-exec-concorrencia.json",
+      "docs/testing/evidence/D106-findings.json",
+      "docs/testing/evidence/D106-regressao-admin.png",
+      "docs/testing/evidence/D106-regressao-seguranca.json",
+      "docs/testing/evidence/D106-regressao.json",
+      "docs/testing/evidence/D106-staging-admin-detalhe.png",
+      "docs/testing/evidence/D106-staging-fixtures-local.json",
+      "docs/testing/evidence/D106-staging-fixtures.json",
+      "docs/testing/evidence/D106-staging-isolation.json",
+      "docs/testing/evidence/D106-staging-readiness.json",
+      "scripts/d106-staging-fixtures.sh"
+    ]
+  },
+  "diffSha256": {
+    "algoritmo": "sha256",
+    "escopo": "git diff HEAD -- <3 arquivos do fix de F-04>",
+    "arquivos": [
+      "apps/api/src/produtos/estoque.service.ts",
+      "apps/api/src/pedidos/pedidos.service.ts",
+      "apps/api/src/pagamentos/pagamentos.service.ts"
+    ],
+    "valor": "d9aa24d4fa95a3aa4e895325db2130eab423a3262713916dca6ad81e3bb889d4"
+  },
+  "comando": "cd apps/api && D106_TEST_DATABASE_URL=\"postgresql://<user>:<senha>@localhost:5432/cupcake_d106?schema=public\" D106_RUN_LABEL=\"reteste-exec2\" D106_EVIDENCE_PATH=\"docs/testing/evidence/D106-exec-concorrencia-reteste.json\" npm run test:d106:postgres",
+  "versoes": {
+    "node": "v22.22.0",
+    "npm": "11.11.0",
+    "ts-node": "v10.9.2"
+  },
+  "banco": {
+    "database": "cupcake_d106",
+    "schema": "public",
+    "migrations": "prisma/migrations (4)"
+  },
+  "ambiente": {
+    "cwd": "apps/api",
+    "database": "cupcake_d106",
+    "schema": "public",
+    "evolucaoUrlAntesDoCreate": "",
+    "evolucaoUrlDepoisDoCreate": "",
+    "geocodeKey": ""
+  },
+  "preflight": {
+    "database": "cupcake_d106",
+    "schema": "public",
+    "migrations": [
+      "20260926124031_initial",
+      "20260926180000_d13_bloqueio_login",
+      "20261022120000_d39_d41_endereco_localizacao",
+      "20261023120000_d56_pix_pendente"
+    ],
+    "migrationsPendentes": [],
+    "deadlocksIniciais": "0",
+    "contagensIniciais": {
+      "Notificacao": 0,
+      "ReservaEstoque": 0,
+      "MovimentacaoEstoque": 0,
+      "Pagamento": 0,
+      "HistoricoStatusPedido": 0,
+      "ItemPedido": 0,
+      "ItemPedidoPersonalizacaoSnapshot": 0,
+      "EnderecoEntregaSnapshot": 0,
+      "Pedido": 0,
+      "ItemCarrinhoPersonalizacao": 0,
+      "ItemCarrinho": 0,
+      "Carrinho": 0,
+      "ProdutoPersonalizacao": 0,
+      "Estoque": 0,
+      "Produto": 0,
+      "Categoria": 0,
+      "Usuario": 0
+    },
+    "instancias": 6,
+    "servidores": 6
+  },
+  "egress": {
+    "tentativas": [],
+    "fetchCalls": 0,
+    "fetchRestaurado": true
+  },
+  "cenarios": [
+    {
+      "id": "CON-001",
+      "operacao": "POST /pedidos — 5 clientes disputando o último item",
+      "concorrencia": 5,
+      "estoqueInicial": {
+        "quantidadeFisica": 1,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto_categoriaId_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto_pkey"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            79
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 77,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            79,
+            78,
+            81
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n4",
+          "pid": 79,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n3",
+          "pid": 80,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            79,
+            78,
+            81,
+            77
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n5",
+          "pid": 81,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            79,
+            78
+          ]
+        }
+      ],
+      "waitersCount": 5,
+      "distinctPids": 5,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 1,
+          "quantidadeReservada": 1,
+          "quantidadeDisponivel": 0
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 1
+        },
+        "pedidos": [
+          {
+            "id": "dd01869c-413d-46c7-897d-47026bf1c388",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "70b2dadd-bbdc-4123-a1ef-6a80ee7b7d4a",
+                "quantidade": 1
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "waitersCount",
+          "ok": true
+        },
+        {
+          "label": "distinctPids",
+          "ok": true
+        },
+        {
+          "label": "pendingBeforeRelease",
+          "ok": true
+        },
+        {
+          "label": "todos aguardando Produto",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "mensagens 409",
+          "ok": true
+        },
+        {
+          "label": "estoque final",
+          "ok": true
+        },
+        {
+          "label": "pedidos",
+          "ok": true
+        },
+        {
+          "label": "itens do pedido",
+          "ok": true
+        },
+        {
+          "label": "reservas ATIVA",
+          "ok": true
+        },
+        {
+          "label": "soma reservas ATIVA",
+          "ok": true
+        },
+        {
+          "label": "movimentações",
+          "ok": true
+        },
+        {
+          "label": "pagamentos",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-002",
+      "operacao": "POST /pedidos — 5 clientes, estoque 3",
+      "concorrencia": 5,
+      "estoqueInicial": {
+        "quantidadeFisica": 3,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto_categoriaId_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto_pkey"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 71,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 72,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n3",
+          "pid": 73,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71,
+            72
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n4",
+          "pid": 74,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71,
+            72,
+            73,
+            75
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n5",
+          "pid": 75,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71,
+            72,
+            73
+          ]
+        }
+      ],
+      "waitersCount": 5,
+      "distinctPids": 5,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Revisão desatualizada. Atualize os valores."
+        },
+        {
+          "status": 409,
+          "message": "Revisão desatualizada. Atualize os valores."
+        },
+        {
+          "status": 409,
+          "message": "Revisão desatualizada. Atualize os valores."
+        },
+        {
+          "status": 409,
+          "message": "Revisão desatualizada. Atualize os valores."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 3,
+          "quantidadeReservada": 1,
+          "quantidadeDisponivel": 2
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 1
+        },
+        "pedidos": [
+          {
+            "id": "2d64d45f-a9dc-48f7-b7c4-7d9d164a0a3f",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "ab4f5df3-8587-4d19-bb27-6f8d1e243239",
+                "quantidade": 1
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "waitersCount",
+          "ok": true
+        },
+        {
+          "label": "distinctPids",
+          "ok": true
+        },
+        {
+          "label": "pendingBeforeRelease",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "mensagens 409",
+          "ok": true
+        },
+        {
+          "label": "estoque final",
+          "ok": true
+        },
+        {
+          "label": "pedidos",
+          "ok": true
+        },
+        {
+          "label": "itens do pedido",
+          "ok": true
+        },
+        {
+          "label": "itens de pedido",
+          "ok": true
+        },
+        {
+          "label": "reservas ATIVA",
+          "ok": true
+        },
+        {
+          "label": "soma reservas ATIVA",
+          "ok": true
+        },
+        {
+          "label": "reservas totais (4 rejeições sem reserva)",
+          "ok": true
+        },
+        {
+          "label": "movimentações",
+          "ok": true
+        },
+        {
+          "label": "pagamentos",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-003",
+      "operacao": "POST /pedidos — 3 clientes, 2 un. cada, estoque 3",
+      "concorrencia": 3,
+      "estoqueInicial": {
+        "quantidadeFisica": 3,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto_categoriaId_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Produto_pkey"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 77,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            78,
+            80
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n3",
+          "pid": 80,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            78
+          ]
+        }
+      ],
+      "waitersCount": 3,
+      "distinctPids": 3,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 3,
+          "quantidadeReservada": 2,
+          "quantidadeDisponivel": 1
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 2
+        },
+        "pedidos": [
+          {
+            "id": "ee34aece-b33f-4a11-a97e-4f2c700f7fd9",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "6f052464-559e-4e0c-bd14-71c383703973",
+                "quantidade": 2
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "waitersCount",
+          "ok": true
+        },
+        {
+          "label": "distinctPids",
+          "ok": true
+        },
+        {
+          "label": "pendingBeforeRelease",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "mensagens 409",
+          "ok": true
+        },
+        {
+          "label": "estoque final",
+          "ok": true
+        },
+        {
+          "label": "pedidos",
+          "ok": true
+        },
+        {
+          "label": "itens do pedido",
+          "ok": true
+        },
+        {
+          "label": "reservas ATIVA",
+          "ok": true
+        },
+        {
+          "label": "soma reservas ATIVA",
+          "ok": true
+        },
+        {
+          "label": "movimentações",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-004",
+      "operacao": "PATCH estoque (→1) e depois POST /pedidos com revisão antiga (sequencial sob lock)",
+      "concorrencia": 1,
+      "estoqueInicial": {
+        "quantidadeFisica": 2,
+        "quantidadeReservada": 0
+      },
+      "blocker": null,
+      "waiters": [],
+      "waitersCount": 0,
+      "distinctPids": 0,
+      "pendingBeforeRelease": null,
+      "responses": [
+        {
+          "status": 200,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 1,
+          "quantidadeReservada": 0,
+          "quantidadeDisponivel": 1
+        },
+        "reservas": {
+          "total": 0,
+          "porEstado": {},
+          "somaAtiva": 0
+        },
+        "pedidos": [],
+        "pagamentos": [],
+        "movimentacoes": [
+          {
+            "quantidade": -1,
+            "motivoOrigem": "AJUSTE_ADMINISTRATIVO",
+            "pedidoId": null
+          }
+        ],
+        "historicos": []
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "ajuste status",
+          "ok": true
+        },
+        {
+          "label": "pedido status",
+          "ok": true
+        },
+        {
+          "label": "pedido mensagem",
+          "ok": true
+        },
+        {
+          "label": "estoque final",
+          "ok": true
+        },
+        {
+          "label": "pedidos",
+          "ok": true
+        },
+        {
+          "label": "reservas",
+          "ok": true
+        },
+        {
+          "label": "movimentações",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-005",
+      "operacao": "PATCH /admin/produtos/:id/estoque — 3 ajustes simultâneos (4, 7, 9)",
+      "concorrencia": 3,
+      "estoqueInicial": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Estoque"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Estoque_pkey"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            80
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 77,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "\n        SELECT \"produtoId\", \"quantidadeFisica\", \"quantidadeReservada\"\n        FROM \"Estoque\" WHERE \"produtoId\" = $1::uuid FOR UPDATE\n      ",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n3",
+          "pid": 80,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            77
+          ]
+        }
+      ],
+      "waitersCount": 3,
+      "distinctPids": 3,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 200,
+          "message": null
+        },
+        {
+          "status": 200,
+          "message": null
+        },
+        {
+          "status": 200,
+          "message": null
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 9,
+          "quantidadeReservada": 2,
+          "quantidadeDisponivel": 7
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 2
+        },
+        "pedidos": [
+          {
+            "id": "274deae6-380e-4c54-aeb3-5e1000fa4d57",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "4bd990d6-31a6-40e5-9a4a-c1f38d63fac0",
+                "quantidade": 2
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [
+          {
+            "quantidade": -4,
+            "motivoOrigem": "AJUSTE_ADMINISTRATIVO",
+            "pedidoId": null
+          },
+          {
+            "quantidade": 5,
+            "motivoOrigem": "AJUSTE_ADMINISTRATIVO",
+            "pedidoId": null
+          },
+          {
+            "quantidade": -2,
+            "motivoOrigem": "AJUSTE_ADMINISTRATIVO",
+            "pedidoId": null
+          }
+        ],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "pedido inicial",
+          "ok": true
+        },
+        {
+          "label": "reservado após pedido",
+          "ok": true
+        },
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "waitersCount",
+          "ok": true
+        },
+        {
+          "label": "distinctPids",
+          "ok": true
+        },
+        {
+          "label": "pendingBeforeRelease",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "reservada preservada",
+          "ok": true
+        },
+        {
+          "label": "disponível ∈ {4,7,9}",
+          "ok": true
+        },
+        {
+          "label": "física = disponível + 2",
+          "ok": true
+        },
+        {
+          "label": "reserva ATIVA intacta",
+          "ok": true
+        },
+        {
+          "label": "reserva ATIVA qty",
+          "ok": true
+        },
+        {
+          "label": "3 ajustes registrados",
+          "ok": true
+        },
+        {
+          "label": "Σ ajustes = Δ física",
+          "ok": true
+        },
+        {
+          "label": "disponível ≥ 0",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-006/6A",
+      "cenario": "CON-006",
+      "ramo": "6A",
+      "operacao": "POST /pedidos (qty 1) enfileirado primeiro no lock Estoque × PATCH estoque (→5) — ramo 6A",
+      "concorrencia": 2,
+      "estoqueInicial": {
+        "quantidadeFisica": 1,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Estoque"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Estoque_pkey"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 71,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "\n          SELECT \"produtoId\" FROM \"Estoque\" WHERE \"produtoId\" = $1::uuid FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71
+          ]
+        }
+      ],
+      "waitersCount": 2,
+      "distinctPids": 2,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 200,
+          "message": null
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 6,
+          "quantidadeReservada": 1,
+          "quantidadeDisponivel": 5
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 1
+        },
+        "pedidos": [
+          {
+            "id": "21bd8ac5-8eca-450c-a16d-910eb48ec825",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "b724e636-54af-416b-a411-3fa54a050fbe",
+                "quantidade": 1
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [
+          {
+            "quantidade": 5,
+            "motivoOrigem": "AJUSTE_ADMINISTRATIVO",
+            "pedidoId": null
+          }
+        ],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "6A: cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "6A: ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "6A: 2 waiters pendentes antes do release",
+          "ok": true
+        },
+        {
+          "label": "6A: ajuste status",
+          "ok": true
+        },
+        {
+          "label": "6A: 1 AJUSTE_ADMINISTRATIVO",
+          "ok": true
+        },
+        {
+          "label": "6A: sem VENDA_PEDIDO",
+          "ok": true
+        },
+        {
+          "label": "6A: Σ movimentos do produto = Δ física",
+          "ok": true
+        },
+        {
+          "label": "6A: quantidade do AJUSTE_ADMINISTRATIVO = Δ física",
+          "ok": true
+        },
+        {
+          "label": "6A: disponível ≥ 0",
+          "ok": true
+        },
+        {
+          "label": "6A: pedido status",
+          "ok": true
+        },
+        {
+          "label": "6A: Δ física = 5",
+          "ok": true
+        },
+        {
+          "label": "6A: estoque final",
+          "ok": true
+        },
+        {
+          "label": "6A: pedidos",
+          "ok": true
+        },
+        {
+          "label": "6A: reserva ATIVA",
+          "ok": true
+        },
+        {
+          "label": "6A: soma ATIVA",
+          "ok": true
+        },
+        {
+          "label": "6A: AJUSTE +5",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-006/6B",
+      "cenario": "CON-006",
+      "ramo": "6B",
+      "operacao": "PATCH estoque (→5) enfileirado primeiro no lock Estoque × POST /pedidos (qty 1) — ramo 6B",
+      "concorrencia": 2,
+      "estoqueInicial": {
+        "quantidadeFisica": 1,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Estoque"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Estoque_pkey"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 71,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "\n        SELECT \"produtoId\", \"quantidadeFisica\", \"quantidadeReservada\"\n        FROM \"Estoque\" WHERE \"produtoId\" = $1::uuid FOR UPDATE\n      ",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 72,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Produto\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71
+          ]
+        }
+      ],
+      "waitersCount": 2,
+      "distinctPids": 2,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 200,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Revisão desatualizada. Atualize os valores."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 5,
+          "quantidadeReservada": 0,
+          "quantidadeDisponivel": 5
+        },
+        "reservas": {
+          "total": 0,
+          "porEstado": {},
+          "somaAtiva": 0
+        },
+        "pedidos": [],
+        "pagamentos": [],
+        "movimentacoes": [
+          {
+            "quantidade": 4,
+            "motivoOrigem": "AJUSTE_ADMINISTRATIVO",
+            "pedidoId": null
+          }
+        ],
+        "historicos": []
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "6B: cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "6B: ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "6B: 2 waiters pendentes antes do release",
+          "ok": true
+        },
+        {
+          "label": "6B: ajuste status",
+          "ok": true
+        },
+        {
+          "label": "6B: 1 AJUSTE_ADMINISTRATIVO",
+          "ok": true
+        },
+        {
+          "label": "6B: sem VENDA_PEDIDO",
+          "ok": true
+        },
+        {
+          "label": "6B: Σ movimentos do produto = Δ física",
+          "ok": true
+        },
+        {
+          "label": "6B: quantidade do AJUSTE_ADMINISTRATIVO = Δ física",
+          "ok": true
+        },
+        {
+          "label": "6B: disponível ≥ 0",
+          "ok": true
+        },
+        {
+          "label": "6B: pedido status",
+          "ok": true
+        },
+        {
+          "label": "6B: mensagem do 409",
+          "ok": true
+        },
+        {
+          "label": "6B: Δ física = 4",
+          "ok": true
+        },
+        {
+          "label": "6B: estoque final",
+          "ok": true
+        },
+        {
+          "label": "6B: pedidos",
+          "ok": true
+        },
+        {
+          "label": "6B: itens de pedido",
+          "ok": true
+        },
+        {
+          "label": "6B: reservas",
+          "ok": true
+        },
+        {
+          "label": "6B: históricos do cliente",
+          "ok": true
+        },
+        {
+          "label": "6B: AJUSTE +4",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-007",
+      "operacao": "POST /pedidos com o mesmo tentativaId — 2 requisições do mesmo cliente",
+      "concorrencia": 2,
+      "estoqueInicial": {
+        "quantidadeFisica": 5,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Carrinho"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Carrinho_pkey"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Carrinho_usuarioId_key"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "advisory",
+          "query": "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))::text AS locked",
+          "blockers": [
+            77
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 77,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "\n          SELECT id FROM \"Carrinho\" WHERE \"usuarioId\" = $1::uuid FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        }
+      ],
+      "waitersCount": 2,
+      "distinctPids": 2,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 201,
+          "message": null
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 5,
+          "quantidadeReservada": 2,
+          "quantidadeDisponivel": 3
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 2
+        },
+        "pedidos": [
+          {
+            "id": "ff7b656b-f02a-4e1a-b2ea-32047fb7928c",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "691bd541-1f0c-455a-b4ad-ee28bea41617",
+                "quantidade": 2
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "waiters no carrinho",
+          "ok": true
+        },
+        {
+          "label": "waiter no advisory",
+          "ok": true
+        },
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "advisory ancorado no blocker ou no predecessor imediato",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "mesmo pedido",
+          "ok": true
+        },
+        {
+          "label": "pedido único",
+          "ok": true
+        },
+        {
+          "label": "estoque final",
+          "ok": true
+        },
+        {
+          "label": "1 reserva ATIVA",
+          "ok": true
+        },
+        {
+          "label": "soma ATIVA = qty",
+          "ok": true
+        },
+        {
+          "label": "itens",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-008",
+      "operacao": "POST /pedidos/:id/pagamentos/pix com o mesmo tentativaId — 2 requisições",
+      "concorrencia": 2,
+      "estoqueInicial": {
+        "quantidadeFisica": 4,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_clienteUsuarioId_data_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_entregadorUsuarioId_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_identificadorNegocio_key"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_pkey"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_statusAtual_data_idx"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 71,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "SELECT id FROM \"Pedido\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "SELECT id FROM \"Pedido\" WHERE id = $1::uuid FOR UPDATE",
+          "blockers": [
+            71
+          ]
+        }
+      ],
+      "waitersCount": 2,
+      "distinctPids": 2,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 200,
+          "message": null
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 2,
+          "quantidadeReservada": 0,
+          "quantidadeDisponivel": 2
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "CONVERTIDA_EM_VENDA": 1
+          },
+          "somaAtiva": 0
+        },
+        "pedidos": [
+          {
+            "id": "5caedda4-1013-4088-9cf5-f6aef599ca95",
+            "statusAtual": "PAGO",
+            "itens": [
+              {
+                "produtoId": "4db28e34-dd4a-4343-a263-2066e5565288",
+                "quantidade": 2
+              }
+            ]
+          }
+        ],
+        "pagamentos": [
+          {
+            "id": "34ebe61f-8acc-4795-8f1c-9fa86cee8720",
+            "forma": "PIX",
+            "resultado": "APROVADO"
+          }
+        ],
+        "movimentacoes": [
+          {
+            "quantidade": -2,
+            "motivoOrigem": "VENDA_PEDIDO",
+            "pedidoId": "5caedda4-1013-4088-9cf5-f6aef599ca95"
+          }
+        ],
+        "historicos": [
+          "PENDENTE_PAGAMENTO",
+          "PAGO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "pedido criado",
+          "ok": true
+        },
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "waitersCount",
+          "ok": true
+        },
+        {
+          "label": "distinctPids",
+          "ok": true
+        },
+        {
+          "label": "pendingBeforeRelease",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "ambos aprovados",
+          "ok": true
+        },
+        {
+          "label": "mesma tentativa",
+          "ok": true
+        },
+        {
+          "label": "pagamento único APROVADO",
+          "ok": true
+        },
+        {
+          "label": "pagamento resultado",
+          "ok": true
+        },
+        {
+          "label": "estoque final",
+          "ok": true
+        },
+        {
+          "label": "reserva convertida",
+          "ok": true
+        },
+        {
+          "label": "sem reserva ATIVA",
+          "ok": true
+        },
+        {
+          "label": "movimento de venda",
+          "ok": true
+        },
+        {
+          "label": "histórico PAGO",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CON-009",
+      "operacao": "PATCH /pedidos/:id/cancelar no mesmo pedido pago — 2 requisições",
+      "concorrencia": 2,
+      "estoqueInicial": {
+        "quantidadeFisica": 10,
+        "quantidadeReservada": 0
+      },
+      "blocker": {
+        "pid": 70,
+        "state": "idle in transaction",
+        "locks": [
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_clienteUsuarioId_data_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_entregadorUsuarioId_idx"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_identificadorNegocio_key"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_pkey"
+          },
+          {
+            "locktype": "relation",
+            "mode": "RowShareLock",
+            "granted": true,
+            "relation": "Pedido_statusAtual_data_idx"
+          }
+        ]
+      },
+      "waiters": [
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n2",
+          "pid": 78,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "tuple",
+          "query": "\n        SELECT \"statusAtual\" FROM \"Pedido\"\n        WHERE id = $1::uuid AND \"clienteUsuarioId\" = $2::uuid\n        FOR UPDATE",
+          "blockers": [
+            77
+          ]
+        },
+        {
+          "application_name": "d106_57401491-d6fc-4ab7-966f-89a32251d21c-n1",
+          "pid": 77,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "query": "\n        SELECT \"statusAtual\" FROM \"Pedido\"\n        WHERE id = $1::uuid AND \"clienteUsuarioId\" = $2::uuid\n        FOR UPDATE",
+          "blockers": [
+            70
+          ]
+        }
+      ],
+      "waitersCount": 2,
+      "distinctPids": 2,
+      "pendingBeforeRelease": true,
+      "responses": [
+        {
+          "status": 200,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Pedido não pode ser cancelado neste status."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 10,
+          "quantidadeReservada": 0,
+          "quantidadeDisponivel": 10
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "DEVOLVIDA_POR_CANCELAMENTO": 1
+          },
+          "somaAtiva": 0
+        },
+        "pedidos": [
+          {
+            "id": "478206ca-1371-4c96-9807-b7090b409c72",
+            "statusAtual": "CANCELADO",
+            "itens": [
+              {
+                "produtoId": "049913fb-1a62-4a56-94aa-608496e6ab7d",
+                "quantidade": 2
+              }
+            ]
+          }
+        ],
+        "pagamentos": [
+          {
+            "id": "f37a24fb-f553-4ef5-9271-d90ee28453d0",
+            "forma": "PIX",
+            "resultado": "APROVADO"
+          }
+        ],
+        "movimentacoes": [
+          {
+            "quantidade": 2,
+            "motivoOrigem": "CANCELAMENTO_PEDIDO",
+            "pedidoId": "478206ca-1371-4c96-9807-b7090b409c72"
+          },
+          {
+            "quantidade": -2,
+            "motivoOrigem": "VENDA_PEDIDO",
+            "pedidoId": "478206ca-1371-4c96-9807-b7090b409c72"
+          }
+        ],
+        "historicos": [
+          "PENDENTE_PAGAMENTO",
+          "PAGO",
+          "CANCELADO"
+        ]
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "pedido criado",
+          "ok": true
+        },
+        {
+          "label": "pagamento aprovado",
+          "ok": true
+        },
+        {
+          "label": "resultado",
+          "ok": true
+        },
+        {
+          "label": "estoque após pagamento",
+          "ok": true
+        },
+        {
+          "label": "cadeia ancorada no blocker",
+          "ok": true
+        },
+        {
+          "label": "ao menos um waiter bloqueado diretamente pelo blocker",
+          "ok": true
+        },
+        {
+          "label": "waitersCount",
+          "ok": true
+        },
+        {
+          "label": "distinctPids",
+          "ok": true
+        },
+        {
+          "label": "pendingBeforeRelease",
+          "ok": true
+        },
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "mensagem do 409",
+          "ok": true
+        },
+        {
+          "label": "estoque devolvido 1×",
+          "ok": true
+        },
+        {
+          "label": "pedido cancelado",
+          "ok": true
+        },
+        {
+          "label": "reserva devolvida",
+          "ok": true
+        },
+        {
+          "label": "movimentos",
+          "ok": true
+        },
+        {
+          "label": "histórico CANCELADO",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "bloqueadosDiretamente": 1,
+      "errosDeBanco": []
+    },
+    {
+      "id": "CTRL-001",
+      "operacao": "mesmos 5 compradores de CON-001 executados em série (controle negativo)",
+      "concorrencia": 5,
+      "estoqueInicial": {
+        "quantidadeFisica": 1,
+        "quantidadeReservada": 0
+      },
+      "blocker": null,
+      "waiters": [],
+      "waitersCount": 0,
+      "distinctPids": 0,
+      "pendingBeforeRelease": null,
+      "responses": [
+        {
+          "status": 201,
+          "message": null
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        },
+        {
+          "status": 409,
+          "message": "Estoque indisponível."
+        }
+      ],
+      "db": {
+        "estoque": {
+          "quantidadeFisica": 1,
+          "quantidadeReservada": 1,
+          "quantidadeDisponivel": 0
+        },
+        "reservas": {
+          "total": 1,
+          "porEstado": {
+            "ATIVA": 1
+          },
+          "somaAtiva": 1
+        },
+        "pedidos": [
+          {
+            "id": "0504a016-3380-4004-b4c5-463e290614e4",
+            "statusAtual": "PENDENTE_PAGAMENTO",
+            "itens": [
+              {
+                "produtoId": "0981e9ce-2cda-47a7-8c2d-608f4d3f39ec",
+                "quantidade": 1
+              }
+            ]
+          }
+        ],
+        "pagamentos": [],
+        "movimentacoes": [],
+        "historicos": [
+          "PENDENTE_PAGAMENTO"
+        ],
+        "maxSimultaneousWaiters": 0
+      },
+      "deadlocksBefore": "0",
+      "deadlocksAfter": "0",
+      "assertions": [
+        {
+          "label": "status",
+          "ok": true
+        },
+        {
+          "label": "estado final idêntico a CON-001",
+          "ok": true
+        },
+        {
+          "label": "pedidos",
+          "ok": true
+        },
+        {
+          "label": "maxSimultaneousWaiters",
+          "ok": true
+        },
+        {
+          "label": "sem blocker",
+          "ok": true
+        }
+      ],
+      "veredito": "PASS",
+      "errosDeBanco": []
+    }
+  ],
+  "consolidado": [
+    {
+      "cenario": "CON-001",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-002",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-003",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-004",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-005",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-006",
+      "ramos": [
+        "6A",
+        "6B"
+      ],
+      "registros": 2,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-007",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-008",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CON-009",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    },
+    {
+      "cenario": "CTRL-001",
+      "ramos": [],
+      "registros": 1,
+      "veredito": "PASS"
+    }
+  ],
+  "invariantes": [
+    {
+      "id": "I3",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-001: 1 reserva por item e somas iguais",
+          "ok": true
+        },
+        {
+          "label": "CON-003: item qty 2 ↔ reserva qty 2",
+          "ok": true
+        },
+        {
+          "label": "CON-007: sem reserva duplicada",
+          "ok": true
+        },
+        {
+          "label": "I3 CON-001",
+          "ok": true
+        },
+        {
+          "label": "I3 CON-002",
+          "ok": true
+        },
+        {
+          "label": "I3 CON-003",
+          "ok": true
+        },
+        {
+          "label": "I3 CON-007",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I4",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-001: Σ reservas ATIVAS ≤ física",
+          "ok": true
+        },
+        {
+          "label": "CON-002: Σ reservas ATIVAS ≤ física (limite efetivo = revisão assinada)",
+          "ok": true
+        },
+        {
+          "label": "CON-003: Σ reservas ATIVAS ≤ física",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I9",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-001: rejeição sem rastro",
+          "ok": true
+        },
+        {
+          "label": "CON-002: 4 rejeições por revisão desatualizada sem rastro",
+          "ok": true
+        },
+        {
+          "label": "CON-003: rejeição sem rastro",
+          "ok": true
+        },
+        {
+          "label": "CON-004: rejeição sem rastro",
+          "ok": true
+        },
+        {
+          "label": "CON-006/6B: 409 sem rastro de pedido (AJUSTE do cenário é esperado)",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I5",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-004: AJUSTE_ADMINISTRATIVO = Δ física",
+          "ok": true
+        },
+        {
+          "label": "CON-005: Σ AJUSTE_ADMINISTRATIVO = Δ física",
+          "ok": true
+        },
+        {
+          "label": "CON-006/6A: Σ AJUSTE_ADMINISTRATIVO = Δ física",
+          "ok": true
+        },
+        {
+          "label": "CON-006/6B: Σ AJUSTE_ADMINISTRATIVO = Δ física",
+          "ok": true
+        },
+        {
+          "label": "CON-008: VENDA_PEDIDO = −qty",
+          "ok": true
+        },
+        {
+          "label": "CON-009: devolução exatamente 1×",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I2",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-005: reservada = Σ ATIVA",
+          "ok": true
+        },
+        {
+          "label": "CON-007: reservada = Σ ATIVA",
+          "ok": true
+        },
+        {
+          "label": "I2 70b2dadd-bbdc-4123-a1ef-6a80ee7b7d4a",
+          "ok": true
+        },
+        {
+          "label": "I2 ab4f5df3-8587-4d19-bb27-6f8d1e243239",
+          "ok": true
+        },
+        {
+          "label": "I2 6f052464-559e-4e0c-bd14-71c383703973",
+          "ok": true
+        },
+        {
+          "label": "I2 5ee66175-16bc-46e6-a6ba-603b9d746aef",
+          "ok": true
+        },
+        {
+          "label": "I2 4bd990d6-31a6-40e5-9a4a-c1f38d63fac0",
+          "ok": true
+        },
+        {
+          "label": "I2 b724e636-54af-416b-a411-3fa54a050fbe",
+          "ok": true
+        },
+        {
+          "label": "I2 7e83778b-b6f1-47bd-912e-6b2818762672",
+          "ok": true
+        },
+        {
+          "label": "I2 691bd541-1f0c-455a-b4ad-ee28bea41617",
+          "ok": true
+        },
+        {
+          "label": "I2 4db28e34-dd4a-4343-a263-2066e5565288",
+          "ok": true
+        },
+        {
+          "label": "I2 049913fb-1a62-4a56-94aa-608496e6ab7d",
+          "ok": true
+        },
+        {
+          "label": "I2 0981e9ce-2cda-47a7-8c2d-608f4d3f39ec",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I1",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-006/6A: 0 ≤ reservada ≤ física",
+          "ok": true
+        },
+        {
+          "label": "CON-006/6B: 0 ≤ reservada ≤ física",
+          "ok": true
+        },
+        {
+          "label": "I1 70b2dadd-bbdc-4123-a1ef-6a80ee7b7d4a",
+          "ok": true
+        },
+        {
+          "label": "I1 ab4f5df3-8587-4d19-bb27-6f8d1e243239",
+          "ok": true
+        },
+        {
+          "label": "I1 6f052464-559e-4e0c-bd14-71c383703973",
+          "ok": true
+        },
+        {
+          "label": "I1 5ee66175-16bc-46e6-a6ba-603b9d746aef",
+          "ok": true
+        },
+        {
+          "label": "I1 4bd990d6-31a6-40e5-9a4a-c1f38d63fac0",
+          "ok": true
+        },
+        {
+          "label": "I1 b724e636-54af-416b-a411-3fa54a050fbe",
+          "ok": true
+        },
+        {
+          "label": "I1 7e83778b-b6f1-47bd-912e-6b2818762672",
+          "ok": true
+        },
+        {
+          "label": "I1 691bd541-1f0c-455a-b4ad-ee28bea41617",
+          "ok": true
+        },
+        {
+          "label": "I1 4db28e34-dd4a-4343-a263-2066e5565288",
+          "ok": true
+        },
+        {
+          "label": "I1 049913fb-1a62-4a56-94aa-608496e6ab7d",
+          "ok": true
+        },
+        {
+          "label": "I1 0981e9ce-2cda-47a7-8c2d-608f4d3f39ec",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I6",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CON-007: 1 pedido para o mesmo tentativaId",
+          "ok": true
+        },
+        {
+          "label": "CON-008: 1 pagamento para o mesmo tentativaId",
+          "ok": true
+        },
+        {
+          "label": "I6 CON-008: 1 pagamento e 1 movimento",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I8",
+      "ok": true,
+      "checks": [
+        {
+          "label": "CTRL-001: estado final igual sem concorrência real",
+          "ok": true
+        },
+        {
+          "label": "I8 CON-009: cancelamento local coerente",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "I7",
+      "ok": true,
+      "checks": [
+        {
+          "label": "deadlocks inalterados",
+          "ok": true
+        }
+      ]
+    }
+  ],
+  "deadlocks": {
+    "antes": "0",
+    "depois": "0"
+  },
+  "correcaoF01": {
+    "origem": "EXEC inicial do harness (execução histórica; artefato próprio não preservado)",
+    "finding": "F-01 (concorrência) — expectativa de CON-002 inexecutável sob o contrato de revisão assinada (PLAN corrigido e revisado)",
+    "evidenciaRun1": "1×201 + 4×409 \"Revisão desatualizada. Atualize os valores.\"; 5 waiters/5 PIDs; estado final 3/1/2; 1 pedido; 1 reserva ATIVA qty 1",
+    "expectativaAntiga": "3×201; 2×409 \"Estoque indisponível.\"; final física 3 / reservada 3 / disponível 0; 3 pedidos; 3 reservas ATIVA",
+    "expectativaNova": "1×201; 4×409 \"Revisão desatualizada. Atualize os valores.\"; final física 3 / reservada 1 / disponível 2; 1 pedido; 1 reserva ATIVA qty 1; 0 movimentação",
+    "baseDeContrato": "assinarRevisao(usuarioId, revisao, saldos) inclui saldos — pedidos.service.ts L665-667; comparação em L608-610 após o teste de overselling",
+    "concorrenciaPreservada": "CON-002: barreira no lock \"Produto\" com 5 concorrentes, 5 PIDs distintos, pendingBeforeRelease=true, nenhuma resposta antes do release"
+  },
+  "correcoesLow": {
+    "origem": "Histórico do harness e da documentação (itens LOW/OBS de ciclos anteriores; histórico não verificável)",
+    "artefatosPreservados": [
+      "docs/testing/evidence/D106-exec-concorrencia-antes.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-1.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-2.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-3.json",
+      "docs/testing/evidence/D106-exec-concorrencia.json"
+    ],
+    "notaDeProveniencia": "Execuções intermediárias de ciclos anteriores não geraram artefato próprio preservado. Os artefatos mantidos são o \"antes\", as três execuções \"depois\" e a execução canônica independente, que grava head, working tree, diffSha256, runLabel e runId. Procedimento e hash do patch estão em docs/testing/D106-CONCORRENCIA-VALIDACAO.md.",
+    "LOW-01": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (CON-006)",
+      "correcao": "I5 passou a ser verificada em CON-006 com a mesma fórmula de CON-005 (Σ movimentos = Δ física), parametrizada pela física inicial 1: Σ movimentos == física_final − 1, quantidade do AJUSTE_ADMINISTRATIVO == Δ física e marcador de invariante I5 emitido.",
+      "estado": "corrigido"
+    },
+    "LOW-02": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (CON-007)",
+      "correcao": "O waiter advisory passou a ser validado com o mesmo critério de ancoramento de disputar(): pg_blocking_pids contém o blocker do harness OU o predecessor imediato (1º waiter no Carrinho); emitidos \"cadeia ancorada no blocker\", \"ao menos um waiter bloqueado diretamente\" e \"advisory ancorado no blocker ou no predecessor imediato\". transactionid/tuple/advisory continuam aceitos.",
+      "estado": "corrigido"
+    },
+    "OBS-01": {
+      "arquivo": "docs/testing/D106-CONCORRENCIA-VALIDACAO.md",
+      "correcao": "Marcador I8 mantido apenas nos cenários com checagem própria (CON-009 e CTRL-001). Generalizar para \"todos\" exigiria marcação tautológica, sem checagem real; registrado como pendência.",
+      "estado": "pendência registrada (não é finding)"
+    },
+    "LOW-03": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (CON-006)",
+      "correcao": "Removido o ramo 409 inalcançável do CON-006 monolítico (substituído pelos ramos forçados 6A/6B).",
+      "estado": "histórico não verificável; superado por 6A/6B"
+    },
+    "LOW-04": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (CON-006/6A e 6B)",
+      "correcao": "CON-006 dividido em dois ramos forçados, com fixtures próprias (s6a/s6b, estoque 1/0, carrinho qty 1): 6A enfileira o pedido primeiro (pedido 201, ajuste 200, final 6/1/5, AJUSTE +5); 6B enfileira o ajuste primeiro (ajuste 200, pedido 409 \"Revisão desatualizada. Atualize os valores.\", final 5/0/5, 0 pedido/reserva, AJUSTE +4). Ordem imposta pela fila do lock Estoque, 2 waiters/2 PIDs distintos bloqueados antes do release; nenhum ramo aceita o estado do outro.",
+      "estado": "corrigido"
+    },
+    "LOW-05": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (I9)",
+      "correcao": "I9 marcada apenas em CON-006/6B (409 sem rastro); N/A em CON-006/6A, que não tem rejeição (verificado por I1/I5).",
+      "estado": "corrigido"
+    },
+    "LOW-06": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (I9)",
+      "correcao": "I9 em 6B não exige ausência do AJUSTE_ADMINISTRATIVO esperado: exige zero Pedido/ItemPedido/Reserva/Histórico e zero movimentação de venda ou com pedidoId; o ajuste do cenário (+4) é esperado.",
+      "estado": "corrigido"
+    },
+    "OBS-A": {
+      "arquivo": "docs/testing/D106-CONCORRENCIA-VALIDACAO.md (CON-009)",
+      "correcao": "Ordem das respostas declarada como variável entre rodadas (conjunto {200, 409}); nenhuma ordem específica é esperada.",
+      "estado": "corrigido"
+    },
+    "OBS-B": {
+      "arquivo": "docs/testing/D106-CONCORRENCIA-VALIDACAO.md (identificação)",
+      "correcao": "Números da rodada passaram a vir do próprio JSON gerado, sem rótulo de rodada fixo.",
+      "estado": "corrigido"
+    },
+    "OBS-C": {
+      "arquivo": "docs/testing/D106-CONCORRENCIA-VALIDACAO.md (§8)",
+      "correcao": "Declarado que I10 é verificada pelos critérios de cleanup no vereditoGeral (17/17 passos, resíduos 0, sessões órfãs 0, promises pendentes 0), e não por marcarInvariante — o JSON traz I1–I9.",
+      "estado": "corrigido"
+    },
+    "LOW-07": {
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts (evidência)",
+      "correcao": "Erros do artefato sanitizados (sem stack/caminhos absolutos) e SQLSTATE do PostgreSQL capturado por instância: CON-006/6B registra 40P01 / TransactionWriteConflict em cenarios[].errosDeBanco; 0 ocorrências de caminhos absolutos no JSON.",
+      "estado": "corrigido"
+    },
+    "LOW-08": {
+      "arquivo": "docs/testing/D106-CONCORRENCIA-VALIDACAO.md (narrativo)",
+      "correcao": "Contabilidade corrigida: 142 assertivas registradas = 141 verdadeiras + 1 falsa (6B: pedido status); removida a menção a checagem não executada por curto-circuito; listadas as checagens de 6B não avaliadas após a falha; consolidado explícito (9 PASS · 1 FAIL · 0 INCONCLUSIVO).",
+      "estado": "corrigido"
+    }
+  },
+  "findings": [],
+  "cleanup": {
+    "totalPassos": 17,
+    "passos": [
+      {
+        "passo": 1,
+        "tabela": "Notificacao",
+        "erro": null
+      },
+      {
+        "passo": 2,
+        "tabela": "ItemPedidoPersonalizacaoSnapshot",
+        "erro": null
+      },
+      {
+        "passo": 3,
+        "tabela": "ReservaEstoque",
+        "erro": null
+      },
+      {
+        "passo": 4,
+        "tabela": "MovimentacaoEstoque",
+        "erro": null
+      },
+      {
+        "passo": 5,
+        "tabela": "Pagamento",
+        "erro": null
+      },
+      {
+        "passo": 6,
+        "tabela": "ItemPedido",
+        "erro": null
+      },
+      {
+        "passo": 7,
+        "tabela": "EnderecoEntregaSnapshot",
+        "erro": null
+      },
+      {
+        "passo": 8,
+        "tabela": "HistoricoStatusPedido",
+        "erro": null
+      },
+      {
+        "passo": 9,
+        "tabela": "Pedido",
+        "erro": null
+      },
+      {
+        "passo": 10,
+        "tabela": "ItemCarrinhoPersonalizacao",
+        "erro": null
+      },
+      {
+        "passo": 11,
+        "tabela": "ItemCarrinho",
+        "erro": null
+      },
+      {
+        "passo": 12,
+        "tabela": "Carrinho",
+        "erro": null
+      },
+      {
+        "passo": 13,
+        "tabela": "ProdutoPersonalizacao",
+        "erro": null
+      },
+      {
+        "passo": 14,
+        "tabela": "Estoque",
+        "erro": null
+      },
+      {
+        "passo": 15,
+        "tabela": "Produto",
+        "erro": null
+      },
+      {
+        "passo": 16,
+        "tabela": "Categoria",
+        "erro": null
+      },
+      {
+        "passo": 17,
+        "tabela": "Usuario",
+        "erro": null
+      }
+    ],
+    "cleanupErrors": [],
+    "residuos": {
+      "Notificacao": 0,
+      "ItemPedidoPersonalizacaoSnapshot": 0,
+      "ReservaEstoque": 0,
+      "MovimentacaoEstoque": 0,
+      "Pagamento": 0,
+      "ItemPedido": 0,
+      "EnderecoEntregaSnapshot": 0,
+      "HistoricoStatusPedido": 0,
+      "Pedido": 0,
+      "ItemCarrinhoPersonalizacao": 0,
+      "ItemCarrinho": 0,
+      "Carrinho": 0,
+      "ProdutoPersonalizacao": 0,
+      "Estoque": 0,
+      "Produto": 0,
+      "Categoria": 0,
+      "Usuario": 0
+    },
+    "sessoesOrfas": 0,
+    "promisesPendentes": 0
+  },
+  "erroFatal": null,
+  "veredito": "PASS"
+}

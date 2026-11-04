@@ -1,0 +1,370 @@
+{
+  "tarefa": "D106 — fixtures sinteticas e reset 2x no staging existente",
+  "geradoEm": "2026-11-04T01:10:26.694Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "ambiente": {
+    "host": "45.231.133.145:30322",
+    "diretorio": "/home/deploy/d106",
+    "banco": "cupcake_staging",
+    "api": "http://127.0.0.1:3000 (interno ao container)",
+    "shaImplantado": "028c605bf8a5114c8927de5991a2d5806a0c069c",
+    "shaEsperado": "028c605bf8a5114c8927de5991a2d5806a0c069c",
+    "avisoSha": "O SHA implantado NAO e o candidato D106; D106_EXPECTED_SHA foi usado para confirmar o alvo real, nao para validar os fixes.",
+    "artefatosCopiados": [
+      {
+        "path": "/home/deploy/d106/scripts/d106-staging-fixtures.sh",
+        "sha256": "69127df347c390937b89728df9dc2377a78dbdb5725fbc8ad15808bbf03d4c5f"
+      },
+      {
+        "path": "/home/deploy/d106/apps/api/scripts/d106-staging-fixtures.mjs",
+        "sha256": "98e59f241dd9116d2b4980483fe5473a9b3f15a510653f7ae79879499500af37"
+      }
+    ],
+    "credencialRuntime": {
+      "caminho": "/home/deploy/.config/cupcake/d106-staging.env",
+      "diretorio": "/home/deploy/.config/cupcake (0700)",
+      "arquivo": "0600, 52 bytes",
+      "observacao": "Senha runtime retida fora do repositorio entre sessoes; conteudo nunca copiado para evidencia."
+    }
+  },
+  "dryRun": {
+    "modo": "dry-run",
+    "banco": "cupcake_staging",
+    "alvosD106Existentes": {
+      "usuarios": [
+        "d106-admin@example.test",
+        "d106-entregador@example.test",
+        "d106-cliente@example.test"
+      ],
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2
+    },
+    "contagensAntes": {
+      "usuarios": 4,
+      "produtos": 2,
+      "categorias": 2,
+      "pedidos": 2,
+      "estoques": 2,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "configuracaoEntregaExistente": 0
+  },
+  "execucoes": [
+    {
+      "execucao": 1,
+      "modo": "apply",
+      "contagensAntes": {
+        "usuarios": 1,
+        "produtos": 1,
+        "categorias": 1,
+        "pedidos": 0,
+        "estoques": 1,
+        "movimentos": 0,
+        "configuracoes": 0
+      },
+      "contagensFinais": {
+        "usuarios": 4,
+        "produtos": 2,
+        "categorias": 2,
+        "pedidos": 2,
+        "estoques": 2,
+        "movimentos": 3,
+        "configuracoes": 0
+      },
+      "estoque": {
+        "fisica": 48,
+        "reservada": 0
+      },
+      "itensNoCarrinho": 0,
+      "pedidos": [
+        {
+          "modalidade": "ENTREGA",
+          "status": "SAIU_PARA_ENTREGA",
+          "identificadorNegocio": "PED-10000000-0000-4000-8000-000000000004-b76875873583c5cbfd36ea670ae5eabd6970a8de1d30b007d0409b0c84a43376",
+          "itens": 1,
+          "entregadorAtribuido": true
+        },
+        {
+          "modalidade": "RETIRADA",
+          "status": "PAGO",
+          "identificadorNegocio": "PED-10000000-0000-4000-8000-000000000002-cc51256790eddbfcaccc35d40c5cd27c998c757a5bbf87fc7455af6e77644d38",
+          "itens": 1,
+          "entregadorAtribuido": false
+        }
+      ],
+      "contas": [
+        {
+          "email": "d106-admin@example.test",
+          "perfil": "ADMIN"
+        },
+        {
+          "email": "d106-cliente@example.test",
+          "perfil": "CLIENTE"
+        },
+        {
+          "email": "d106-entregador@example.test",
+          "perfil": "ENTREGADOR"
+        }
+      ],
+      "contagensDepoisDoReset": {
+        "usuarios": 1,
+        "produtos": 1,
+        "categorias": 1,
+        "pedidos": 0,
+        "estoques": 1,
+        "movimentos": 0,
+        "configuracoes": 0
+      },
+      "backup": {
+        "arquivo": "/home/deploy/cupcake-staging/backups/postgres/20261104T005432Z-d106-fixtures.dump",
+        "bytes": 49624,
+        "sha256": "6ef9bef8d6f97288747d0a650de49e26193d0086005eb6e0d5e78391fea36a78"
+      }
+    },
+    {
+      "execucao": 2,
+      "modo": "apply",
+      "contagensAntes": {
+        "usuarios": 4,
+        "produtos": 2,
+        "categorias": 2,
+        "pedidos": 2,
+        "estoques": 2,
+        "movimentos": 3,
+        "configuracoes": 0
+      },
+      "contagensFinais": {
+        "usuarios": 4,
+        "produtos": 2,
+        "categorias": 2,
+        "pedidos": 2,
+        "estoques": 2,
+        "movimentos": 3,
+        "configuracoes": 0
+      },
+      "estoque": {
+        "fisica": 48,
+        "reservada": 0
+      },
+      "itensNoCarrinho": 0,
+      "pedidos": [
+        {
+          "modalidade": "ENTREGA",
+          "status": "SAIU_PARA_ENTREGA",
+          "identificadorNegocio": "PED-10000000-0000-4000-8000-000000000004-bb072d7e283f0e3a930f95cf25c4dbed9aa3ffed9dda28e4101c56b94fc47db4",
+          "itens": 1,
+          "entregadorAtribuido": true
+        },
+        {
+          "modalidade": "RETIRADA",
+          "status": "PAGO",
+          "identificadorNegocio": "PED-10000000-0000-4000-8000-000000000002-9932de51bf0123e0ca6a25f142df7efbda39eb94e7d9767291555d6061b69c87",
+          "itens": 1,
+          "entregadorAtribuido": false
+        }
+      ],
+      "contas": [
+        {
+          "email": "d106-admin@example.test",
+          "perfil": "ADMIN"
+        },
+        {
+          "email": "d106-cliente@example.test",
+          "perfil": "CLIENTE"
+        },
+        {
+          "email": "d106-entregador@example.test",
+          "perfil": "ENTREGADOR"
+        }
+      ],
+      "contagensDepoisDoReset": {
+        "usuarios": 1,
+        "produtos": 1,
+        "categorias": 1,
+        "pedidos": 0,
+        "estoques": 1,
+        "movimentos": 0,
+        "configuracoes": 0
+      },
+      "backup": {
+        "arquivo": "/home/deploy/cupcake-staging/backups/postgres/20261104T005441Z-d106-fixtures.dump",
+        "bytes": 51728,
+        "sha256": "e479dce2098a5a4a57887d09d832714118bb7a26b6bbd10c81c1ca771bae47a8"
+      }
+    },
+    {
+      "execucao": 3,
+      "motivo": "TEST reteste: regenerar a senha apos o TEST anterior te-la apagado",
+      "modo": "apply",
+      "contagensAntes": {
+        "usuarios": 4,
+        "produtos": 2,
+        "categorias": 2,
+        "pedidos": 2,
+        "estoques": 2,
+        "movimentos": 3,
+        "configuracoes": 0
+      },
+      "contagensFinais": {
+        "usuarios": 4,
+        "produtos": 2,
+        "categorias": 2,
+        "pedidos": 2,
+        "estoques": 2,
+        "movimentos": 3,
+        "configuracoes": 0
+      },
+      "contagensDepoisDoReset": {
+        "usuarios": 1,
+        "produtos": 1,
+        "categorias": 1,
+        "pedidos": 0,
+        "estoques": 1,
+        "movimentos": 0,
+        "configuracoes": 0
+      },
+      "estoque": {
+        "fisica": 48,
+        "reservada": 0
+      },
+      "itensNoCarrinho": 0,
+      "pedidos": [
+        {
+          "modalidade": "ENTREGA",
+          "status": "SAIU_PARA_ENTREGA",
+          "identificadorNegocio": "PED-10000000-0000-4000-8000-000000000004-af684e9076dc9f34aaf547870957371129d8027f7efa167420fa2bb1a04f394b",
+          "itens": 1,
+          "entregadorAtribuido": true
+        },
+        {
+          "modalidade": "RETIRADA",
+          "status": "PAGO",
+          "identificadorNegocio": "PED-10000000-0000-4000-8000-000000000002-20076eade79d5deae49f245eea73668b2e8b50ef9260b3fad76fe46b6fa7030a",
+          "itens": 1,
+          "entregadorAtribuido": false
+        }
+      ],
+      "contas": [
+        {
+          "email": "d106-admin@example.test",
+          "perfil": "ADMIN"
+        },
+        {
+          "email": "d106-cliente@example.test",
+          "perfil": "CLIENTE"
+        },
+        {
+          "email": "d106-entregador@example.test",
+          "perfil": "ENTREGADOR"
+        }
+      ],
+      "backup": {
+        "arquivo": "/home/deploy/cupcake-staging/backups/postgres/20261104T010903Z-d106-fixtures.dump",
+        "bytes": 51717,
+        "sha256": "c00bad990bbd8ff1fb2d260a27fe082389bf7d488aad6d6418180030c052e323"
+      }
+    }
+  ],
+  "idempotencia": {
+    "contagensExecucao1": {
+      "usuarios": 4,
+      "produtos": 2,
+      "categorias": 2,
+      "pedidos": 2,
+      "estoques": 2,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "contagensExecucao2": {
+      "usuarios": 4,
+      "produtos": 2,
+      "categorias": 2,
+      "pedidos": 2,
+      "estoques": 2,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "contagensExecucao3": {
+      "usuarios": 4,
+      "produtos": 2,
+      "categorias": 2,
+      "pedidos": 2,
+      "estoques": 2,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "identicas": true,
+    "residuos": 0,
+    "observacao": "As tres execucoes terminam com as mesmas contagens; apenas IDs sao novos (por isso o resumo muda). A execucao 3 apenas regenerou a credencial e repetiu reset+seed."
+  },
+  "estadoFinal": {
+    "contas": [
+      "d106-admin@example.test (ADMIN)",
+      "d106-cliente@example.test (CLIENTE)",
+      "d106-entregador@example.test (ENTREGADOR)"
+    ],
+    "adminExistentePreservado": "diego@qosit.cloud",
+    "o1": {
+      "modalidade": "RETIRADA",
+      "status": "PAGO",
+      "itens": 1,
+      "entregador": null
+    },
+    "o2": {
+      "modalidade": "ENTREGA",
+      "status": "SAIU_PARA_ENTREGA",
+      "itens": 1,
+      "entregadorAtribuido": true
+    },
+    "estoque": {
+      "fisica": 48,
+      "reservada": 0
+    },
+    "carrinho": 0,
+    "reservas": {
+      "total": 2,
+      "ativas": 0,
+      "convertidasEmVenda": 2
+    },
+    "movimentacoes": {
+      "total": 3,
+      "vendaPedido": 2,
+      "ajusteAdministrativo": 1
+    },
+    "configuracoesLojaEntrega": 0
+  },
+  "parametros": {
+    "confirm": "D106_STAGING_CONFIRM=cupcake_staging",
+    "expectedSha": "D106_EXPECTED_SHA=028c605bf8a5114c8927de5991a2d5806a0c069c",
+    "modo": "staging",
+    "senha": "<runtime, apenas em /home/deploy/.config/cupcake/d106-staging.env (0600, fora do repo); nao copiada para evidencia>"
+  },
+  "resultado": "PASS (3 execucoes com contagens identicas, 0 residuo, ADMIN preservado, backup novo, credencial retida)",
+  "execucao3AposReteste": {
+    "usuarios": [
+      "d106-admin@example.test (ADMIN)",
+      "d106-cliente@example.test (CLIENTE)",
+      "d106-entregador@example.test (ENTREGADOR)",
+      "diego@qosit.cloud (ADMIN existente)"
+    ],
+    "o1": {
+      "modalidade": "RETIRADA",
+      "status": "PAGO",
+      "entregador": null
+    },
+    "o2": {
+      "modalidade": "ENTREGA",
+      "status": "SAIU_PARA_ENTREGA",
+      "entregadorAtribuido": true
+    },
+    "estoqueD106": {
+      "fisica": 48,
+      "reservada": 0
+    },
+    "itensCarrinho": 0,
+    "configuracoes": 0
+  }
+}

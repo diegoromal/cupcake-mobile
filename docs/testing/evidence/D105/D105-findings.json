@@ -1,0 +1,133 @@
+{
+  "task": "D105",
+  "kind": "findings",
+  "participant_findings": [],
+  "findings_note": "Nenhum finding de usabilidade confirmado (sem sessao com participante). Ha 1 finding objetivo de layout (D105-F01) detectado no dry-run de UI do moderador, contra requisito documentado.",
+  "inherited_findings": [
+    {
+      "id": "F-04",
+      "origin": "D104",
+      "severity_suggested": "ALTA",
+      "profile": "ADMIN e CLIENTE",
+      "flow": "PATCH /admin/produtos/:id/estoque concorrente com POST /pedidos do mesmo produto",
+      "observed": "Deadlock real 40P01 no ramo ajuste-primeiro; ajuste 200, pedido 500 Internal server error; contador de deadlocks +1.",
+      "expected": "Pedido 409 'Revisao desatualizada. Atualize os valores.' no ramo ajuste-primeiro, sem deadlock.",
+      "impact": "Falha real de producao sob concorrencia; pedido pode falhar com erro interno.",
+      "evidence": [
+        "docs/testing/D104-CONCORRENCIA-VALIDACAO.md (branch task/D104-testes-concorrencia-estoque, commit 28eb11d)",
+        "docs/testing/evidence/D104-exec-concorrencia.json (commit 28eb11d)"
+      ],
+      "evidence_availability": "nao integrada a branch D105; disponivel no commit 28eb11d da branch D104",
+      "status": "encaminhado a D106; nao corrigir na D105",
+      "consequence": "F-03/6B e consequencia de F-04, sem acao propria."
+    }
+  ],
+  "dry_run_observations": [
+    {
+      "id": "OBS-D105-01",
+      "type": "environment",
+      "description": "Quatro pedidos adicionais de processo concorrente apareceram no banco dedicado durante o dry-run.",
+      "impact": "Risco de contaminacao; exige ambiente exclusivo por sessao.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-02",
+      "type": "product-behavior",
+      "description": "Pagamento simulado decide aprovacao pelo ultimo digito hexadecimal do tentativaId.",
+      "impact": "Pode recusar a primeira tentativa; observar a reacao do participante.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-03",
+      "type": "security-behavior",
+      "description": "Admin responde 403 Origem nao permitida para mutacao de origem diferente.",
+      "impact": "Exige acesso direto a localhost:3001; nao e defeito.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-04",
+      "type": "environment",
+      "description": "Delivery depende de coordenadas/configuracao; Retirada e mais deterministica.",
+      "impact": "Pode falhar se o ambiente nao estiver preparado.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-05",
+      "type": "environment",
+      "description": "Keychain pode restaurar sessao antiga no simulador.",
+      "impact": "Sessao anterior pode contaminar a sessao do participante.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-06",
+      "type": "product-behavior",
+      "description": "Vitrine oferece categorias/lista, sem busca textual; 'Meus pedidos' e botao somente de icone com tooltip.",
+      "impact": "Observar a estrategia de descoberta do participante; nao e defeito por si so.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-07",
+      "type": "product-behavior",
+      "description": "POST /pedidos consome os itens na criacao, mas nao remove ItemCarrinho; o script limpa o carrinho antes da sessao.",
+      "impact": "Se o participante voltar ao carrinho apos comprar, pode ver itens ja comprados; avaliar na D106 se houver requisito.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-08",
+      "type": "product-behavior",
+      "description": "Identificador de negocio longo (PED-<uuid>-<hash>) exibido como numero do pedido no app, pagamento e Admin.",
+      "impact": "Dificulta leitura/transcricao e aumenta a largura da tabela do Admin (ver D105-F01).",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-09",
+      "type": "product-behavior",
+      "description": "Lista do Entregador mistura SAIU_PARA_ENTREGA e ENTREGUE, sem filtro.",
+      "impact": "Pode dificultar localizar a entrega ativa quando houver historico.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-10",
+      "type": "product-behavior",
+      "description": "Confirmar entrega executa a mutacao sem dialogo de confirmacao (o Admin usa dialogo para Iniciar producao).",
+      "impact": "Acao irreversivel sem etapa de confirmacao; documentacao exige acao explicita, nao dialogo.",
+      "is_finding": false
+    },
+    {
+      "id": "OBS-D105-11",
+      "type": "environment",
+      "description": "Em next dev, Open Next.js Dev Tools sobrepoe Sair do Sistema no rodape do Admin.",
+      "impact": "Artefato de desenvolvimento; nao ocorre em build de producao.",
+      "is_finding": false
+    }
+  ],
+  "triage": {
+    "destination": "D106",
+    "rules": [
+      "Confirmar se o item e finding ou observacao.",
+      "Exigir requisito/contrato/criterio e evidencia.",
+      "Definir severidade final na D106.",
+      "Nao corrigir F-04 na D105."
+    ]
+  },
+  "objective_findings": [
+    {
+      "id": "D105-F01",
+      "origin": "dry-run de UI do moderador (2026-11-03, HEAD 4452c0c); nao e sessao com participante",
+      "profile": "ADMIN",
+      "task": "localizar pedido / executar acao administrativa",
+      "observed": "Em viewport 1280x801, /pedidos deixa STATUS, VALOR TOTAL e ACAO fora da area visivel. A rolagem horizontal funciona, mas o indicador so aparece abaixo de 601 px (.table-wrap:after display:none; habilitado apenas em @media(max-width:600px)). O link Ver detalhes so apareceu apos rolagem horizontal manual.",
+      "expected": "docs/design/admin/orders/order-list.md: cenario-base 1280-1440 px; acoes devem permanecer acessiveis; rolagem horizontal deve ser indicada; nenhuma coluna critica pode desaparecer silenciosamente.",
+      "impact": "No cenario-base o Admin nao ve a acao primaria de abrir o pedido nem parte de status/valor sem descobrir a rolagem; pode atrasar ou impedir as tarefas 1-2 do roteiro.",
+      "evidence": [
+        "docs/testing/evidence/D105/screenshots/admin-pedidos-1280.png",
+        "apps/admin/components/OrderList.tsx",
+        "apps/admin/app/globals.css"
+      ],
+      "reproduction": "Abrir http://localhost:3001/pedidos em 1280x801 com pedidos PED-<uuid>-<hash>; observar colunas e indicador de rolagem.",
+      "severity_suggested": "MEDIA",
+      "status": "aberto; encaminhado a D106; nao corrigido na D105",
+      "limits": "Observado em 1280 px (limite inferior do cenario-base); nao verificado em 1440 px; nao e auditoria visual ampla."
+    }
+  ]
+}
