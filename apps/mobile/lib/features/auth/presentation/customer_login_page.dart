@@ -6,6 +6,7 @@ import '../data/customer_auth_api.dart';
 import '../data/customer_registration_api.dart';
 import '../session/customer_session.dart';
 import 'customer_sign_up_validation.dart';
+import 'auth_brand_mark.dart';
 import 'courier_access_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
@@ -107,151 +108,261 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTokens.spacing24),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: (constraints.maxHeight - AppTokens.spacing24 * 2)
-                  .clamp(0.0, double.infinity)
-                  .toDouble(),
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Form(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          'Cupcake Mobile',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      const SizedBox(height: AppTokens.spacing32),
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          'Entrar',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                      ),
-                      const SizedBox(height: AppTokens.spacing12),
-                      Text(
-                        widget.session.profile == SessionProfile.courier
-                            ? 'Entre para acessar suas entregas.'
-                            : 'Acesse sua conta para continuar.',
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCustomer = widget.session.profile == SessionProfile.customer;
+    final compactHints =
+        MediaQuery.sizeOf(context).width < 360 &&
+        MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppTokens.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
+        leading: IconButton(
+          tooltip: 'Voltar',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: Semantics(
+          header: true,
+          child: Row(
+            children: [
+              const AuthBrandMark(),
+              const SizedBox(width: AppTokens.spacing8),
+              Flexible(
+                child: Text(
+                  'Cupcake Mobile',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: AppTokens.primaryStrong,
+                    fontFamily: 'Georgia',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spacing16,
+            AppTokens.spacing12,
+            AppTokens.spacing16,
+            AppTokens.spacing24,
+          ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Form(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        'Entrar',
                         textAlign: TextAlign.center,
-                      ),
-                      if (widget.session.sessionExpired) ...[
-                        const SizedBox(height: AppTokens.spacing16),
-                        Semantics(
-                          liveRegion: true,
-                          child: const Text(
-                            'Sua sessão foi encerrada. Entre novamente para continuar.',
-                            textAlign: TextAlign.center,
-                          ),
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontSize: 22,
                         ),
-                      ],
-                      const SizedBox(height: AppTokens.spacing32),
-                      TextFormField(
-                        controller: _email,
-                        enabled: !_loading,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        decoration: InputDecoration(
-                          labelText: 'E-mail',
-                          errorText: _emailError,
-                        ),
-                        onChanged: (_) {
-                          _emailTouched = true;
-                          _changed();
-                        },
                       ),
+                    ),
+                    const SizedBox(height: AppTokens.spacing8),
+                    Text(
+                      widget.session.profile == SessionProfile.courier
+                          ? 'Entre para acessar suas entregas.'
+                          : 'Acesse sua conta para continuar e fazer pedidos no Cupcake Mobile.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTokens.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: AppTokens.spacing16),
+                    Card(
+                      margin: EdgeInsets.zero,
+                      color: AppTokens.surface,
+                      surfaceTintColor: Colors.transparent,
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTokens.radius12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTokens.spacing16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _fieldLabel(context, 'E-mail'),
+                            Semantics(
+                              label: 'E-mail',
+                              textField: true,
+                              child: TextFormField(
+                                controller: _email,
+                                enabled: !_loading,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                decoration: _fieldDecoration(
+                                  hintText: compactHints
+                                      ? 'E-mail'
+                                      : 'exemplo@email.com',
+                                  prefixIcon: Icons.mail_outline,
+                                  errorText: _emailError,
+                                ),
+                                onChanged: (_) {
+                                  _emailTouched = true;
+                                  _changed();
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: AppTokens.spacing12),
+                            _fieldLabel(context, 'Senha'),
+                            Semantics(
+                              label: 'Senha',
+                              textField: true,
+                              child: TextFormField(
+                                controller: _password,
+                                enabled: !_loading,
+                                obscureText: _obscure,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => _submit(),
+                                decoration: _fieldDecoration(
+                                  hintText: compactHints
+                                      ? 'Senha'
+                                      : 'Digite sua senha',
+                                  prefixIcon: Icons.key_outlined,
+                                  errorText: _passwordError,
+                                  suffixIcon: IconButton(
+                                    tooltip: _obscure
+                                        ? 'Mostrar senha'
+                                        : 'Ocultar senha',
+                                    onPressed: _loading
+                                        ? null
+                                        : () => setState(
+                                            () => _obscure = !_obscure,
+                                          ),
+                                    icon: Icon(
+                                      _obscure
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                    ),
+                                  ),
+                                ),
+                                onChanged: (_) {
+                                  _passwordTouched = true;
+                                  _changed();
+                                },
+                              ),
+                            ),
+                            if (widget.session.sessionExpired) ...[
+                              const SizedBox(height: AppTokens.spacing12),
+                              Semantics(
+                                liveRegion: true,
+                                child: const Text(
+                                  'Sua sessão foi encerrada. Entre novamente para continuar.',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                            if (_message case final message?) ...[
+                              const SizedBox(height: AppTokens.spacing12),
+                              Focus(
+                                focusNode: _summaryFocus,
+                                child: Semantics(
+                                  liveRegion: true,
+                                  focusable: true,
+                                  child: Text(
+                                    message,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: AppTokens.danger,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ] else if (_loading) ...[
+                              const SizedBox(height: AppTokens.spacing12),
+                              Semantics(
+                                liveRegion: true,
+                                label: 'Entrando…',
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: AppTokens.spacing16),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                disabledBackgroundColor: AppTokens.disabled,
+                                disabledForegroundColor: AppTokens.surface,
+                              ),
+                              onPressed: _loading || !_formValid
+                                  ? null
+                                  : _submit,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Entrar'),
+                                  const SizedBox(width: AppTokens.spacing4),
+                                  const ExcludeSemantics(
+                                    child: Icon(Icons.arrow_forward, size: 18),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (isCustomer) ...[
                       const SizedBox(height: AppTokens.spacing16),
-                      TextFormField(
-                        controller: _password,
-                        enabled: !_loading,
-                        obscureText: _obscure,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          labelText: 'Senha',
-                          errorText: _passwordError,
-                          suffixIcon: IconButton(
-                            tooltip: _obscure
-                                ? 'Mostrar senha'
-                                : 'Ocultar senha',
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            'Não tem uma conta?',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(44, 40),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppTokens.spacing8,
+                                vertical: AppTokens.spacing8,
+                              ),
+                              foregroundColor: AppTokens.primaryStrong,
+                              textStyle: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                             onPressed: _loading
                                 ? null
-                                : () => setState(() => _obscure = !_obscure),
-                            icon: Icon(
-                              _obscure
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
+                                : () => AppNavigation.openCustomerSignUp(
+                                    context,
+                                    registrationApi: widget.registrationApi,
+                                  ),
+                            child: const Text('Criar conta'),
                           ),
-                        ),
-                        onChanged: (_) {
-                          _passwordTouched = true;
-                          _changed();
-                        },
+                        ],
                       ),
-                      const SizedBox(height: AppTokens.spacing16),
-                      if (_message case final message?)
-                        Focus(
-                          focusNode: _summaryFocus,
-                          child: Semantics(
-                            liveRegion: true,
-                            focusable: true,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: AppTokens.spacing16,
-                              ),
-                              child: Text(
-                                message,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: AppTokens.danger),
-                              ),
-                            ),
+                      Center(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(44, 40),
+                            foregroundColor: AppTokens.textMuted,
+                            textStyle: theme.textTheme.bodySmall,
                           ),
-                        )
-                      else if (_loading)
-                        Semantics(
-                          liveRegion: true,
-                          label: 'Entrando…',
-                          child: Padding(
-                            padding: EdgeInsets.all(AppTokens.spacing12),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        ),
-                      FilledButton(
-                        onPressed: _loading || !_formValid ? null : _submit,
-                        child: const Text('Entrar'),
-                      ),
-                      const SizedBox(height: AppTokens.spacing12),
-                      if (widget.session.profile == SessionProfile.customer)
-                        TextButton(
-                          onPressed: _loading
-                              ? null
-                              : () => AppNavigation.openCustomerSignUp(
-                                  context,
-                                  registrationApi: widget.registrationApi,
-                                ),
-                          child: const Text('Criar conta'),
-                        ),
-                      if (widget.session.profile == SessionProfile.customer)
-                        TextButton(
                           onPressed: _loading
                               ? null
                               : () => Navigator.of(context).push<void>(
@@ -261,14 +372,42 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                                 ),
                           child: const Text('Acesso do entregador'),
                         ),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _fieldLabel(BuildContext context, String label) => Padding(
+    padding: const EdgeInsets.only(bottom: AppTokens.spacing4),
+    child: Text(
+      label,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: AppTokens.text,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+
+  InputDecoration _fieldDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+    String? errorText,
+    Widget? suffixIcon,
+  }) => InputDecoration(
+    hintText: hintText,
+    errorText: errorText,
+    prefixIcon: Icon(prefixIcon, size: 18),
+    suffixIcon: suffixIcon,
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppTokens.spacing12,
+      vertical: AppTokens.spacing8,
     ),
   );
 }

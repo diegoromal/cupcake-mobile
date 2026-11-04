@@ -8,6 +8,11 @@ void main() {
     await pumpUntilSessionReady(tester);
 
     expect(find.text('Entrar'), findsNWidgets(2));
-    expect(find.text('Acesse sua conta para continuar.'), findsOneWidget);
+    expect(
+      find.text(
+        'Acesse sua conta para continuar e fazer pedidos no Cupcake Mobile.',
+      ),
+      findsOneWidget,
+    );
   });
 }
