@@ -1,0 +1,50 @@
+{
+  "task": "D105",
+  "kind": "fixture-script-end-to-end",
+  "date": "2026-11-03",
+  "script": "scripts/d105-demo-fixtures.sh",
+  "script_version": "final: limpa o carrinho antes de cada pedido e ao final; guardas de ambiente; payloads via arquivo",
+  "environment": {
+    "api": "http://127.0.0.1:3102",
+    "database": "cupcake_d105 (container efemero dedicado cupcake-d105-verify2)",
+    "fresh_database": true
+  },
+  "result": "PASS",
+  "checks": {
+    "admin_provisioned": true,
+    "courier_created": true,
+    "category_product_stock_created": true,
+    "delivery_config_created": true,
+    "customer_created": true,
+    "address_coordinates_set": true,
+    "cart_items_after_fixtures": 0,
+    "stock_after_fixtures": "48/0",
+    "customer_orders": 2,
+    "customer_order_statuses": ["SAIU_PARA_ENTREGA", "PAGO"],
+    "admin_orders": 2,
+    "admin_order_o1_status": "PAGO",
+    "courier_orders": 1,
+    "courier_detail_has_customer": true,
+    "courier_detail_has_address": true
+  },
+  "fixtures": {
+    "customerId": "fa1193a0-2196-4bb1-bdc5-818ac09eb5ef",
+    "courierId": "1f892313-a096-4246-902f-a318007ab5fe",
+    "categoryId": "34f62906-2f1f-4e19-9654-cd54162c2f9d",
+    "productId": "1b71db1a-ff48-425d-8dfe-c7a5e5dda0d0",
+    "addressId": "7f2bafb4-9855-4a20-ad68-b60fd99a6f70",
+    "orders": {
+      "adminPagoRetirada": "e2084c8f-880c-4290-8fe6-f6f71acce9c2",
+      "courierSaiuParaEntrega": "d25d4a44-8466-4ba8-af05-4657f88d626f"
+    }
+  },
+  "security": {
+    "password_in_output": false,
+    "token_in_output": false,
+    "database_isolated": true,
+    "cart_cleaned": true
+  },
+  "limitations": [
+    "Valida o provisionamento e as leituras por HTTP; nao valida usabilidade com participante."
+  ]
+}

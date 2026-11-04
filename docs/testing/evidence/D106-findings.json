@@ -1,0 +1,359 @@
+{
+  "tarefa": "D106 — findings e triagem",
+  "geradoEm": "2026-11-04T02:00:09Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "findings": [
+    {
+      "id": "F-04",
+      "severidade": "ALTA",
+      "origem": "D104",
+      "perfis": [
+        "ADMIN",
+        "CLIENTE"
+      ],
+      "arquivo": [
+        "apps/api/src/produtos/estoque.service.ts",
+        "apps/api/src/pedidos/pedidos.service.ts",
+        "apps/api/src/pagamentos/pagamentos.service.ts"
+      ],
+      "problema": "Deadlock real (SQLSTATE 40P01) entre PATCH /admin/produtos/:id/estoque e POST /pedidos do mesmo produto por inversão de ordem de locks: criação de pedido bloqueia Produto e depois Estoque; o ajuste bloqueava Estoque e, ao inserir MovimentacaoEstoque, adquiria FOR KEY SHARE em Produto.",
+      "correcao": "Adquirir Produto FOR UPDATE antes de Estoque FOR UPDATE nos três caminhos que inserem MovimentacaoEstoque, com produtoId ordenado de forma determinística.",
+      "estado": "corrigido",
+      "evidencia": [
+        "docs/testing/evidence/D106-exec-concorrencia-antes.json",
+        "docs/testing/evidence/D106-exec-concorrencia-depois-1.json",
+        "docs/testing/evidence/D106-exec-concorrencia-depois-2.json",
+        "docs/testing/evidence/D106-exec-concorrencia-depois-3.json",
+        "docs/testing/evidence/D106-exec-concorrencia.json"
+      ],
+      "riscoResidual": "Aumento de serialização por produto; liberacao-reservas.service.ts mantém Estoque → Reserva/Pedido sem inserir movimentação — ausência de ciclo justificada pela disjunção de status em docs/testing/D106-CONCORRENCIA-VALIDACAO.md §5.1."
+    },
+    {
+      "id": "D105-F01",
+      "severidade": "MEDIA",
+      "origem": "dry-run de UI da D105 (2026-11-03, HEAD 4452c0c)",
+      "perfis": [
+        "ADMIN"
+      ],
+      "arquivo": [
+        "apps/admin/components/OrderList.tsx",
+        "apps/admin/app/globals.css",
+        "apps/admin/__tests__/orders-ui.test.tsx"
+      ],
+      "problema": "Em 1280×801 a lista de pedidos deixava STATUS, VALOR TOTAL e AÇÃO fora da área visível; o hint de rolagem só aparecia abaixo de 601 px.",
+      "correcao": "table-layout fixed com 7 colunas e larguras rebalanceadas, identificador quebrável, hint condicional ao overflow real (scrollWidth > clientWidth + 1) via ResizeObserver, badge de status com quebra permitida dentro da tabela.",
+      "estado": "corrigido; medido no TEST em navegador real (1280/1440 sem overflow, hint ausente; 768/320 com rolagem funcional e hint). O \"antes\" no build 028c605 e evidencia do defeito original, nao A/B controlado (R-08).",
+      "evidencia": [
+        "apps/admin/__tests__/orders-ui.test.tsx",
+        "docs/testing/evidence/D106-admin-f01-layout.json",
+        "docs/testing/evidence/D106-admin-f01-1280.png",
+        "docs/testing/evidence/D106-admin-f01-1440.png",
+        "docs/testing/evidence/D106-admin-f01-768.png",
+        "docs/testing/evidence/D106-admin-f01-320.png",
+        "docs/testing/evidence/D106-admin-f01-1280-antes.png"
+      ],
+      "riscoResidual": "jsdom não mede layout; a prova de 1280/1440/768/320 depende de medição no navegador."
+    },
+    {
+      "id": "D106-TRACE-01",
+      "severidade": "MEDIA",
+      "arquivo": [
+        "docs/testing/evidence/D106-exec-concorrencia*.json"
+      ],
+      "problema": "Evidências citavam docs/testing/D106-CONCORRENCIA-VALIDACAO.md e D106-exec-concorrencia-run1/2/3/4.json, inexistentes.",
+      "correcao": "Criado docs/testing/D106-CONCORRENCIA-VALIDACAO.md e removidas todas as referências a arquivos inexistentes.",
+      "estado": "corrigido",
+      "verificacao": "grep por run1..run4 e por caminhos citados não encontra referências mortas"
+    },
+    {
+      "id": "D106-TRACE-02",
+      "severidade": "MEDIA",
+      "arquivo": [
+        "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts"
+      ],
+      "problema": "O 'antes' não registrava procedimento/hash do patch; o 'depois' canônico era cópia silenciosa da depois-3; o contador de deadlocks é cumulativo.",
+      "correcao": "Harness grava head, branch, dirty, workingTree, diffSha256, runLabel e runId; aceita D106_EVIDENCE_PATH e D106_RUN_LABEL; procedimento do 'antes' com git apply -R e hash do patch documentado; execução canônica independente gerada; critério delta 0 adotado.",
+      "estado": "corrigido",
+      "evidencia": [
+        "docs/testing/D106-CONCORRENCIA-VALIDACAO.md",
+        "docs/testing/evidence/D106-exec-concorrencia.json"
+      ]
+    },
+    {
+      "id": "D106-TRACE-03",
+      "severidade": "BAIXA",
+      "arquivo": [
+        "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts"
+      ],
+      "problema": "Strings internas usavam o nome antigo d106-concorrencia-estoque-postgres.ts e metadados run1..run4 obsoletos.",
+      "correcao": "Nome atualizado para d106-f04-concorrencia-estoque-postgres.ts; metadados mortos removidos e substituídos por artefatosPreservados + notaDeProveniencia.",
+      "estado": "corrigido",
+      "verificacao": "grep sem o nome antigo no harness e nos JSONs"
+    },
+    {
+      "id": "D105-DRIFT-DOCS",
+      "severidade": "BAIXA",
+      "arquivo": [
+        "docs/testing/D105-AMBIENTE.md",
+        "docs/testing/D105-VALIDACAO.md",
+        "docs/testing/evidence/D105/D105-dry-run.json",
+        "docs/testing/evidence/D105/D105-environment.json"
+      ],
+      "problema": "A documentação da D105 afirmava que o ambiente local teria ficado ligado após o dry-run; o ambiente foi encerrado.",
+      "correcao": "Mantidas as correções factuais (D-06=A), declaradas neste relatório.",
+      "estado": "corrigido (rastreabilidade)",
+      "impactoNoVereditoD105": "nenhum; D105 permanece INCONCLUSIVO/BLOQUEADO"
+    }
+  ],
+  "triagemOBS": [
+    {
+      "id": "OBS-D105-01",
+      "classificacao": "Risco (ambiente/teste)",
+      "justificativa": "Quatro pedidos de processo concorrente contaminaram o banco dedicado; não é defeito de produto.",
+      "acaoNaD106": "Exigir banco/container exclusivo e reset idempotente; registrar IDs.",
+      "destino": "Runbook D106; sem código",
+      "estado": "endereçado no runbook e no script de fixtures"
+    },
+    {
+      "id": "OBS-D105-02",
+      "classificacao": "Comportamento esperado",
+      "justificativa": "O simulador local decide aprovação pelo último dígito hexadecimal do tentativaId; documentado.",
+      "acaoNaD106": "Não alterar; observar reação e permitir retry.",
+      "destino": "Sessão D105",
+      "estado": "sem ação de código"
+    },
+    {
+      "id": "OBS-D105-03",
+      "classificacao": "Comportamento esperado (segurança)",
+      "justificativa": "Admin responde 403 Origem não permitida. para origem diferente de localhost:3001/APP_PUBLIC_URL.",
+      "acaoNaD106": "Acessar direto a URL pública; não contornar; validar no staging com a origem HTTPS correta.",
+      "destino": "Runbook",
+      "estado": "documentado em D106-STAGING-AMBIENTE.md §7 e §10"
+    },
+    {
+      "id": "OBS-D105-04",
+      "classificacao": "Risco (fixture/ambiente) + validação humana",
+      "justificativa": "Delivery depende de coordenadas/configuração; Retirada é mais determinística.",
+      "acaoNaD106": "Preferir Retirada; validar fixture antes da sessão.",
+      "destino": "Runbook; observação",
+      "estado": "O1 Retirada PAGO garantido pelo script"
+    },
+    {
+      "id": "OBS-D105-05",
+      "classificacao": "Risco (ambiente) + validação humana",
+      "justificativa": "Keychain pode restaurar sessão antiga no simulador.",
+      "acaoNaD106": "Logout/limpeza antes de cada sessão.",
+      "destino": "Runbook",
+      "estado": "registrado"
+    },
+    {
+      "id": "OBS-D105-06",
+      "classificacao": "Validação humana (melhoria sem requisito)",
+      "justificativa": "Vitrine sem busca textual; 'Meus pedidos' é botão de ícone com tooltip; não há requisito de busca.",
+      "acaoNaD106": "Não implementar; observar descoberta e registrar estratégia.",
+      "destino": "D105/sessão",
+      "estado": "fora da fronteira"
+    },
+    {
+      "id": "OBS-D105-07",
+      "classificacao": "Validação humana (potencial defeito sem requisito documentado)",
+      "justificativa": "POST /pedidos consome itens mas não remove ItemCarrinho; não há requisito documentado de esvaziar o carrinho.",
+      "acaoNaD106": "Não alterar; fixture limpa o carrinho; promover a finding em tarefa própria se a sessão confirmar violação.",
+      "destino": "D105 → decisão de produto",
+      "estado": "fora da fronteira; script limpa o carrinho"
+    },
+    {
+      "id": "OBS-D105-08",
+      "classificacao": "Comportamento esperado (contrato) + mitigação F-01",
+      "justificativa": "identificadorNegocio longo é contrato; contribui para a largura da tabela.",
+      "acaoNaD106": "Não alterar formato; F-01 quebra o identificador e mantém colunas críticas.",
+      "destino": "F-01",
+      "estado": "corrigido via CSS (sem mudar contrato)"
+    },
+    {
+      "id": "OBS-D105-09",
+      "classificacao": "Validação humana (melhoria sem requisito)",
+      "justificativa": "Lista do Entregador mistura SAIU_PARA_ENTREGA e ENTREGUE sem filtro; não há requisito de filtro.",
+      "acaoNaD106": "Não implementar; observar se atrapalha a tarefa.",
+      "destino": "D105/sessão",
+      "estado": "fora da fronteira"
+    },
+    {
+      "id": "OBS-D105-10",
+      "classificacao": "Comportamento esperado",
+      "justificativa": "Documentação exige ação explícita, não diálogo; 'Confirmar entrega' executa direto.",
+      "acaoNaD106": "Não alterar; observar compreensão.",
+      "destino": "D105/sessão",
+      "estado": "sem ação de código"
+    },
+    {
+      "id": "OBS-D105-11",
+      "classificacao": "Fora de escopo (artefato de desenvolvimento)",
+      "justificativa": "'Open Next.js Dev Tools' só aparece em next dev; não ocorre em build de produção.",
+      "acaoNaD106": "Usar build/next start ou orientar o moderador.",
+      "destino": "Runbook",
+      "estado": "fora da fronteira"
+    }
+  ],
+  "bloqueios": [
+    {
+      "id": "D-01",
+      "descricao": "Deploy do candidato D106 no staging",
+      "estado": "nao_autorizado",
+      "efeito": "staging permanece em 028c605; sessões humanas BLOCKED"
+    },
+    {
+      "id": "D-02",
+      "descricao": "Publicação da API api-staging.qosit.cloud para o mobile físico",
+      "estado": "nao_autorizado",
+      "efeito": "CLIENTE/ENTREGADOR no dispositivo físico BLOCKED"
+    }
+  ],
+  "resumo": {
+    "totalFindings": 6,
+    "corrigidos": 6,
+    "abertos": 0,
+    "testFindings": 8,
+    "reviewFindings": 9,
+    "pendentesDeValidacaoVisual": [],
+    "vereditoD105": "INCONCLUSIVO/BLOQUEADO",
+    "classificacaoStaging": "BLOCKED para sessoes humanas; PARTIAL para verificacoes read-only"
+  },
+  "testFindings": [
+    {
+      "id": "TEST-F01",
+      "severidade": "BAIXA",
+      "arquivo": "apps/api/src/produtos/produto-imagens.service.spec.ts:71",
+      "problema": "Timeout de 5 s sob carga concorrente de varias suites (3,3 s isolado).",
+      "estado": "encerrado — nao reprodutivel fora de carga; suite isolada e suite completa isolada PASS 360/360; teste e assertion nao alterados."
+    },
+    {
+      "id": "TEST-F02",
+      "severidade": "BAIXA (reclassificado MEDIA pelo Maestro)",
+      "arquivo": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts",
+      "problema": "diffSha256 do harness era o diff completo (incluia docs) e nao comparavel ao hash restrito dos 3 arquivos do fix.",
+      "estado": "corrigido no EXEC #2 — diffSha256 objeto, restrito aos 3 arquivos do fix."
+    },
+    {
+      "id": "TEST-F03",
+      "severidade": "BAIXA (reclassificado MEDIA pelo Maestro)",
+      "arquivo": "docs/testing/evidence/D106-exec-concorrencia-*.json",
+      "problema": "Artefatos legados sem runId/runLabel no topo.",
+      "estado": "corrigido no EXEC #2 — 6 artefatos com runId/runLabel/condicao/head/branch/dirty/workingTree/diffSha256."
+    },
+    {
+      "id": "TEST-F04",
+      "severidade": "BAIXA",
+      "arquivo": "apps/admin/next-env.d.ts; docs/testing/evidence/D103-exec-autorizacao.json",
+      "problema": "Artefatos incidentais da execucao de testes.",
+      "estado": "corrigido no EXEC #2 — D103 e next-env.d.ts restaurados de HEAD; reexecucao D103 preservada em D106-regressao-seguranca.json (108/108)."
+    },
+    {
+      "id": "TEST-F05",
+      "severidade": "INFO",
+      "arquivo": "staging 028c605",
+      "problema": "Build antigo ainda reproduz F-01 em 1280.",
+      "estado": "observacao registrada — esperado (sem os fixes); nao e regressao da D106; depende de D-01."
+    },
+    {
+      "id": "TEST-F06",
+      "severidade": "INFO",
+      "arquivo": "apps/admin/app/globals.css",
+      "problema": "Em 320 px ha 17 px de overflow horizontal do documento, fora da tabela.",
+      "estado": "observacao registrada — a tabela rola e o hint aparece; fora do escopo de F-01."
+    },
+    {
+      "id": "RETEST-F01",
+      "severidade": "BAIXA",
+      "arquivo": "docs/testing/evidence/D106-evidencias.json",
+      "problema": "Manifesto do EXEC #2 cobria apenas 24 arquivos e omitia evidencias atuais.",
+      "estado": "corrigido — manifesto reconstruido cobrindo todos os arquivos D106 atuais, com sha256 conferido."
+    },
+    {
+      "id": "TEST3-F01",
+      "severidade": "BAIXA",
+      "arquivo": "docs/testing/D106-VALIDACAO.md (TEST #3)",
+      "problema": "O handoff do TEST #3 previa 83/83 para o comando de specs, mas o comando exato retorna 15/15 (8+7); conjuntos mais amplos retornam 71/71 (4 specs) a 79/79 (6 suites). Divergencia documental de expectativa, sem falha de teste.",
+      "estado": "registrado — testes PASS (15/15 no comando exato; 79/79 no conjunto de 6 suites); nenhum codigo/assertion alterado."
+    }
+  ],
+  "reviewFindings": [
+    {
+      "id": "R-01",
+      "severidade": "ALTA",
+      "arquivo": "apps/api/src/produtos/produtos.service.ts",
+      "problema": "remove() fazia Estoque->Produto, invertendo a ordem global e permitindo deadlock com o ajuste (Produto->Estoque).",
+      "estado": "corrigido — Produto FOR UPDATE antes de Estoque; spec de sequencia; CON-010 real (depois PASS delta 0; antes com remove revertido 500/40P01).",
+      "evidencia": [
+        "docs/testing/evidence/D106-exec-concorrencia-con010-antes.json",
+        "docs/testing/evidence/D106-exec-concorrencia.json"
+      ]
+    },
+    {
+      "id": "R-02",
+      "severidade": "MEDIA",
+      "arquivo": [
+        "docs/testing/D106-PLAN.md",
+        "docs/testing/D106-STAGING-AMBIENTE.md"
+      ],
+      "problema": "Base de autorizacao do staging nao estava explicita; risco de confundir fixtures autorizadas com D-01 cumprido.",
+      "estado": "corrigido — adendo no PLAN e runbook separam fixtures (autorizadas/executadas) de D-01/D-02 (nao autorizados); guarda de SHA exige D106_EXPECTED_SHA."
+    },
+    {
+      "id": "R-03",
+      "severidade": "MEDIA",
+      "arquivo": "docs/testing/D106-STAGING-AMBIENTE.md",
+      "problema": "Runbook afirmava que nada foi executado no staging e que fixtures/ADMIN dependiam de deploy.",
+      "estado": "corrigido — documenta dry-run + 3 applies + login real no build 028c605, com backups e sem deploy."
+    },
+    {
+      "id": "R-04",
+      "severidade": "BAIXA",
+      "arquivo": "apps/api/src/pagamentos/pagamentos.service.spec.ts",
+      "problema": "Faltava prova da ordem Produto->Estoque no caminho de pagamento.",
+      "estado": "corrigido — spec executa o caminho real e prova Produto -> Estoque -> Movimentacao."
+    },
+    {
+      "id": "R-05",
+      "severidade": "BAIXA",
+      "arquivo": [
+        "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts",
+        "docs/testing/D106-CONCORRENCIA-VALIDACAO.md"
+      ],
+      "problema": "Referencias mortas (EXEC #5, REVIEW LOW/OBS, secoes inexistentes) e desalinhamento regenerado vs original.",
+      "estado": "corrigido — itens antigos rotulados como historico nao verificavel; doc distingue EXEC #2/#3 de test-* (execucoes originais do TEST)."
+    },
+    {
+      "id": "R-06",
+      "severidade": "BAIXA",
+      "arquivo": "docs/testing/D106-PLAN.md",
+      "problema": "Revisao da expectativa de CON-002 nao estava registrada no PLAN.",
+      "estado": "corrigido — adendo §14 explica a revisao assinada (inclui saldos) como decisao de PLAN baseada no contrato, apos o EXEC."
+    },
+    {
+      "id": "R-07",
+      "severidade": "BAIXA",
+      "arquivo": "docs/testing/evidence/D106-findings.json",
+      "problema": "Findings do TEST/REVIEW ausentes no consolidado.",
+      "estado": "corrigido — TEST-F01..F06, TEST3-F01, RETEST-F01 e R-01..R-09 registrados com base nas evidencias existentes; testFindings=8 no resumo."
+    },
+    {
+      "id": "R-08",
+      "severidade": "BAIXA",
+      "arquivo": [
+        "docs/testing/D106-VALIDACAO.md",
+        "docs/testing/evidence/D106-admin-f01-layout.json"
+      ],
+      "problema": "\"Antes\" de F-01 tratado como A/B controlado; 768 com fullyVisible:true apesar da rolagem.",
+      "estado": "corrigido — \"antes\" rotulado como evidencia do defeito original (build 028c605, dados diferentes); 768 com fullyVisible:false e semantica documentada."
+    },
+    {
+      "id": "R-09",
+      "severidade": "INFO",
+      "arquivo": "apps/admin/components/OrderList.tsx",
+      "problema": "Hint de rolagem competia com a contagem como role=status.",
+      "estado": "corrigido — hint com role=note; contagem mantida como role=status; texto e teste preservados."
+    }
+  ]
+}

@@ -1,0 +1,480 @@
+{
+  "tarefa": "D106 — manifesto de evidências (EXEC + TEST + RETEST + REVIEW)",
+  "geradoEm": "2026-11-04T02:00:24Z",
+  "fase": "EXEC #4 + TEST #4 (+ guard)",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "workingTree": {
+    "dirty": true,
+    "modificados": [
+      "apps/admin/__tests__/orders-ui.test.tsx",
+      "apps/admin/app/globals.css",
+      "apps/admin/components/OrderList.tsx",
+      "apps/api/package.json",
+      "apps/api/src/pagamentos/pagamentos.service.spec.ts",
+      "apps/api/src/pagamentos/pagamentos.service.ts",
+      "apps/api/src/pedidos/pedidos.service.spec.ts",
+      "apps/api/src/pedidos/pedidos.service.ts",
+      "apps/api/src/produtos/estoque.service.spec.ts",
+      "apps/api/src/produtos/estoque.service.ts",
+      "apps/api/src/produtos/produtos.service.spec.ts",
+      "apps/api/src/produtos/produtos.service.ts",
+      "docs/testing/D105-AMBIENTE.md",
+      "docs/testing/D105-VALIDACAO.md",
+      "docs/testing/evidence/D105/D105-dry-run.json",
+      "docs/testing/evidence/D105/D105-environment.json"
+    ],
+    "naoRastreados": [
+      ".maestri/",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "apps/api/scripts/d106-staging-fixtures.mjs",
+      "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts",
+      "docs/testing/D106-CONCORRENCIA-VALIDACAO.md",
+      "docs/testing/D106-PLAN.md",
+      "docs/testing/D106-STAGING-AMBIENTE.md",
+      "docs/testing/D106-VALIDACAO.md",
+      "docs/testing/evidence/D106-admin-f01-1280-ab-antes.png",
+      "docs/testing/evidence/D106-admin-f01-1280-antes.png",
+      "docs/testing/evidence/D106-admin-f01-1280.png",
+      "docs/testing/evidence/D106-admin-f01-1440-ab-antes.png",
+      "docs/testing/evidence/D106-admin-f01-1440.png",
+      "docs/testing/evidence/D106-admin-f01-320.png",
+      "docs/testing/evidence/D106-admin-f01-768.png",
+      "docs/testing/evidence/D106-admin-f01-layout.json",
+      "docs/testing/evidence/D106-evidencias.json",
+      "docs/testing/evidence/D106-exec-concorrencia-antes.json",
+      "docs/testing/evidence/D106-exec-concorrencia-con010-antes-reteste.json",
+      "docs/testing/evidence/D106-exec-concorrencia-con010-antes.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-1.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-2.json",
+      "docs/testing/evidence/D106-exec-concorrencia-depois-3.json",
+      "docs/testing/evidence/D106-exec-concorrencia-reteste-exec3.json",
+      "docs/testing/evidence/D106-exec-concorrencia-reteste.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-1.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-2.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-3.json",
+      "docs/testing/evidence/D106-exec-concorrencia-test-antes.json",
+      "docs/testing/evidence/D106-exec-concorrencia.json",
+      "docs/testing/evidence/D106-findings.json",
+      "docs/testing/evidence/D106-regressao-admin.png",
+      "docs/testing/evidence/D106-regressao-seguranca.json",
+      "docs/testing/evidence/D106-regressao.json",
+      "docs/testing/evidence/D106-staging-admin-detalhe.png",
+      "docs/testing/evidence/D106-staging-fixtures-local.json",
+      "docs/testing/evidence/D106-staging-fixtures.json",
+      "docs/testing/evidence/D106-staging-isolation.json",
+      "docs/testing/evidence/D106-staging-readiness.json",
+      "docs/testing/evidence/D106-test4-guard-sha.json",
+      "scripts/d106-staging-fixtures.sh"
+    ]
+  },
+  "observacoes": [
+    "sha256 recalculado sobre o working tree no reteste TEST.",
+    "Este próprio manifesto não entra na lista (hash de si mesmo é circular).",
+    "Nenhuma entrada contém senha, token, cookie ou dado pessoal.",
+    "Cobre os 6 artefatos de concorrência definitivos, os retestes independentes, as evidências de F-01 (incluindo o A/B no mesmo HEAD/dados), regressão, staging e os arquivos de código do incremento."
+  ],
+  "arquivos": [
+    {
+      "path": "apps/admin/__tests__/orders-ui.test.tsx",
+      "sha256": "7ee031b0041b891e78caf4b1b3012fefa8271c7467344fdb10bd6d62564ea5fc",
+      "bytes": 25262,
+      "conteudo": "F-01: 2 testes novos",
+      "comando": "npm test -- orders-ui",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/admin/app/globals.css",
+      "sha256": "32257b2d1b49db2a86f6875471979d9b3ca7bde0b457615732b7cb43d324dc11",
+      "bytes": 19029,
+      "conteudo": "F-01: colunas, badge e células com quebra",
+      "comando": "npm run lint; npm run build",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/admin/components/OrderList.tsx",
+      "sha256": "69b8e6f5206ba5e6bf4182ce9ea8e940d3f0caf630518dd17532622966ce52b7",
+      "bytes": 4054,
+      "conteudo": "F-01: tabela fixa, hint condicional",
+      "comando": "npm test -- orders-ui",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/package.json",
+      "sha256": "7c9de4290e8580e884a08da47fdf42a7d87956dd5608e3604eb07b5cb6e0d63a",
+      "bytes": 2729,
+      "conteudo": "script test:d106:postgres",
+      "comando": "npx tsc --noEmit",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/scripts/d106-staging-fixtures.mjs",
+      "sha256": "10279ed8b37921e8095186d0c0d0bd51e3799ea6a4c45371500d43f5bfcbf94f",
+      "bytes": 21355,
+      "conteudo": "reset escopado + seed via API (staging)",
+      "comando": "node --check; validação local 2×",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/pagamentos/pagamentos.service.spec.ts",
+      "sha256": "ffa144576b9aa232c034b33d4df6da85313d70da3eeacfae43070fb451b3f931",
+      "bytes": 9944,
+      "conteudo": "evidência D106",
+      "comando": "ver D106-VALIDACAO",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/pagamentos/pagamentos.service.ts",
+      "sha256": "5eb4cf0e5b274a1bbec8b3f4ebfb7e01c5805d680dc59c3c738936b57909c17e",
+      "bytes": 12339,
+      "conteudo": "fix F-04 na conclusão Pix",
+      "comando": "npx jest pagamentos.service.spec.ts",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/pedidos/pedidos.service.spec.ts",
+      "sha256": "2ac8884e8a67aac24fe190f0dc3a48b100b2fd68369477a2da249383bbb74779",
+      "bytes": 48312,
+      "conteudo": "cobertura da ordem de locks",
+      "comando": "npx jest pedidos.service.spec.ts",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/pedidos/pedidos.service.ts",
+      "sha256": "e48584ee6a0ef6a2f35ec345c41808c587dc175ea431307086cf29924671b147",
+      "bytes": 33537,
+      "conteudo": "fix F-04 no cancelamento/devolução",
+      "comando": "npx jest pedidos.service.spec.ts",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/produtos/estoque.service.spec.ts",
+      "sha256": "92a50b08357ee2beed54637629696f4eabad843d57fa6d1b89ed1a2895fd91c0",
+      "bytes": 3313,
+      "conteudo": "cobertura da ordem de locks",
+      "comando": "npx jest estoque.service.spec.ts",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/produtos/estoque.service.ts",
+      "sha256": "15de7509872472af1ab78415dd5cc7c4887a73d86dc14919ea12192ef072daf1",
+      "bytes": 2887,
+      "conteudo": "fix F-04 (Produto antes de Estoque)",
+      "comando": "npx jest estoque.service.spec.ts",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/produtos/produtos.service.spec.ts",
+      "sha256": "780a029632d28394ad9d6f726da366f118eaa86bdff573daa903368892b42fa2",
+      "bytes": 6216,
+      "conteudo": "evidência D106",
+      "comando": "ver D106-VALIDACAO",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/src/produtos/produtos.service.ts",
+      "sha256": "c9c5a14c1af588907044352a894bdfcceaa133632e46de3416deab1a38063e25",
+      "bytes": 4848,
+      "conteudo": "evidência D106",
+      "comando": "ver D106-VALIDACAO",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "apps/api/test/d106-f04-concorrencia-estoque-postgres.ts",
+      "sha256": "4d0678d959958761a04621065dfede5c46e849941154dfb3c82d2fa4ab46e8c1",
+      "bytes": 92517,
+      "conteudo": "harness com schema unificado de proveniência",
+      "comando": "npm run lint; npx tsc --noEmit; npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/D106-CONCORRENCIA-VALIDACAO.md",
+      "sha256": "62ca1f9a8872adcae42ed15576b00f22681d6125bec16957f529f3289f048255",
+      "bytes": 16360,
+      "conteudo": "concorrência, matriz de locks e schema de evidência",
+      "comando": "sem comando",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/D106-PLAN.md",
+      "sha256": "58756df1e14121ab6cd7542af133e62cb1e61f437c664c2a3b7e705d6d3bcb13",
+      "bytes": 41543,
+      "conteudo": "PLAN aprovado pelo Maestro (somente leitura nesta fase)",
+      "comando": "sem comando",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/D106-STAGING-AMBIENTE.md",
+      "sha256": "a5378ad7c43b493fdfe6409269d3c2b00aca7807e0d59081dd9190e9502cfb57",
+      "bytes": 17114,
+      "conteudo": "runbook de staging e classificação",
+      "comando": "sem comando",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/D106-VALIDACAO.md",
+      "sha256": "4238fbe51c88027f94868710f8fdb46a83ec047b4883a29fe44df5cd1047ac9b",
+      "bytes": 37805,
+      "conteudo": "visão geral EXEC/TEST e encerramento dos findings do TEST",
+      "comando": "sem comando",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1280-ab-antes.png",
+      "sha256": "4d80141ae6eed969d7a57bc24970f0d673b97c7ad2c74ee672a3acf8f7490dea",
+      "bytes": 122137,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1280-antes.png",
+      "sha256": "786cf0a083118cea319b538f9d4427362af4f5f4f786da8fcc582a9aeecbc543",
+      "bytes": 117582,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1280.png",
+      "sha256": "896de74b00c0f576afd98dcbba219e3395e829d512a2eda5852c3d71e4765448",
+      "bytes": 146208,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1440-ab-antes.png",
+      "sha256": "c934f580ca78f70c986346cb47c1d85c913552237ba9d75baa592118682bf7c1",
+      "bytes": 133755,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1440.png",
+      "sha256": "0ef8c84eb2c81274f1919e9dc228fb21517dc74fe61fc2dac39157e1052e3ca1",
+      "bytes": 149576,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-320.png",
+      "sha256": "08f12c19b2d422356888eb3d4fbab1606c47af2b61da01d6f9a4ccfaebdd36db",
+      "bytes": 53571,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-768.png",
+      "sha256": "ed9cb2854d2236160e0b89f117ebf2035b80a3263ed9b506ef17fbed4dac9faa",
+      "bytes": 77721,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-layout.json",
+      "sha256": "5b1ab2088b720afaa30a50a907b791e9474f600bddf81aa23021969278ceed11",
+      "bytes": 18779,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-antes.json",
+      "sha256": "ec187afd1f404dcdb50ec9e55afbddbe36ee166980f7d51d6fd34c1ef4d0d441",
+      "bytes": 70065,
+      "conteudo": "antes de F-04 (3 arquivos revertidos): 500 + 40P01 + deadlock +1",
+      "comando": "D106_RUN_LABEL=antes D106_CONDICAO=f04-revertido ... npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-con010-antes-reteste.json",
+      "sha256": "d1c96c21a5fd6a6a841aeb01b942364c48f5a340f66c0675f9852c34699d00b4",
+      "bytes": 72430,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-con010-antes.json",
+      "sha256": "98bc3fac7ffd8dad4aa9cbd757b4d7caa3009a95c7644b9f19e1f7289ba2d791",
+      "bytes": 72412,
+      "conteudo": "antes de R-01 (remove revertido): CON-010 500/204 + 40P01 + deadlock +1",
+      "comando": "D106_RUN_LABEL=con010-antes D106_CONDICAO=remove-revertido ... npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-depois-1.json",
+      "sha256": "54c1ae4ef1dca1fb0c53f9faf3cd06bae2aa4e41398213ffe4bd5e1537f7ff54",
+      "bytes": 73075,
+      "conteudo": "depois-1: PASS, delta 0",
+      "comando": "D106_RUN_LABEL=<label> D106_CONDICAO=fixes-aplicados ... npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-depois-2.json",
+      "sha256": "3ff6f02506500ca172c8c71e875a790583bb468a96c3672c2116d170440f44b3",
+      "bytes": 73074,
+      "conteudo": "depois-2: PASS, delta 0",
+      "comando": "D106_RUN_LABEL=<label> D106_CONDICAO=fixes-aplicados ... npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-depois-3.json",
+      "sha256": "a741b99f2ea7b83251d9864fcaf00e4a5b31c4e3f411f0b77210748f28f373fd",
+      "bytes": 73112,
+      "conteudo": "depois-3: PASS, delta 0",
+      "comando": "D106_RUN_LABEL=<label> D106_CONDICAO=fixes-aplicados ... npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-reteste-exec3.json",
+      "sha256": "46bc40f0991afd34301e52e748cfd9ca65a84ea1183023f10eae0f9fad9621cb",
+      "bytes": 73090,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-reteste.json",
+      "sha256": "e4c146d48ccdd515d99be7f887fe72235f13e472c7cfbc6977669f2f96c18218",
+      "bytes": 68261,
+      "conteudo": "TEST reteste: harness independente com schema novo (PASS, delta 0)",
+      "comando": "D106_RUN_LABEL=reteste-exec2 D106_EVIDENCE_PATH=... npm run test:d106:postgres",
+      "resultado": "PASS"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-test-1.json",
+      "sha256": "9830cd3dc958c815dfb72f88ccc23c48a1cdc6986d04ff5ce71b5e5097b1f3d9",
+      "bytes": 67038,
+      "conteudo": "evidência JSON (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados)",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-test-2.json",
+      "sha256": "75dee43d9be5b89269b50b9167fcd516e4a94707f1ae53ef197581cffdba0023",
+      "bytes": 67278,
+      "conteudo": "evidência JSON (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados)",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-test-3.json",
+      "sha256": "ce7ef35900028a3397f68dbcded5cb801a27fe9a2addf8ae2ebb50448621f92d",
+      "bytes": 67555,
+      "conteudo": "evidência JSON (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados)",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia-test-antes.json",
+      "sha256": "d890572a642500312bd110b6f4ccce1c934ebea50fa0fdc6af028cf53f631039",
+      "bytes": 69158,
+      "conteudo": "evidência JSON (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados) (histórico do TEST, schema legado, superado pelos 5 artefatos regenerados)",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-exec-concorrencia.json",
+      "sha256": "2ae01f85dfd232477ac690177c10c4606135c887f540bf2dfa59a9ec92d712ec",
+      "bytes": 73145,
+      "conteudo": "canônica independente: PASS, delta 0",
+      "comando": "D106_RUN_LABEL=<label> D106_CONDICAO=fixes-aplicados ... npm run test:d106:postgres",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-findings.json",
+      "sha256": "eabec4c1085272476d6bcb72b64ca7419fe29de7ba7c33e3f3aed8eb192675cc",
+      "bytes": 17612,
+      "conteudo": "findings e triagem OBS-D105-01..11",
+      "comando": "sem comando",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-regressao-admin.png",
+      "sha256": "a3a0eb517fb6b8a0e737a616e258720658e349416336f79583f0781b8648d093",
+      "bytes": 186848,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-regressao-seguranca.json",
+      "sha256": "776f69d2b1e73d942bdaf6f28c7db7d722823d2c83f336a9434972687fb2429b",
+      "bytes": 120338,
+      "conteudo": "evidência do TEST preservada: autorização/segurança 108/108",
+      "comando": "npx ts-node test/d103-autorizacao-postgres.ts (TEST)",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-regressao.json",
+      "sha256": "38f23bb2062a76a8dde51fd0bd23560843264f7ac97df9acfdb631e971f3ab6e",
+      "bytes": 9564,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-staging-admin-detalhe.png",
+      "sha256": "c75a060630960d97ef2d8c41d72266eda7360a1f8d258177452c1abd1ed2abbf",
+      "bytes": 99294,
+      "conteudo": "screenshot de evidência",
+      "comando": "maestri portal screenshot",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-staging-fixtures-local.json",
+      "sha256": "e8bc78ac2c8ee7ad41418433634d5534bd7eb4ed5519d19c9941cdb30d11f21b",
+      "bytes": 6921,
+      "conteudo": "validação local do reset/seed 2×",
+      "comando": "scripts/d106-staging-fixtures.sh --dry-run + 2× --apply (modo local)",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-staging-fixtures.json",
+      "sha256": "a912a7396d70f6903bc245d0594c7f3b750729c3fe7a0a8a20367f0c3bae7b84",
+      "bytes": 10536,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-staging-isolation.json",
+      "sha256": "50441145d1075ee4059ad6dbd4e505c178b6e5c864679524e9d68538bf4a7d63",
+      "bytes": 3479,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-staging-readiness.json",
+      "sha256": "088cc56d92c58033f4c9f674f59824ba2ae0f54e5e86a1936d46fc0ac3ec0d5f",
+      "bytes": 3111,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "docs/testing/evidence/D106-test4-guard-sha.json",
+      "sha256": "65412dd1f57946866af1c73e394e4894e388642a211c2fda3f6647349c13507b",
+      "bytes": 3626,
+      "conteudo": "evidência JSON",
+      "comando": "ver D106-VALIDACAO §10",
+      "resultado": "ver D106-VALIDACAO §10"
+    },
+    {
+      "path": "scripts/d106-staging-fixtures.sh",
+      "sha256": "e5908c7fb2e45ab2242901e62a4738c630aac6227a87e5a2e6c32f61fc7e6dcb",
+      "bytes": 7736,
+      "conteudo": "wrapper host-side com guardas e backup",
+      "comando": "bash -n; validação local 2×",
+      "resultado": "ver D106-VALIDACAO §10"
+    }
+  ]
+}

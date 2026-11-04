@@ -1,0 +1,202 @@
+{
+  "tarefa": "D106 — validação local do script de fixtures do staging",
+  "geradoEm": "2026-11-03T23:48:33Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "objetivo": "Provar que scripts/d106-staging-fixtures.sh + apps/api/scripts/d106-staging-fixtures.mjs são idempotentes (reset 2×) antes de qualquer execução no staging.",
+  "ambiente": {
+    "modo": "local",
+    "postgres": {
+      "container": "cupcake-d106-fixtures-postgres",
+      "imagem": "postgres:16-alpine",
+      "porta": "127.0.0.1:55433",
+      "banco": "cupcake_staging",
+      "migrationsAplicadas": 4,
+      "migrationsPendentes": 0
+    },
+    "api": {
+      "origem": "apps/api (HEAD da branch D106)",
+      "url": "http://127.0.0.1:3106",
+      "evolution": "ausente",
+      "geocode": "ausente"
+    },
+    "stagingTocado": false,
+    "producaoTocada": false
+  },
+  "comandos": [
+    "docker run -d --rm --name cupcake-d106-fixtures-postgres -e POSTGRES_USER=cupcake -e POSTGRES_DB=cupcake_staging -p 127.0.0.1:55433:5432 postgres:16-alpine",
+    "cd apps/api && DATABASE_URL='postgresql://cupcake:<senha>@127.0.0.1:55433/cupcake_staging?schema=public' npx prisma migrate deploy",
+    "cd apps/api && DATABASE_URL='...' PORT=3106 JWT_ACCESS_SECRET='<runtime>' JWT_REFRESH_SECRET='<runtime>' npm run start",
+    "D106_STAGING_CONFIRM=cupcake_staging bash scripts/d106-staging-fixtures.sh --dry-run",
+    "D106_STAGING_CONFIRM=cupcake_staging bash scripts/d106-staging-fixtures.sh --apply  (execução 1)",
+    "D106_STAGING_CONFIRM=cupcake_staging bash scripts/d106-staging-fixtures.sh --apply  (execução 2)"
+  ],
+  "dryRun": {
+    "resultado": "PASS",
+    "escritas": 0,
+    "alvosD106Existentes": {
+      "usuarios": [
+        "d106-admin@example.test",
+        "d106-entregador@example.test",
+        "d106-cliente@example.test"
+      ],
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2
+    },
+    "contagensAntes": {
+      "usuarios": 3,
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2,
+      "estoques": 1,
+      "movimentos": 3,
+      "configuracoes": 0
+    }
+  },
+  "execucao1": {
+    "resultado": "PASS",
+    "backup": {
+      "formato": "pg_dump -Fc",
+      "bytes": 50595,
+      "sha256": "f4529fac1ac54f536d759375ab3a046e67c5598870d880c90b4c9791f8da2a54",
+      "preservado": false,
+      "motivo": "arquivo local temporário; o procedimento gera novo backup no staging"
+    },
+    "remocoes": {
+      "Notificacao": 4,
+      "ItemPedidoPersonalizacaoSnapshot": 0,
+      "ItemPedido": 2,
+      "EnderecoEntregaSnapshot": 1,
+      "HistoricoStatusPedido": 6,
+      "Pagamento": 2,
+      "ReservaEstoque": 2,
+      "MovimentacaoEstoque": 3,
+      "Pedido": 2,
+      "ItemCarrinhoPersonalizacao": 0,
+      "ItemCarrinho": 0,
+      "Carrinho": 1,
+      "ProdutoPersonalizacao": 0,
+      "Estoque": 1,
+      "Produto": 1,
+      "Categoria": 1,
+      "Endereco": 1,
+      "Usuario": 3
+    },
+    "contagensAntes": {
+      "usuarios": 3,
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2,
+      "estoques": 1,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "contagensDepoisDoReset": {
+      "usuarios": 0,
+      "produtos": 0,
+      "categorias": 0,
+      "pedidos": 0,
+      "estoques": 0,
+      "movimentos": 0,
+      "configuracoes": 0
+    },
+    "contagensFinais": {
+      "usuarios": 3,
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2,
+      "estoques": 1,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "pedidos": [
+      { "modalidade": "ENTREGA", "status": "SAIU_PARA_ENTREGA", "itens": 1, "entregadorAtribuido": true },
+      { "modalidade": "RETIRADA", "status": "PAGO", "itens": 1, "entregadorAtribuido": false }
+    ],
+    "estoque": { "fisica": 48, "reservada": 0 },
+    "itensNoCarrinho": 0,
+    "configuracaoEntrega": {
+      "snapshotRestaurado": true,
+      "registrosRestaurados": 0
+    },
+    "resumoEstado": "fa3e07ed7f9fc128"
+  },
+  "execucao2": {
+    "resultado": "PASS",
+    "backup": {
+      "formato": "pg_dump -Fc",
+      "bytes": 50594,
+      "sha256": "72435fd512c8656cbaccb09326255826eedd288a95f8e8aafa32db0704153951",
+      "preservado": false
+    },
+    "contagensAntes": {
+      "usuarios": 3,
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2,
+      "estoques": 1,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "contagensDepoisDoReset": {
+      "usuarios": 0,
+      "produtos": 0,
+      "categorias": 0,
+      "pedidos": 0,
+      "estoques": 0,
+      "movimentos": 0,
+      "configuracoes": 0
+    },
+    "contagensFinais": {
+      "usuarios": 3,
+      "produtos": 1,
+      "categorias": 1,
+      "pedidos": 2,
+      "estoques": 1,
+      "movimentos": 3,
+      "configuracoes": 0
+    },
+    "pedidos": [
+      { "modalidade": "ENTREGA", "status": "SAIU_PARA_ENTREGA", "itens": 1, "entregadorAtribuido": true },
+      { "modalidade": "RETIRADA", "status": "PAGO", "itens": 1, "entregadorAtribuido": false }
+    ],
+    "estoque": { "fisica": 48, "reservada": 0 },
+    "itensNoCarrinho": 0,
+    "configuracaoEntrega": {
+      "snapshotRestaurado": true,
+      "registrosRestaurados": 0
+    },
+    "resumoEstado": "d8e1cd334f179727"
+  },
+  "comparacao": {
+    "contagensAntes": "iguais",
+    "contagensDepoisDoReset": "iguais",
+    "contagensFinais": "iguais",
+    "contas": "iguais (3 contas D106, papéis corretos)",
+    "estoque": "igual (física 48, reservada 0)",
+    "itensNoCarrinho": "igual (0)",
+    "configuracaoEntrega": "igual (snapshot restaurado; 0 registros)",
+    "pedidos": "estados iguais; identificadorNegocio e IDs novos por desenho (assinatura nova por execução)",
+    "duplicacao": "nenhuma",
+    "residuo": "nenhum",
+    "segundaExecucaoFalhou": false
+  },
+  "guardaVerificada": {
+    "stagingConfirm": "cupcake_staging obrigatório",
+    "banco": "cupcake_staging obrigatório",
+    "evolution": "recusa se configurada",
+    "dryRunDefault": true,
+    "backupAntesDaEscrita": true,
+    "deleteEscopado": "somente linhas D106 (e-mail/prefixo)",
+    "semDropTruncate": true,
+    "senha": "somente em arquivo local gitignored; ausente deste artefato"
+  },
+  "notaDeDesenvolvimento": "Durante o ajuste do script, duas execuções falharam por contagem de parâmetros SQL (corrigidas no próprio script) e uma por ausência do produtoId no seed. A validação final acima foi feita com o script já corrigido: 1 dry-run + 2 apply consecutivos.",
+  "veredito": "PASS — script idempotente e escopado validado localmente (1 dry-run + 2 execuções apply)",
+  "limitacoes": [
+    "A validação foi local (PostgreSQL dedicado + API atual), não contra o staging.",
+    "O SHA implantado no staging (028c605) é anterior ao candidato D106; D-01 não autorizado.",
+    "A imagem `api` do staging só conterá o script após um deploy do candidato; caso contrário o wrapper usa o modo stdin documentado."
+  ]
+}

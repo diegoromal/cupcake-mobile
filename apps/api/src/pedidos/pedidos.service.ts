@@ -279,6 +279,11 @@ export class PedidosService {
         throw new ConflictException('Pedido pago possui reserva em estado incompatível.');
       }
 
+      // Ordem global de locks: Produto antes de Estoque (mesma classe do F-04). A
+      // devolução insere MovimentacaoEstoque, que exige FOR KEY SHARE em Produto.
+      for (const produtoId of [...new Set(candidatas.map((reserva) => reserva.produtoId))].sort()) {
+        await db.$queryRaw`SELECT id FROM "Produto" WHERE id = ${produtoId}::uuid FOR UPDATE`;
+      }
       for (const produtoId of [...new Set(candidatas.map((reserva) => reserva.produtoId))].sort()) {
         const [estoque] = await db.$queryRaw<Array<{ produtoId: string }>>`
           SELECT "produtoId" FROM "Estoque" WHERE "produtoId" = ${produtoId}::uuid FOR UPDATE`;

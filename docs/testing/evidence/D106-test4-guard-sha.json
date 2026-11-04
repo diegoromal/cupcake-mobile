@@ -1,0 +1,78 @@
+{
+  "tarefa": "D106 TEST #4 — guard de SHA do wrapper de fixtures (execução local, sem staging)",
+  "geradoEm": "2026-11-04T01:55:47.394Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "ambiente": {
+    "tipo": "local dedicado",
+    "postgres": "container cupcake-d106-guard-postgres, 127.0.0.1:55433, banco cupcake_staging",
+    "api": "http://127.0.0.1:3106",
+    "staging": "NÃO acessado nesta rodada (nenhum comando SSH/remoto)",
+    "senha": "D106_DEMO_PASSWORD fixa de teste no processo; nenhuma senha registrada na evidência"
+  },
+  "casos": [
+    {
+      "id": "G-01",
+      "descricao": "modo staging sem D106_EXPECTED_SHA deve abortar antes de compose/backup",
+      "comando": "D106_RUN_MODE=staging STAGING_ROOT=<fake> D106_SECRET_FILE=<tmp> D106_DEMO_PASSWORD=<runtime> D106_STAGING_CONFIRM=cupcake_staging bash scripts/d106-staging-fixtures.sh --dry-run",
+      "exit": 1,
+      "saida": "D106_EXPECTED_SHA é obrigatório no modo staging; informe o SHA real de state/deployed-sha.",
+      "escritas": "nenhuma: apenas state/deployed-sha pré-existente; sem diretório backups, sem compose, sem arquivo de segredo",
+      "resultado": "PASS"
+    },
+    {
+      "id": "G-02",
+      "descricao": "modo local com D106_EXIGIR_SHA=1 e sem D106_EXPECTED_SHA aborta no guard do script node",
+      "comando": "D106_RUN_MODE=local ... D106_EXIGIR_SHA=1 bash scripts/d106-staging-fixtures.sh --dry-run",
+      "exit": 1,
+      "saida": "D106 fixtures: D106_EXPECTED_SHA é obrigatório no modo staging; informe o SHA real de state/deployed-sha.",
+      "escritas": "nenhuma (aborta antes de conectar ao banco/API)",
+      "resultado": "PASS"
+    },
+    {
+      "id": "G-03",
+      "descricao": "SHA local válido (implantado == esperado) e --dry-run funciona",
+      "comando": "D106_RUN_MODE=local ... D106_DEPLOYED_SHA=bbbb… D106_EXPECTED_SHA=bbbb… bash scripts/d106-staging-fixtures.sh --dry-run",
+      "exit": 0,
+      "resultadoJson": {
+        "modo": "dry-run",
+        "shaImplantado": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "esperadoSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "shaDivergente": false,
+        "contagensAntes": {
+          "usuarios": 0,
+          "produtos": 0,
+          "categorias": 0,
+          "pedidos": 0,
+          "estoques": 0,
+          "movimentos": 0,
+          "configuracoes": 0
+        }
+      },
+      "escritas": "nenhuma (dry-run; contagens 0/0)",
+      "resultado": "PASS"
+    },
+    {
+      "id": "G-04",
+      "descricao": "SHA divergente gera aviso, registra shaDivergente=true e continua o dry-run",
+      "comando": "D106_RUN_MODE=local ... D106_DEPLOYED_SHA=bbbb… D106_EXPECTED_SHA=cccc… bash scripts/d106-staging-fixtures.sh --dry-run",
+      "exit": 0,
+      "aviso": "AVISO: SHA implantado bbbb… difere de D106_EXPECTED_SHA cccc…; prosseguindo com registro (D-01 não autorizado).",
+      "resultadoJson": {
+        "modo": "dry-run",
+        "shaImplantado": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "esperadoSha": "cccccccccccccccccccccccccccccccccccccccc",
+        "shaDivergente": true
+      },
+      "escritas": "nenhuma (dry-run)",
+      "resultado": "PASS"
+    }
+  ],
+  "confirmacoes": [
+    "O guard do wrapper roda antes de qualquer leitura de compose, backup ou fixtures.",
+    "Nenhuma escrita no banco (contagens 0/0) e nenhum backup criado nos quatro casos.",
+    "Staging não foi acessado nem mutado nesta rodada.",
+    "Stack local encerrada: container removido; portas 3106 e 55433 livres."
+  ],
+  "resultado": "PASS"
+}

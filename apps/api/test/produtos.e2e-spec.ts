@@ -17,6 +17,7 @@ const output = { ...row, precoAtual: '12.30' };
 const err = (code: string) => new Prisma.PrismaClientKnownRequestError(code, {
   code, clientVersion: '7.10.0',
 });
+const queryRaw = jest.fn();
 
 describe('CRUD administrativo de produtos', () => {
   let app: INestApplication;
@@ -33,6 +34,7 @@ describe('CRUD administrativo de produtos', () => {
   const transaction = jest.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({
     produto: { create, findUnique, delete: remove },
     estoque: { create: stockCreate, deleteMany: stockDelete },
+    $queryRaw: queryRaw,
   }));
 
   beforeAll(async () => {
@@ -56,6 +58,7 @@ describe('CRUD administrativo de produtos', () => {
     update.mockResolvedValue(row);
     stockDelete.mockResolvedValue({ count: 1 });
     remove.mockResolvedValue({ id });
+    queryRaw.mockResolvedValue([{ id, imagem: null }]);
   });
   async function token(perfil: PerfilUsuario = PerfilUsuario.ADMIN) {
     return jwt.signAsync({ sub: adminId, perfil, type: 'access' }, {
@@ -106,11 +109,16 @@ describe('CRUD administrativo de produtos', () => {
     const auth = await token();
     const call = () => request(app.getHttpServer()).delete(`${base}/${id}`)
       .set('Authorization', `Bearer ${auth}`);
+
     await call().expect(204, '');
-    findUnique.mockResolvedValueOnce(null);
+
+    queryRaw.mockResolvedValueOnce([]);
+
     await call().expect(404);
+
     stockDelete.mockResolvedValueOnce({ count: 0 });
     await call().expect(409);
+
     remove.mockRejectedValueOnce(err('P2003'));
     await call().expect(409);
   });

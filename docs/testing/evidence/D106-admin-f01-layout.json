@@ -1,0 +1,648 @@
+{
+  "tarefa": "D106 — D105-F01: layout da lista de pedidos do Admin em navegador real (depois + A/B CSS no mesmo HEAD/dados)",
+  "geradoEm": "2026-11-04T01:42:14.185Z",
+  "head": "66e653b1918002b43a1c6b6b8cb1a21be9732b3c",
+  "branch": "task/D106-corrigir-findings-regressao-staging",
+  "ambiente": {
+    "url": "http://localhost:3001/pedidos",
+    "servidor": "next dev (Next.js 16.3.6)",
+    "api": "http://127.0.0.1:3100 (NestJS local, banco dedicado cupcake_d105)",
+    "portal": "D106 F01 (Maestri)",
+    "usuario": "d105-admin@example.test",
+    "dados": "fixtures D105 com identificadorNegocio longo PED-<uuid>-<sha256>",
+    "pedidosListados": 2
+  },
+  "criterios": {
+    "1280/1440": "scrollWidth <= clientWidth + 1 no wrapper; hint ausente; link \"Ver detalhes\" visivel e focavel; 7 cabecalhos; nenhuma celula com overflow",
+    "768/320": "rolagem horizontal funcional e hint visivel quando houver overflow",
+    "A/B (R-08)": "mesmo HEAD e mesmos dados; \"antes\" simulado apenas por CSS em runtime; nao e o build 028c605"
+  },
+  "execucoes": [
+    {
+      "viewport": "1280x801",
+      "estado": "depois (CSS do fix)",
+      "medicao": {
+        "viewport": {
+          "innerWidth": 1280,
+          "innerHeight": 801
+        },
+        "body": {
+          "scrollWidth": 1263,
+          "clientWidth": 1263
+        },
+        "wrap": {
+          "scrollWidth": 899,
+          "clientWidth": 899,
+          "overflowX": "auto",
+          "rect": {
+            "x": 311,
+            "y": 264,
+            "w": 901,
+            "h": 428,
+            "right": 1212
+          }
+        },
+        "table": {
+          "scrollWidth": 835,
+          "clientWidth": 835,
+          "layout": "fixed"
+        },
+        "headerCount": 7,
+        "headers": [
+          "Pedido",
+          "Data / Hora",
+          "Cliente",
+          "Modalidade",
+          "Status",
+          "Total",
+          "Ação"
+        ],
+        "headersOutsideWrap": [],
+        "hintsCount": 0,
+        "hintVisible": false,
+        "hintRole": null,
+        "hintText": null,
+        "cellOverflow": [],
+        "link": {
+          "text": "Ver detalhes",
+          "rect": {
+            "x": 1074,
+            "y": 414,
+            "w": 80,
+            "h": 15,
+            "right": 1154
+          },
+          "fullyVisible": true,
+          "tabIndex": 0,
+          "linkVisivelSemScroll": true,
+          "fullyVisibleSignificado": "tabela cabe integralmente no wrapper (sem rolagem); link visível sem rolar."
+        },
+        "tabelaCabeSemScroll": true
+      },
+      "resultado": "PASS"
+    },
+    {
+      "viewport": "1440x900",
+      "estado": "depois (CSS do fix)",
+      "medicao": {
+        "viewport": {
+          "innerWidth": 1440,
+          "innerHeight": 900
+        },
+        "body": {
+          "scrollWidth": 1423,
+          "clientWidth": 1423
+        },
+        "wrap": {
+          "scrollWidth": 1046,
+          "clientWidth": 1046,
+          "overflowX": "auto",
+          "rect": {
+            "x": 318,
+            "y": 269,
+            "w": 1048,
+            "h": 356,
+            "right": 1365
+          }
+        },
+        "table": {
+          "scrollWidth": 982,
+          "clientWidth": 982,
+          "layout": "fixed"
+        },
+        "headerCount": 7,
+        "headers": [
+          "Pedido",
+          "Data / Hora",
+          "Cliente",
+          "Modalidade",
+          "Status",
+          "Total",
+          "Ação"
+        ],
+        "headersOutsideWrap": [],
+        "hintsCount": 0,
+        "hintVisible": false,
+        "hintRole": null,
+        "hintText": null,
+        "cellOverflow": [],
+        "link": {
+          "text": "Ver detalhes",
+          "rect": {
+            "x": 1207,
+            "y": 401,
+            "w": 80,
+            "h": 15,
+            "right": 1287
+          },
+          "fullyVisible": true,
+          "tabIndex": 0,
+          "linkVisivelSemScroll": true,
+          "fullyVisibleSignificado": "tabela cabe integralmente no wrapper (sem rolagem); link visível sem rolar."
+        },
+        "tabelaCabeSemScroll": true
+      },
+      "resultado": "PASS"
+    },
+    {
+      "viewport": "768x600",
+      "estado": "depois (CSS do fix)",
+      "medicao": {
+        "viewport": {
+          "innerWidth": 768,
+          "innerHeight": 600
+        },
+        "body": {
+          "scrollWidth": 751,
+          "clientWidth": 751
+        },
+        "wrap": {
+          "scrollWidth": 710,
+          "clientWidth": 701,
+          "overflowX": "auto",
+          "rect": {
+            "x": 24,
+            "y": 430,
+            "w": 703,
+            "h": 469,
+            "right": 727
+          }
+        },
+        "table": {
+          "scrollWidth": 670,
+          "clientWidth": 670,
+          "layout": "fixed"
+        },
+        "headerCount": 7,
+        "headers": [
+          "Pedido",
+          "Data / Hora",
+          "Cliente",
+          "Modalidade",
+          "Status",
+          "Total",
+          "Ação"
+        ],
+        "headersOutsideWrap": [],
+        "hintsCount": 1,
+        "hintVisible": true,
+        "hintRole": "note",
+        "hintText": "↔ Role para ver toda a tabela",
+        "cellOverflow": [],
+        "link": {
+          "text": "Ver detalhes",
+          "rect": {
+            "x": 633,
+            "y": 589,
+            "w": 80,
+            "h": 15,
+            "right": 713
+          },
+          "fullyVisible": false,
+          "tabIndex": 0,
+          "linkVisivelSemScroll": true,
+          "fullyVisibleSignificado": "tabela não cabe integralmente (9 px de rolagem); o link está dentro da área visível no scroll inicial (linkVisivelSemScroll=true), mas a última coluna é cortada em 9 px até rolar."
+        },
+        "tabelaCabeSemScroll": false,
+        "fullyVisibleSignificado": "tabela não cabe integralmente (9 px de rolagem); o link fica dentro da área na posição inicial, mas a última coluna é cortada em 9 px até rolar",
+        "scrollFuncional": {
+          "scrollLeftAposScroll": 9,
+          "maxScroll": 9,
+          "funcional": true
+        }
+      },
+      "resultado": "PASS"
+    },
+    {
+      "viewport": "320x640",
+      "estado": "depois (CSS do fix)",
+      "medicao": {
+        "viewport": {
+          "innerWidth": 320,
+          "innerHeight": 640
+        },
+        "body": {
+          "scrollWidth": 320,
+          "clientWidth": 303
+        },
+        "wrap": {
+          "scrollWidth": 706,
+          "clientWidth": 286,
+          "overflowX": "auto",
+          "rect": {
+            "x": 16,
+            "y": 552,
+            "w": 288,
+            "h": 465,
+            "right": 304
+          }
+        },
+        "table": {
+          "scrollWidth": 670,
+          "clientWidth": 670,
+          "layout": "fixed"
+        },
+        "headerCount": 7,
+        "headers": [
+          "Pedido",
+          "Data / Hora",
+          "Cliente",
+          "Modalidade",
+          "Status",
+          "Total",
+          "Ação"
+        ],
+        "headersOutsideWrap": [
+          "Cliente",
+          "Modalidade",
+          "Status",
+          "Total",
+          "Ação"
+        ],
+        "hintsCount": 1,
+        "hintVisible": true,
+        "hintRole": "note",
+        "hintText": "↔ Role para ver toda a tabela",
+        "cellOverflow": [],
+        "link": {
+          "text": "Ver detalhes",
+          "rect": {
+            "x": 623,
+            "y": 709,
+            "w": 80,
+            "h": 15,
+            "right": 703
+          },
+          "fullyVisible": false,
+          "tabIndex": 0,
+          "linkVisivelSemScroll": false,
+          "fullyVisibleSignificado": "tabela não cabe (420 px de rolagem) e o link está fora da área visível no scroll inicial; só aparece após rolar."
+        },
+        "tabelaCabeSemScroll": false,
+        "fullyVisibleSignificado": "tabela excede 420 px; o link só fica visível após rolagem horizontal",
+        "scrollFuncional": {
+          "scrollLeftAposScroll": 420,
+          "maxScroll": 420,
+          "funcional": true,
+          "linkVisivelAposScroll": true
+        }
+      },
+      "resultado": "PASS"
+    }
+  ],
+  "ab": {
+    "rotulo": "A/B CSS no mesmo HEAD/dados",
+    "metodo": "style injetado em runtime: table.order-table{table-layout:auto;width:auto}, th/td{width:auto}, td{overflow-wrap:normal}, .order-id{word-break:normal}, .badge{white-space:nowrap}; nenhum arquivo alterado",
+    "aviso": "NÃO é o build 028c605. O build antigo (dados diferentes) foi registrado em D106-VALIDACAO §10.3 e em D106-admin-f01-1280-antes.png.",
+    "resultados": [
+      {
+        "viewport": "1280x801",
+        "depois": {
+          "viewport": {
+            "innerWidth": 1280,
+            "innerHeight": 801
+          },
+          "body": {
+            "scrollWidth": 1263,
+            "clientWidth": 1263
+          },
+          "wrap": {
+            "scrollWidth": 899,
+            "clientWidth": 899,
+            "overflowX": "auto",
+            "rect": {
+              "x": 311,
+              "y": 264,
+              "w": 901,
+              "h": 428,
+              "right": 1212
+            }
+          },
+          "table": {
+            "scrollWidth": 835,
+            "clientWidth": 835,
+            "layout": "fixed"
+          },
+          "headerCount": 7,
+          "headers": [
+            "Pedido",
+            "Data / Hora",
+            "Cliente",
+            "Modalidade",
+            "Status",
+            "Total",
+            "Ação"
+          ],
+          "headersOutsideWrap": [],
+          "hintsCount": 0,
+          "hintVisible": false,
+          "hintRole": null,
+          "hintText": null,
+          "cellOverflow": [],
+          "link": {
+            "text": "Ver detalhes",
+            "rect": {
+              "x": 1074,
+              "y": 414,
+              "w": 80,
+              "h": 15,
+              "right": 1154
+            },
+            "fullyVisible": true,
+            "tabIndex": 0,
+            "linkVisivelSemScroll": true,
+            "fullyVisibleSignificado": "tabela cabe e link visível sem rolagem."
+          },
+          "tabelaCabeSemScroll": true
+        },
+        "antes": {
+          "viewport": {
+            "innerWidth": 1280,
+            "innerHeight": 801
+          },
+          "body": {
+            "scrollWidth": 1263,
+            "clientWidth": 1263
+          },
+          "wrap": {
+            "scrollWidth": 1294,
+            "clientWidth": 899,
+            "overflowX": "auto",
+            "rect": {
+              "x": 311,
+              "y": 264,
+              "w": 901,
+              "h": 265,
+              "right": 1212
+            }
+          },
+          "table": {
+            "scrollWidth": 1230,
+            "clientWidth": 1230,
+            "layout": "auto"
+          },
+          "headerCount": 7,
+          "headers": [
+            "Pedido",
+            "Data / Hora",
+            "Cliente",
+            "Modalidade",
+            "Status",
+            "Total",
+            "Ação"
+          ],
+          "headersOutsideWrap": [
+            "Modalidade",
+            "Status",
+            "Total",
+            "Ação"
+          ],
+          "hintsCount": 1,
+          "hintVisible": true,
+          "hintRole": "note",
+          "hintText": "↔ Role para ver toda a tabela",
+          "cellOverflow": [],
+          "link": {
+            "text": "Ver detalhes",
+            "rect": {
+              "x": 1482,
+              "y": 369,
+              "w": 80,
+              "h": 15,
+              "right": 1562
+            },
+            "fullyVisible": false,
+            "tabIndex": 0,
+            "linkVisivelSemScroll": false,
+            "fullyVisibleSignificado": "tabela não cabe; link fora da área visível no scroll inicial."
+          },
+          "tabelaCabeSemScroll": false
+        },
+        "contraste": {
+          "wrapScrollWidth": [
+            899,
+            1294
+          ],
+          "wrapClientWidth": 899,
+          "headersForaDoWrap": [
+            [],
+            [
+              "Modalidade",
+              "Status",
+              "Total",
+              "Ação"
+            ]
+          ],
+          "linkFullyVisible": [
+            true,
+            false
+          ],
+          "hints": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "viewport": "1440x900",
+        "depois": {
+          "viewport": {
+            "innerWidth": 1440,
+            "innerHeight": 900
+          },
+          "body": {
+            "scrollWidth": 1423,
+            "clientWidth": 1423
+          },
+          "wrap": {
+            "scrollWidth": 1046,
+            "clientWidth": 1046,
+            "overflowX": "auto",
+            "rect": {
+              "x": 318,
+              "y": 269,
+              "w": 1048,
+              "h": 356,
+              "right": 1365
+            }
+          },
+          "table": {
+            "scrollWidth": 982,
+            "clientWidth": 982,
+            "layout": "fixed"
+          },
+          "headerCount": 7,
+          "headers": [
+            "Pedido",
+            "Data / Hora",
+            "Cliente",
+            "Modalidade",
+            "Status",
+            "Total",
+            "Ação"
+          ],
+          "headersOutsideWrap": [],
+          "hintsCount": 0,
+          "hintVisible": false,
+          "hintRole": null,
+          "hintText": null,
+          "cellOverflow": [],
+          "link": {
+            "text": "Ver detalhes",
+            "rect": {
+              "x": 1207,
+              "y": 401,
+              "w": 80,
+              "h": 15,
+              "right": 1287
+            },
+            "fullyVisible": true,
+            "tabIndex": 0,
+            "linkVisivelSemScroll": true,
+            "fullyVisibleSignificado": "tabela cabe e link visível sem rolagem."
+          },
+          "tabelaCabeSemScroll": true
+        },
+        "antes": {
+          "viewport": {
+            "innerWidth": 1440,
+            "innerHeight": 900
+          },
+          "body": {
+            "scrollWidth": 1423,
+            "clientWidth": 1423
+          },
+          "wrap": {
+            "scrollWidth": 1294,
+            "clientWidth": 1046,
+            "overflowX": "auto",
+            "rect": {
+              "x": 318,
+              "y": 269,
+              "w": 1048,
+              "h": 265,
+              "right": 1365
+            }
+          },
+          "table": {
+            "scrollWidth": 1230,
+            "clientWidth": 1230,
+            "layout": "auto"
+          },
+          "headerCount": 7,
+          "headers": [
+            "Pedido",
+            "Data / Hora",
+            "Cliente",
+            "Modalidade",
+            "Status",
+            "Total",
+            "Ação"
+          ],
+          "headersOutsideWrap": [
+            "Status",
+            "Total",
+            "Ação"
+          ],
+          "hintsCount": 1,
+          "hintVisible": true,
+          "hintRole": "note",
+          "hintText": "↔ Role para ver toda a tabela",
+          "cellOverflow": [],
+          "link": {
+            "text": "Ver detalhes",
+            "rect": {
+              "x": 1488,
+              "y": 374,
+              "w": 80,
+              "h": 15,
+              "right": 1568
+            },
+            "fullyVisible": false,
+            "tabIndex": 0,
+            "linkVisivelSemScroll": false,
+            "fullyVisibleSignificado": "tabela não cabe; link fora da área visível no scroll inicial."
+          },
+          "tabelaCabeSemScroll": false
+        },
+        "contraste": {
+          "wrapScrollWidth": [
+            1046,
+            1294
+          ],
+          "wrapClientWidth": 1046,
+          "headersForaDoWrap": [
+            [],
+            [
+              "Status",
+              "Total",
+              "Ação"
+            ]
+          ],
+          "linkFullyVisible": [
+            true,
+            false
+          ],
+          "hints": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  },
+  "focoPorTeclado": {
+    "viewport": "1280x801",
+    "metodo": "Tab sequencial a partir de document.activeElement.blur()",
+    "paradasAteOLink": 10,
+    "activeElement": {
+      "tag": "A",
+      "text": "Ver detalhes",
+      "ariaLabelPrefixo": "Ver detalhes do pedido PED-"
+    },
+    "resultado": "PASS"
+  },
+  "screenshots": [
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1280.png",
+      "sha256": "896de74b00c0f576afd98dcbba219e3395e829d512a2eda5852c3d71e4765448"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1440.png",
+      "sha256": "0ef8c84eb2c81274f1919e9dc228fb21517dc74fe61fc2dac39157e1052e3ca1"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-768.png",
+      "sha256": "ed9cb2854d2236160e0b89f117ebf2035b80a3263ed9b506ef17fbed4dac9faa"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-320.png",
+      "sha256": "08f12c19b2d422356888eb3d4fbab1606c47af2b61da01d6f9a4ccfaebdd36db"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1280-ab-antes.png",
+      "sha256": "4d80141ae6eed969d7a57bc24970f0d673b97c7ad2c74ee672a3acf8f7490dea"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1440-ab-antes.png",
+      "sha256": "c934f580ca78f70c986346cb47c1d85c913552237ba9d75baa592118682bf7c1"
+    },
+    {
+      "path": "docs/testing/evidence/D106-admin-f01-1280-antes.png",
+      "sha256": "786cf0a083118cea319b538f9d4427362af4f5f4f786da8fcc582a9aeecbc543"
+    }
+  ],
+  "observacoes": [
+    "Viewport solicitado 1280x801; innerWidth/innerHeight medidos 1280x801.",
+    "Em 320x640 há overflow horizontal de 17 px no documento (main.container/aside.top), fora da tabela; a tabela rola e o hint (role=note) aparece.",
+    "No A/B, o hint aparece no estado \"antes\" porque o componente atual calcula o overflow em runtime; isso não reproduz o build antigo, que não tinha hint em 1280.",
+    "Eficácia dos fixes de F-01 é independente do A/B: no estado \"depois\" não há overflow nem hint em 1280/1440; no estado simulado há overflow de 395 px (1280) e 248 px (1440), com STATUS/TOTAL/AÇÃO fora da área."
+  ],
+  "resultado": "PASS",
+  "semantica": {
+    "tabelaCabeSemScroll": "wrap.scrollWidth <= wrap.clientWidth + 1: toda a tabela cabe no wrapper sem rolagem horizontal.",
+    "link.fullyVisible": "true somente quando tabelaCabeSemScroll E o link está integralmente dentro do viewport; equivale a \"visível sem qualquer rolagem\". Não basta o link estar na área inicial do wrapper.",
+    "link.linkVisivelSemScroll": "true quando o link está integralmente dentro da área visível do wrapper em scrollLeft=0 (rect.right <= wrap.rect.x + wrap.clientWidth), mesmo que a tabela não caiba e fullyVisible seja false.",
+    "link.fullyVisibleSignificado": "texto por viewport com o valor medido e a consequência para o usuário."
+  }
+}

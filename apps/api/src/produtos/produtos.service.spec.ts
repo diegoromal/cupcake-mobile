@@ -18,9 +18,11 @@ describe('ProdutosService', () => {
   const update = jest.fn();
   const remove = jest.fn();
   const stockDelete = jest.fn();
+  const queryRaw = jest.fn();
   const transaction = jest.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({
     produto: { create, findUnique, delete: remove },
     estoque: { create: stockCreate, deleteMany: stockDelete },
+    $queryRaw: queryRaw,
   }));
   const service = new ProdutosService({
     categoria: { findUnique: categoriaFind },
@@ -38,6 +40,7 @@ describe('ProdutosService', () => {
     update.mockResolvedValue(row);
     stockDelete.mockResolvedValue({ count: 1 });
     remove.mockResolvedValue({ id });
+    queryRaw.mockResolvedValue([{ id, imagem: null }]);
   });
 
   it('cria Produto e Estoque zero em uma transação, com defaults e Decimal exato', async () => {
@@ -94,6 +97,13 @@ describe('ProdutosService', () => {
 
   it('delete livre remove Estoque zero e Produto na mesma transação', async () => {
     await expect(service.remove(id)).resolves.toBeUndefined();
+    // Ordem global de locks (R-01): Produto FOR UPDATE antes de Estoque.
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(queryRaw.mock.calls[0][0].join('')).toContain('FROM "Produto"');
+    expect(queryRaw.mock.calls[0][0].join('')).toContain('FOR UPDATE');
+    expect(queryRaw.mock.calls[0][0].join('')).toContain('id, imagem');
+    expect(queryRaw.mock.invocationCallOrder[0])
+      .toBeLessThan(stockDelete.mock.invocationCallOrder[0]);
     expect(stockDelete).toHaveBeenCalledWith({ where: {
       produtoId: id, quantidadeFisica: 0, quantidadeReservada: 0,
     } });

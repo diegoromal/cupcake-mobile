@@ -41,6 +41,8 @@ services:
       S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:?required}
     expose:
       - "3000"
+    ports:
+      - "10.60.60.30:3100:3000"
     networks:
       - app
       - data

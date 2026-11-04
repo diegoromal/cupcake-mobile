@@ -1,0 +1,25 @@
+{
+  "task": "D105",
+  "kind": "participant-sessions",
+  "status": "not_executed",
+  "reason": "Nenhum participante humano disponivel nesta rodada; agentes de IA nao substituem pessoas e resultados nao podem ser inventados.",
+  "sessions": [],
+  "profiles": {
+    "CLIENTE": {"executed": false, "participant": null},
+    "ADMIN": {"executed": false, "participant": null},
+    "ENTREGADOR": {"executed": false, "participant": null}
+  },
+  "gate": {
+    "d105_pass_requires": [
+      "3 sessoes, uma por perfil",
+      "preferencialmente 3 pessoas distintas; se houver reuso, registrar o vies",
+      "consentimento registrado",
+      "tarefas observadas e registradas",
+      "evidencias anonimizadas",
+      "findings organizados para a D106"
+    ],
+    "current_result": "INCONCLUSIVO/BLOQUEADO",
+    "pass": false
+  },
+  "next_step": "Humano executa as sessoes com o protocolo D105-PROTOCOLO.md e devolve as observacoes anonimizadas para preenchimento de D105-OBSERVACOES.md."
+}

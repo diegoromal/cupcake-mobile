@@ -75,6 +75,37 @@ test('filtra por status válido, conta registros visíveis, limpa e abre o pedid
   expect(screen.queryByRole('option', { name: 'Pendente de pagamento' })).not.toBeInTheDocument();
 });
 
+test('mantém todas as colunas críticas na tabela de pedidos (D105-F01)', async () => {
+  const longOrder = {
+    ...order,
+    identificadorNegocio: `PED-123e4567-e89b-12d3-a456-426614174000-${'a'.repeat(64)}`,
+  };
+  mockApi.mockResolvedValue([longOrder]);
+  const { container } = render(<OrderList />);
+  expect(await screen.findByText(longOrder.identificadorNegocio)).toBeInTheDocument();
+  const table = container.querySelector('table.order-table');
+  expect(table).not.toBeNull();
+  expect(container.querySelector('.order-table-wrap')).not.toBeNull();
+  expect(container.querySelector('td.order-id strong')).toHaveTextContent(longOrder.identificadorNegocio);
+  expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+    'Pedido', 'Data / Hora', 'Cliente', 'Modalidade', 'Status', 'Total', 'Ação',
+  ]);
+  expect(screen.getByRole('link', { name: `Ver detalhes do pedido ${longOrder.identificadorNegocio}` }))
+    .toHaveAttribute('href', '/pedidos/order-1');
+});
+
+test('sinaliza rolagem horizontal somente quando a tabela excede a largura disponível', async () => {
+  mockApi.mockResolvedValue([order]);
+  const { container } = render(<OrderList />);
+  expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(screen.queryByText('↔ Role para ver toda a tabela')).not.toBeInTheDocument();
+  const wrap = container.querySelector('.order-table-wrap') as HTMLElement;
+  Object.defineProperty(wrap, 'scrollWidth', { configurable: true, value: 900 });
+  Object.defineProperty(wrap, 'clientWidth', { configurable: true, value: 600 });
+  act(() => { window.dispatchEvent(new Event('resize')); });
+  expect(await screen.findByText('↔ Role para ver toda a tabela')).toBeInTheDocument();
+});
+
 test('não mostra pedidos quando o acesso administrativo é negado', async () => {
   mockApi.mockRejectedValue(new AdminApiError(403, 'Acesso negado.'));
   render(<OrderList />);
