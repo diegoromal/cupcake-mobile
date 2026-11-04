@@ -27,13 +27,14 @@ process.env.JWT_ACCESS_SECRET = `d61-access-${randomUUID()}`;
 process.env.JWT_REFRESH_SECRET = `d61-refresh-${randomUUID()}`;
 
 type Forma = 'pix' | 'cartao';
-type Fixture = { pedidoId: string; produtos: string[] };
+type Fixture = { pedidoId: string; produtos: string[]; itemPedidoId: string;
+  personalizacaoId: string; itemCarrinhoId: string };
 
 async function main() {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
   const pg = new Client({ connectionString: url.toString() });
-  const usuarioId = randomUUID(), categoriaId = randomUUID();
-  const pedidos: string[] = [], produtos: string[] = [];
+  const usuarioId = randomUUID(), categoriaId = randomUUID(), carrinhoId = randomUUID();
+  const pedidos: string[] = [], produtos: string[] = [], personalizacoes: string[] = [];
   const sequencia = `${marker}_seq`, funcao = `${marker}_fn`, trigger = `${marker}_trigger`;
   let app: INestApplication | undefined, pgConnected = false, sequenceCreated = false;
   let functionCreated = false, triggerCreated = false, originalError: unknown, checks = 0;
@@ -48,10 +49,16 @@ async function main() {
     movimentos: await prisma.movimentacaoEstoque.findMany({ where: { pedidoId }, orderBy: { id: 'asc' } }),
     historicos: await prisma.historicoStatusPedido.findMany({ where: { pedidoId }, orderBy: { id: 'asc' } }),
   });
+  const estadoCarrinho = () => prisma.carrinho.findUniqueOrThrow({
+    where: { id: carrinhoId }, include: { itens: {
+      orderBy: { id: 'asc' }, include: { personalizacoes: { orderBy: { personalizacaoId: 'asc' } } },
+    } },
+  });
   const tentativa = (aprovada = true) => randomUUID().slice(0, -1) + (aprovada ? '0' : '1');
   const fixture = async (): Promise<Fixture> => {
     const pedidoId = randomUUID(), ids = [randomUUID(), randomUUID()];
-    pedidos.push(pedidoId); produtos.push(...ids);
+    const itemPedidoId = randomUUID(), itemCarrinhoId = randomUUID(), personalizacaoId = randomUUID();
+    pedidos.push(pedidoId); produtos.push(...ids); personalizacoes.push(personalizacaoId);
     for (let i = 0; i < ids.length; i++) {
       await prisma.produto.create({ data: { id: ids[i], categoriaId, nome: `${marker}-${pedidoId}-${i}`,
         precoAtual: '12.34' } });
@@ -61,11 +68,19 @@ async function main() {
     await prisma.pedido.create({ data: { id: pedidoId, identificadorNegocio: `${marker}-${pedidoId}`,
       clienteUsuarioId: usuarioId, modalidade: 'RETIRADA', valorItens: '12.34',
       freteAplicado: '0.00', total: '12.34' } });
+    await prisma.personalizacao.create({ data: { id: personalizacaoId,
+      nome: `${marker}-${pedidoId}-personalizacao`, ajusteValor: '1.23' } });
+    await prisma.itemCarrinho.create({ data: { id: itemCarrinhoId, carrinhoId, produtoId: ids[0],
+      quantidade: 1, personalizacoes: { create: [{ personalizacaoId }] } } });
+    await prisma.itemPedido.create({ data: { id: itemPedidoId, pedidoId, produtoId: ids[0],
+      quantidade: 1, precoAplicado: '12.34', subtotalAplicado: '12.34',
+      personalizacoes: { create: [{ identificacaoPersonalizacaoAplicada: personalizacaoId,
+        nomeAplicado: `${marker}-${pedidoId}-personalizacao`, ajusteValorAplicado: '1.23' }] } } });
     for (const [produtoId, quantidade] of [[ids[0], 2], [ids[0], 1], [ids[1], 3]] as const) {
       await prisma.reservaEstoque.create({ data: { pedidoId, produtoId, quantidade,
         estado: 'ATIVA', momentoExpiracaoValidade: new Date(Date.now() + 900_000) } });
     }
-    return { pedidoId, produtos: ids };
+    return { pedidoId, produtos: ids, itemPedidoId, personalizacaoId, itemCarrinhoId };
   };
   const venda = async (alvo: Fixture) => {
     const estado = await snapshot(alvo);
@@ -82,11 +97,26 @@ async function main() {
     eq(estado.historicos.map((h) => h.statusRegistrado), ['PAGO'], 'Um histórico PAGO');
     eq(estado.estoques.every((e) => e.quantidadeFisica >= e.quantidadeReservada &&
       e.quantidadeReservada >= 0), true, 'Saldos não negativos e coerentes');
+    const carrinho = await estadoCarrinho();
+    eq(carrinho.id, carrinhoId, 'Carrinho pai permanece após aprovação');
+    eq(carrinho.itens, [], 'Aprovação remove itens e personalizações do carrinho');
+    eq(await prisma.itemCarrinhoPersonalizacao.count({ where: { itemCarrinhoId: alvo.itemCarrinhoId } }),
+      0, 'Personalizações do item removido em cascata');
+    const itemPedido = await prisma.itemPedido.findUniqueOrThrow({
+      where: { id: alvo.itemPedidoId }, include: { personalizacoes: true },
+    });
+    eq([itemPedido.pedidoId, itemPedido.produtoId, itemPedido.quantidade,
+      itemPedido.precoAplicado.toFixed(2), itemPedido.subtotalAplicado.toFixed(2)],
+    [alvo.pedidoId, alvo.produtos[0], 1, '12.34', '12.34'], 'Snapshot ItemPedido preservado');
+    eq(itemPedido.personalizacoes.map((p) => [p.identificacaoPersonalizacaoAplicada,
+      p.nomeAplicado, p.ajusteValorAplicado?.toFixed(2)]),
+    [[alvo.personalizacaoId, `${marker}-${alvo.pedidoId}-personalizacao`, '1.23']],
+    'Personalização snapshot ItemPedido preservada');
     return estado;
   };
   const removeInjection = async () => {
     if (triggerCreated) {
-      await pg.query(`DROP TRIGGER "${trigger}" ON "HistoricoStatusPedido"`);
+      await pg.query(`DROP TRIGGER "${trigger}" ON "ItemCarrinho"`);
       triggerCreated = false;
     }
     if (functionCreated) {
@@ -108,6 +138,7 @@ async function main() {
     await prisma.usuario.create({ data: { id: usuarioId, nome: marker, email: `${marker}@example.test`,
       telefone: '00000000000', credencialSenha: 'fixture', perfil: 'CLIENTE' } });
     await prisma.categoria.create({ data: { id: categoriaId, nome: marker } });
+    await prisma.carrinho.create({ data: { id: carrinhoId, usuarioId } });
     const module = await Test.createTestingModule({ imports: [PagamentosModule] }).compile();
     app = module.createNestApplication(); app.useLogger(false); await app.init();
     const jwt = new JwtService();
@@ -128,19 +159,24 @@ async function main() {
       const aposVenda = await venda(aprovado);
       eq((await post(aprovado, forma, aprovadoId).expect(200)).body, resposta.body,
         `${forma}: retry conserva pagamento`);
-      await post(aprovado, forma, tentativa()).expect(409);
+      const novaTentativa = await post(aprovado, forma, tentativa());
+      if (novaTentativa.status !== 409) throw new Error(
+        `${forma}: nova tentativa após aprovação: status ${novaTentativa.status}, body ${JSON.stringify(novaTentativa.body)}`);
       eq(await snapshot(aprovado), aposVenda, `${forma}: repetições não duplicam conversão`);
       eq(await prisma.pagamento.count({ where: { pedidoId: aprovado.pedidoId } }), 1,
         `${forma}: uma tentativa`);
 
       const recusado = await fixture(), recusadoId = tentativa(false);
       const antesRecusa = await snapshot(recusado);
+      const carrinhoAntesRecusa = await estadoCarrinho();
       const recusa = await post(recusado, forma, recusadoId).expect(201);
       eq(recusa.body.resultado, 'RECUSADO', `${forma}: recusa`);
       eq(await snapshot(recusado), antesRecusa, `${forma}: recusa sem baixa`);
+      eq(await estadoCarrinho(), carrinhoAntesRecusa, `${forma}: recusa preserva carrinho e personalizações`);
       eq((await post(recusado, forma, recusadoId).expect(200)).body, recusa.body,
         `${forma}: retry da recusa imutável`);
       eq(await snapshot(recusado), antesRecusa, `${forma}: retry da recusa sem baixa`);
+      eq(await estadoCarrinho(), carrinhoAntesRecusa, `${forma}: retry da recusa preserva carrinho`);
       const outraForma: Forma = forma === 'pix' ? 'cartao' : 'pix';
       eq((await post(recusado, outraForma, tentativa()).expect(201)).body.resultado,
         'APROVADO', `${forma}: nova tentativa por ${outraForma}`);
@@ -148,37 +184,26 @@ async function main() {
       eq(await prisma.pagamento.count({ where: { pedidoId: recusado.pedidoId } }), 2,
         `${forma}: duas tentativas distintas`);
 
-      const reservaVencida = await fixture(), vencidaId = tentativa();
-      await prisma.reservaEstoque.updateMany({ where: { pedidoId: reservaVencida.pedidoId,
-        produtoId: reservaVencida.produtos[1] },
-      data: { momentoExpiracaoValidade: new Date(Date.now() - 60_000) } });
-      const antesVencida = await snapshot(reservaVencida);
-      await post(reservaVencida, forma, vencidaId).expect(409);
-      eq((await get(reservaVencida, forma, vencidaId).expect(200)).body.resultado,
-        'PENDENTE', `${forma}: reserva vencida não aprova`);
-      eq(await snapshot(reservaVencida), antesVencida, `${forma}: reserva vencida não converte nada`);
-      await post(reservaVencida, forma, vencidaId).expect(409);
-      eq(await prisma.pagamento.count({ where: { pedidoId: reservaVencida.pedidoId } }), 1,
-        `${forma}: retry vencido não duplica pagamento`);
-      eq(await snapshot(reservaVencida), antesVencida, `${forma}: retry vencido não baixa`);
-
       const rollback = await fixture(), rollbackId = tentativa();
       const antesRollback = await snapshot(rollback);
+      const carrinhoAntesRollback = await estadoCarrinho();
       await pg.query(`CREATE FUNCTION "${funcao}"() RETURNS trigger LANGUAGE plpgsql AS $$
-        BEGIN IF NEW."pedidoId" = '${rollback.pedidoId}'::uuid THEN
+        BEGIN IF OLD."carrinhoId" = '${carrinhoId}'::uuid AND OLD.id = '${rollback.itemCarrinhoId}'::uuid THEN
           PERFORM nextval('"${sequencia}"');
-          RAISE EXCEPTION 'D61 falha injetada após conversão';
-        END IF; RETURN NEW; END $$`); functionCreated = true;
-      await pg.query(`CREATE TRIGGER "${trigger}" BEFORE INSERT ON "HistoricoStatusPedido"
-        FOR EACH ROW EXECUTE FUNCTION "${funcao}"()`); triggerCreated = true;
+          RAISE EXCEPTION 'D61 falha injetada após limpeza do carrinho';
+        END IF; RETURN OLD; END $$`); functionCreated = true;
+      await pg.query(`CREATE CONSTRAINT TRIGGER "${trigger}" AFTER DELETE ON "ItemCarrinho"
+        DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "${funcao}"()`); triggerCreated = true;
       await post(rollback, forma, rollbackId).expect(500);
       eq((await pg.query(`SELECT last_value, is_called FROM "${sequencia}"`)).rows[0],
         { last_value: '1', is_called: true },
-        `${forma}: trigger atingiu o histórico após conversão`);
+        `${forma}: trigger diferido atingiu o commit após limpeza`);
       eq((await get(rollback, forma, rollbackId).expect(200)).body.resultado,
         'PENDENTE', `${forma}: pagamento revertido`);
       eq(await snapshot(rollback), antesRollback,
         `${forma}: pedido, reservas, saldos, movimentos e histórico revertidos`);
+      eq(await estadoCarrinho(), carrinhoAntesRollback,
+        `${forma}: rollback preserva carrinho e personalizações`);
       await removeInjection();
       eq((await post(rollback, forma, rollbackId).expect(200)).body.resultado,
         'APROVADO', `${forma}: retry da tentativa recupera venda`);
@@ -189,6 +214,35 @@ async function main() {
       eq(await prisma.pagamento.count({ where: { pedidoId: rollback.pedidoId } }), 1,
         `${forma}: uma tentativa após rollback`);
       await pg.query(`ALTER SEQUENCE "${sequencia}" RESTART WITH 1`);
+
+      const reservaVencida = await fixture(), vencidaId = tentativa();
+      const expiracao = new Date(Date.now() - 60_000);
+      const expiracaoAtualizada = await prisma.reservaEstoque.updateMany({ where: {
+        pedidoId: reservaVencida.pedidoId, produtoId: reservaVencida.produtos[1], estado: 'ATIVA',
+      }, data: { momentoExpiracaoValidade: expiracao } });
+      if (expiracaoAtualizada.count !== 1) {
+        throw new Error(`${forma}: fixture de reserva vencida atualizou ${expiracaoAtualizada.count} linhas`);
+      }
+      const reservaConfirmada = await prisma.reservaEstoque.findFirst({ where: {
+        pedidoId: reservaVencida.pedidoId, produtoId: reservaVencida.produtos[1], estado: 'ATIVA',
+      }, select: { momentoExpiracaoValidade: true } });
+      const [{ agora: agoraBanco }] = await pg.query<{ agora: Date }>('SELECT clock_timestamp() AS agora')
+        .then((resultado) => resultado.rows);
+      if (!reservaConfirmada || reservaConfirmada.momentoExpiracaoValidade >= agoraBanco) {
+        throw new Error(`${forma}: fixture não ficou vencido no banco (expiração ${
+          reservaConfirmada?.momentoExpiracaoValidade.toISOString() ?? 'ausente'}, agora ${agoraBanco.toISOString()})`);
+      }
+      const antesVencida = await snapshot(reservaVencida);
+      const respostaVencida = await post(reservaVencida, forma, vencidaId);
+      if (respostaVencida.status !== 409) throw new Error(
+        `${forma}: reserva vencida: status ${respostaVencida.status}, body ${JSON.stringify(respostaVencida.body)}`);
+      eq((await get(reservaVencida, forma, vencidaId).expect(200)).body.resultado,
+        'PENDENTE', `${forma}: reserva vencida não aprova`);
+      eq(await snapshot(reservaVencida), antesVencida, `${forma}: reserva vencida não converte nada`);
+      await post(reservaVencida, forma, vencidaId).expect(409);
+      eq(await prisma.pagamento.count({ where: { pedidoId: reservaVencida.pedidoId } }), 1,
+        `${forma}: retry vencido não duplica pagamento`);
+      eq(await snapshot(reservaVencida), antesVencida, `${forma}: retry vencido não baixa`);
     }
 
     for (const status of ['PENDENTE_PAGAMENTO', 'EXPIRADO'] as const) {
@@ -216,9 +270,19 @@ async function main() {
     await cleanup('movimentações', () => prisma.movimentacaoEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('históricos', () => prisma.historicoStatusPedido.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('reservas', () => prisma.reservaEstoque.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('personalizações dos itens de pedido', () => prisma.itemPedidoPersonalizacaoSnapshot.deleteMany({
+      where: { itemPedido: { pedidoId: { in: pedidos } } },
+    }));
+    await cleanup('itens de pedido', () => prisma.itemPedido.deleteMany({ where: { pedidoId: { in: pedidos } } }));
+    await cleanup('itens do carrinho', () => prisma.itemCarrinho.deleteMany({ where: { carrinhoId } }));
+    await cleanup('carrinho', () => prisma.carrinho.deleteMany({ where: { id: carrinhoId } }));
+    await cleanup('notificações', () => prisma.notificacao.deleteMany({ where: { pedidoId: { in: pedidos } } }));
     await cleanup('pedidos', () => prisma.pedido.deleteMany({ where: { id: { in: pedidos } } }));
     await cleanup('estoques', () => prisma.estoque.deleteMany({ where: { produtoId: { in: produtos } } }));
     await cleanup('produtos', () => prisma.produto.deleteMany({ where: { id: { in: produtos } } }));
+    await cleanup('personalizações', () => prisma.personalizacao.deleteMany({
+      where: { id: { in: personalizacoes } },
+    }));
     await cleanup('categoria', () => prisma.categoria.deleteMany({ where: { id: categoriaId } }));
     await cleanup('usuário', () => prisma.usuario.deleteMany({ where: { id: usuarioId } }));
     await cleanup('resíduos fixtures', async () => {
@@ -227,9 +291,14 @@ async function main() {
         ['movimentações', prisma.movimentacaoEstoque.count({ where: { pedidoId: { in: pedidos } } })],
         ['históricos', prisma.historicoStatusPedido.count({ where: { pedidoId: { in: pedidos } } })],
         ['reservas', prisma.reservaEstoque.count({ where: { pedidoId: { in: pedidos } } })],
+        ['itens de pedido', prisma.itemPedido.count({ where: { pedidoId: { in: pedidos } } })],
+        ['itens do carrinho', prisma.itemCarrinho.count({ where: { carrinhoId } })],
+        ['carrinho', prisma.carrinho.count({ where: { id: carrinhoId } })],
+        ['notificações', prisma.notificacao.count({ where: { pedidoId: { in: pedidos } } })],
         ['pedidos', prisma.pedido.count({ where: { id: { in: pedidos } } })],
         ['estoques', prisma.estoque.count({ where: { produtoId: { in: produtos } } })],
         ['produtos', prisma.produto.count({ where: { id: { in: produtos } } })],
+        ['personalizações', prisma.personalizacao.count({ where: { id: { in: personalizacoes } } })],
         ['categoria', prisma.categoria.count({ where: { id: categoriaId } })],
         ['usuário', prisma.usuario.count({ where: { id: usuarioId } })],
       ] as const) eq(await count, 0, `Sem resíduo ${label}`);
