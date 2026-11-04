@@ -316,8 +316,91 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Detalhes do cupcake')),
+    appBar: AppBar(title: const Text('Detalhes do Produto')),
     body: SafeArea(child: _content(context)),
+    bottomNavigationBar: _product == null
+        ? null
+        : SafeArea(top: false, child: _purchaseBar(context)),
+  );
+
+  Widget _purchaseBar(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(
+      AppTokens.spacing16,
+      AppTokens.spacing8,
+      AppTokens.spacing16,
+      AppTokens.spacing12,
+    ),
+    decoration: const BoxDecoration(
+      color: AppTokens.background,
+      boxShadow: [
+        BoxShadow(
+          color: Color(0x16000000),
+          blurRadius: 12,
+          offset: Offset(0, -3),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Diminuir quantidade',
+              onPressed: _adding || _quantity == 1
+                  ? null
+                  : () => _changeQuantity(_quantity - 1),
+              icon: const Icon(Icons.remove),
+            ),
+            Semantics(
+              label: 'Quantidade selecionada: $_quantity',
+              liveRegion: true,
+              child: Text('$_quantity'),
+            ),
+            IconButton(
+              tooltip: 'Aumentar quantidade',
+              onPressed: _adding || _quantity == 2147483647
+                  ? null
+                  : () => _changeQuantity(_quantity + 1),
+              icon: const Icon(Icons.add),
+            ),
+          ],
+        ),
+        const SizedBox(width: AppTokens.spacing8),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_priceLoading)
+                const LinearProgressIndicator()
+              else if (_unitPrice != null)
+                Text(
+                  'Subtotal: ${_formatSubtotal(_unitPrice!, _quantity)}',
+                  textAlign: TextAlign.end,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTokens.primaryStrong,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              const SizedBox(height: AppTokens.spacing4),
+              FilledButton(
+                onPressed:
+                    _adding ||
+                        _currentIndeterminate ||
+                        _priceLoading ||
+                        _unitPrice == null ||
+                        _addStatus == CartRequestStatus.unauthorized ||
+                        _addStatus == CartRequestStatus.forbidden
+                    ? null
+                    : () => unawaited(_addToCart()),
+                child: Text(_adding ? 'Adicionando…' : 'Adicionar ao carrinho'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
   );
 
   Widget _content(BuildContext context) {
@@ -366,7 +449,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
     final product = _product!;
     return ListView(
-      padding: const EdgeInsets.all(AppTokens.spacing16),
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.spacing16,
+        AppTokens.spacing16,
+        AppTokens.spacing16,
+        AppTokens.spacing24,
+      ),
       children: [
         SizedBox(
           height: 240,
@@ -554,97 +642,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
         ],
         const SizedBox(height: AppTokens.spacing16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final horizontal =
-                constraints.maxWidth >= 340 &&
-                MediaQuery.textScalerOf(context).scale(16) <= 20;
-            final quantity = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Quantidade',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'Diminuir quantidade',
-                      onPressed: _adding || _quantity == 1
-                          ? null
-                          : () => _changeQuantity(_quantity - 1),
-                      icon: const Icon(Icons.remove),
-                    ),
-                    Semantics(
-                      label: 'Quantidade selecionada: $_quantity',
-                      liveRegion: true,
-                      child: Text('$_quantity'),
-                    ),
-                    IconButton(
-                      tooltip: 'Aumentar quantidade',
-                      onPressed: _adding || _quantity == 2147483647
-                          ? null
-                          : () => _changeQuantity(_quantity + 1),
-                      icon: const Icon(Icons.add),
-                    ),
-                  ],
-                ),
-              ],
-            );
-            final action = Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!_priceLoading && _unitPrice != null)
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      'Subtotal: ${_formatSubtotal(_unitPrice!, _quantity)}',
-                      textAlign: horizontal ? TextAlign.end : TextAlign.start,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                const SizedBox(height: AppTokens.spacing8),
-                FilledButton(
-                  onPressed:
-                      _adding ||
-                          _currentIndeterminate ||
-                          _priceLoading ||
-                          _unitPrice == null ||
-                          _addStatus == CartRequestStatus.unauthorized ||
-                          _addStatus == CartRequestStatus.forbidden
-                      ? null
-                      : () => unawaited(_addToCart()),
-                  child: Text(
-                    _adding ? 'Adicionando…' : 'Adicionar ao carrinho',
-                  ),
-                ),
-              ],
-            );
-            return Container(
-              padding: const EdgeInsets.all(AppTokens.spacing12),
-              decoration: BoxDecoration(
-                color: AppTokens.surfaceSoft,
-                borderRadius: BorderRadius.circular(AppTokens.radius12),
-              ),
-              child: horizontal
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        quantity,
-                        const SizedBox(width: AppTokens.spacing12),
-                        Expanded(child: action),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [quantity, action],
-                    ),
-            );
-          },
-        ),
-        if (_adding)
-          Semantics(liveRegion: true, child: LinearProgressIndicator()),
       ],
     );
   }

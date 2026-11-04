@@ -348,7 +348,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 spacing: 12,
                 runSpacing: 4,
                 children: [
-                  Text('Pedido ${widget.orderNumber}'),
+                  _CompactOrderNumber(value: widget.orderNumber),
                   Text('Total: $_totalLabel'),
                 ],
               ),
@@ -374,8 +374,8 @@ class _PaymentPageState extends State<PaymentPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            'Pedido ${widget.orderNumber}',
+                          _CompactOrderNumber(
+                            value: widget.orderNumber,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 4),
@@ -454,6 +454,22 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
     );
   }
+}
+
+class _CompactOrderNumber extends StatelessWidget {
+  const _CompactOrderNumber({required this.value, this.style});
+  final String value;
+  final TextStyle? style;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Identificador completo: $value',
+    child: Text(
+      'Pedido ${value.length > 16 ? '${value.substring(0, 8)}…${value.substring(value.length - 4)}' : value}',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
+    ),
+  );
 }
 
 String _newUuid() {

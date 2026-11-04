@@ -396,12 +396,24 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
             },
           ),
         ],
-        const SizedBox(height: 12),
-        Text('Itens: R\$ ${review['valorItens']}'),
-        Text('Frete: R\$ ${review['freteAplicado']}'),
-        Text(
-          'Total: R\$ ${review['total']}',
-          style: Theme.of(context).textTheme.titleMedium,
+        Card(
+          color: AppTokens.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Itens: R\$ ${review['valorItens']}'),
+                const SizedBox(height: AppTokens.spacing8),
+                Text('Frete: R\$ ${review['freteAplicado']}'),
+                const Divider(height: AppTokens.spacing24),
+                Text(
+                  'Total: R\$ ${review['total']}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
         ),
         if (_status != null && _status != OrderStatus.success) ...[
           const SizedBox(height: 16),
@@ -417,14 +429,6 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
           Semantics(
             liveRegion: true,
             child: Text('Pedido confirmado. Número: $_orderId'),
-          ),
-        ] else ...[
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _confirming || _status == OrderStatus.conflict
-                ? null
-                : () => unawaited(_confirm()),
-            child: _confirmationButtonContent(review['total'] as String),
           ),
         ],
       ],
@@ -500,6 +504,26 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Revisar Pedido')),
+    bottomNavigationBar: _review != null && _orderId == null
+        ? SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.spacing16,
+                AppTokens.spacing8,
+                AppTokens.spacing16,
+                AppTokens.spacing12,
+              ),
+              child: FilledButton(
+                onPressed:
+                    _confirming || _loading || _status == OrderStatus.conflict
+                    ? null
+                    : () => unawaited(_confirm()),
+                child: _confirmationButtonContent(_review!['total'] as String),
+              ),
+            ),
+          )
+        : null,
     body: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTokens.spacing16),
