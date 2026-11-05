@@ -114,19 +114,6 @@ class PaymentResultPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (outcome == PaymentOutcome.approved) ...[
-                  const SizedBox(height: AppTokens.spacing16),
-                  // A rota de detalhe depende das tarefas posteriores de pedidos (D83/D84).
-                  OutlinedButton(
-                    onPressed: null,
-                    child: const Text('Ver pedido'),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'A consulta do pedido ainda não está disponível.',
-                    textAlign: TextAlign.center,
-                  ),
-                ],
                 if (_action case final action?) ...[
                   const SizedBox(height: AppTokens.spacing16),
                   FilledButton(

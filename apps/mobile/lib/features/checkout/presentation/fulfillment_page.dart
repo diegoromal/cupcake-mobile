@@ -7,9 +7,10 @@ import '../../address/data/customer_address_api.dart';
 import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
 import '../data/customer_order_api.dart';
+import 'fulfillment_mode.dart';
 import 'order_review_page.dart';
 
-enum FulfillmentMode { delivery, pickup }
+export 'fulfillment_mode.dart';
 
 class FulfillmentPage extends StatefulWidget {
   const FulfillmentPage({
@@ -17,10 +18,12 @@ class FulfillmentPage extends StatefulWidget {
     required this.session,
     this.addressApi,
     this.orderApi,
+    this.modeSelection,
   });
   final CustomerSession session;
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
+  final ValueNotifier<FulfillmentMode?>? modeSelection;
 
   @override
   State<FulfillmentPage> createState() => _FulfillmentPageState();
@@ -42,7 +45,9 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
   @override
   void initState() {
     super.initState();
+    _mode = widget.modeSelection?.value;
     widget.session.addListener(_sessionChanged);
+    if (_mode == FulfillmentMode.delivery) unawaited(_loadAddresses());
   }
 
   @override
@@ -88,6 +93,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
         _loadingAddresses = false;
       }
     });
+    widget.modeSelection?.value = mode;
     if (mode == FulfillmentMode.delivery) unawaited(_loadAddresses());
   }
 

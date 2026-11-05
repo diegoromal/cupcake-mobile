@@ -19,6 +19,7 @@ class CartPage extends StatefulWidget {
     required this.catalogApi,
     this.addressApi,
     this.orderApi,
+    this.modeSelection,
   });
 
   final CustomerSession session;
@@ -26,6 +27,7 @@ class CartPage extends StatefulWidget {
   final CustomerCatalogApi catalogApi;
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
+  final ValueNotifier<FulfillmentMode?>? modeSelection;
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -193,6 +195,7 @@ class _CartPageState extends State<CartPage> {
           session: widget.session,
           addressApi: widget.addressApi,
           orderApi: widget.orderApi,
+          modeSelection: widget.modeSelection,
         ),
       ),
     );

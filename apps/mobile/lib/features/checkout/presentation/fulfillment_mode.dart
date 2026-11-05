@@ -1,0 +1,1 @@
+enum FulfillmentMode { delivery, pickup }

@@ -75,9 +75,12 @@ product-detail (D31)
 └── voltar → mesma instância de storefront, sem recarga automática
 ```
 
-Na Vitrine, `Carrinho` abre cart, `Meus pedidos` abre order-list, `Meus endereços`
-abre a gestão de endereços, e `Sair` encerra a sessão. Essas ações são acessos
-da tela, não itens de bottom navigation.
+Na Vitrine, a navegação inferior contém `Cardápio` (vitrine), `Carrinho` (cart)
+e `Pedidos` (order-list). `Meus endereços` abre a gestão de endereços e `Sair`
+encerra a sessão. Perfil não é um destino enquanto não houver tela funcional.
+Os controles Delivery/Retirada compartilham a preferência mantida pela Vitrine
+com o carrinho e `FulfillmentPage`; os requisitos de endereço, frete e revisão
+continuam sendo validados pelo fluxo/API existentes.
 
 Produtos/opções indisponíveis devem respeitar o domínio; a interface não pode forçar inclusão.
 
@@ -102,6 +105,9 @@ fulfillment
 ```
 
 A escolha entre Delivery e Retirada deve preservar a modalidade selecionada até a revisão.
+Quando a modalidade é escolhida na Vitrine, a preferência segue por cart até
+`fulfillment`; a página inicia nessa modalidade e continua a validar os dados
+de endereço/frete antes da revisão.
 
 ## Mobile — revisão e pagamento
 
@@ -131,12 +137,13 @@ order-list
 ├── atualizar → mesma lista
 └── voltar → Vitrine
 
-order-detail (referência visual; sem navegação implementada)
-└── comportamento/rota técnica → tarefa futura
+order-detail (referência visual; endpoint/contrato cliente ainda não encontrado)
+└── habilitar quando a API mobile fornecer detalhe do pedido por ID
 ```
 
 A referência visual de detalhe/cancelamento não implica navegação implementada.
-Não inferir cancelamento para estados cuja regra permaneça aberta.
+Não apresentar ação de detalhe até existir endpoint/contrato autenticado de
+cliente. Não inferir cancelamento para estados cuja regra permaneça aberta.
 
 ## WhatsApp
 
@@ -146,11 +153,10 @@ Não adicionar item de navegação `Notificações` sem requisito próprio.
 
 ## Bottom navigation do cliente
 
-Nas referências aprovadas em que a navegação inferior aparece, manter somente itens efetivamente previstos pelo fluxo.
-
-O estado ativo deve corresponder à tela atual.
-
-A implementação futura deve consolidar o conjunto final sem inventar destinos.
+A Vitrine implementa `Cardápio`, `Carrinho` e `Pedidos` como destinos
+funcionais e distintos. Não apresentar Perfil sem tela/fluxo implementado.
+O detalhe do produto oferece atalho ao carrinho e mantém a tela de origem na
+pilha de navegação.
 
 ## Admin — autenticação
 

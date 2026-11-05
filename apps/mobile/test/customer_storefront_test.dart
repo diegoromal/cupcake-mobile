@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cupcake_mobile/core/design/app_tokens.dart';
+import 'package:cupcake_mobile/features/checkout/presentation/fulfillment_mode.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
 import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
@@ -55,6 +56,7 @@ class _AuthApi extends CustomerAuthApi {
     );
   }
 }
+
 
 class _CatalogApi extends CustomerCatalogApi {
   _CatalogApi(this.responses, {this.categoryResponses});
@@ -824,15 +826,81 @@ void main() {
     await tester.tap(find.byTooltip('Carrinho'));
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsOneWidget);
+    expect(
+      tester.widget<CartPage>(find.byType(CartPage)).modeSelection?.value,
+      FulfillmentMode.delivery,
+    );
     expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
     expect(cartApi.calls, 1);
     expect(api.calls, 1);
     await tester.pageBack();
     await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsNothing);
     expect(tester.state(find.byType(StorefrontPage)), same(storefront));
     expect(find.text('Cupcake número 1'), findsWidgets);
     expect(api.calls, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('busca filtra por nome e categoria e mostra estado vazio', (
+    tester,
+  ) async {
+    final session = await _session();
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi([
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, [
+          _product(1, name: 'Cupcake baunilha'),
+          _product(2, category: _category2, name: 'Bolo de cenoura'),
+        ]),
+      ),
+    ]);
+    await tester.pumpWidget(_app(session, api));
+    await tester.pumpAndSettle();
+    final search = find.byKey(const ValueKey('storefront-search'));
+    await tester.enterText(search, 'baunilha');
+    await tester.pumpAndSettle();
+    expect(find.text('Cupcake baunilha'), findsAtLeastNWidgets(1));
+    expect(find.text('Bolo de cenoura'), findsNothing);
+    await tester.enterText(search, _category2.name);
+    await tester.pumpAndSettle();
+    expect(find.text('Bolo de cenoura'), findsAtLeastNWidgets(1));
+    expect(find.text('Cupcake baunilha'), findsNothing);
+    await tester.enterText(search, 'inexistente');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Nenhum produto carregado corresponde'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('navegação inferior abre pedidos e carrinho', (tester) async {
+    final session = await _session();
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi([
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, [_product(1)]),
+      ),
+    ]);
+    await tester.pumpWidget(_app(session, api));
+    await tester.pumpAndSettle();
+    final storefront = tester.state(find.byType(StorefrontPage));
+    await tester.tap(find.text('Pedidos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Meus Pedidos'), findsAtLeastNWidgets(1));
+    Navigator.of(tester.element(find.text('Meus Pedidos').first)).pop();
+    await tester.pumpAndSettle();
+    expect(tester.state(find.byType(StorefrontPage)), same(storefront));
+    await tester.tap(find.text('Retirada'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Carrinho').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(CartPage), findsOneWidget);
+    expect(
+      tester.widget<CartPage>(find.byType(CartPage)).modeSelection?.value,
+      FulfillmentMode.pickup,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -860,8 +928,8 @@ void main() {
           expect(find.text('Cupcake Mobile'), findsOneWidget);
           expect(find.text('Categorias'), findsOneWidget);
           expect(find.text('Destaques Artesanais'), findsOneWidget);
-          expect(find.text('Início'), findsOneWidget);
           expect(find.text('Cardápio'), findsOneWidget);
+          expect(find.text('Carrinho'), findsOneWidget);
           expect(find.byTooltip('Carrinho'), findsOneWidget);
           expect(find.byTooltip('Perfil'), findsOneWidget);
           expect(find.byType(FloatingActionButton), findsNothing);
