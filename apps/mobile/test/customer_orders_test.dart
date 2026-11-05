@@ -70,21 +70,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.calls, 3);
 
-      await tester.tap(find.byTooltip('Atualizar pedidos'));
-      await tester.pump();
-      expect(api.calls, 4);
+      // Pull-to-refresh above covers manual refresh without adding an action
+      // absent from the approved orders header.
+      expect(find.byTooltip('Atualizar pedidos'), findsNothing);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();
       await tester.pump(const Duration(seconds: 60));
-      expect(api.calls, 4);
+      expect(api.calls, 3);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
-      expect(api.calls, 5);
+      expect(api.calls, 4);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 60));
-      expect(api.calls, 5);
+      expect(api.calls, 4);
       session.dispose();
     },
   );

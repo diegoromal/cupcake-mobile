@@ -74,13 +74,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(authApi.loginRequests, 1);
-    expect(find.text('Vitrine'), findsOneWidget);
+    expect(find.text('Cupcake Mobile'), findsOneWidget);
     expect(
       find.text('A vitrine não está configurada neste aplicativo.'),
       findsOneWidget,
     );
     expect(find.textContaining('signature'), findsNothing);
 
+    await tester.tap(find.byTooltip('Perfil'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sair'));
     await tester.pumpAndSettle();
     expect(

@@ -295,7 +295,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final storefront = tester.state(find.byType(StorefrontPage));
-    await tester.tap(find.text('Carrinho'));
+    await tester.tap(find.byTooltip('Carrinho'));
     await tester.pumpAndSettle();
     expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
     expect(find.textContaining('R\$'), findsNothing);
@@ -311,7 +311,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsNothing);
     expect(tester.state(find.byType(StorefrontPage)), same(storefront));
-    expect(find.text('Nome da vitrine'), findsOneWidget);
+    expect(find.text('Cupcake Mobile'), findsOneWidget);
     expect(catalog.pageCalls, 1);
     expect(cartApi.calls, 1);
   });
@@ -365,10 +365,16 @@ void main() {
         find.text('Quantidade superior à disponibilidade.'),
         findsOneWidget,
       );
-      expect(find.text('Preço unitário: R\$ 10,50'), findsOneWidget);
-      expect(find.text('Subtotal do item: R\$ 31,50'), findsOneWidget);
-      expect(find.text('Preço unitário: R\$ 8,00'), findsOneWidget);
-      expect(find.text('Subtotal do item: R\$ 32,00'), findsOneWidget);
+      expect(find.text('Un. R\$ 10,50'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Subtotal do item: R\$ 31,50'),
+        findsOneWidget,
+      );
+      expect(find.text('Un. R\$ 8,00'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Subtotal do item: R\$ 32,00'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Frete'), findsNothing);
       expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
       expect(find.bySemanticsLabel('Quantidade 4'), findsOneWidget);
@@ -378,10 +384,10 @@ void main() {
       );
       final name = tester.widget<Text>(find.text(_longName));
       final option = tester.widget<Text>(find.text(_longOption));
-      expect(name.maxLines, isNull);
-      expect(name.overflow, isNull);
-      expect(option.maxLines, isNull);
-      expect(option.overflow, isNull);
+      expect(name.maxLines, 1);
+      expect(name.overflow, TextOverflow.ellipsis);
+      expect(option.maxLines, 1);
+      expect(option.overflow, TextOverflow.ellipsis);
       expect(find.bySemanticsLabel('Diminuir quantidade'), findsNWidgets(2));
       expect(find.bySemanticsLabel('Aumentar quantidade'), findsNWidgets(2));
       expect(find.bySemanticsLabel('Remover item'), findsNWidgets(2));
@@ -539,7 +545,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Carrinho'));
+    await tester.tap(find.byTooltip('Carrinho'));
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsNothing);
     expect(session.isAuthenticated, isFalse);
@@ -566,14 +572,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Carrinho'));
+    await tester.tap(find.byTooltip('Carrinho'));
     await tester.pumpAndSettle();
     expect(find.text(_longName), findsOneWidget);
     await session.signOut();
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsNothing);
     expect(find.text(_longName), findsNothing);
-    expect(find.text('Vitrine'), findsOneWidget);
+    expect(find.text('Cupcake Mobile'), findsOneWidget);
   });
 
   Future<void> pumpCart(
@@ -643,8 +649,11 @@ void main() {
       expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
       expect(find.text('Aroma'), findsOneWidget);
       expect(catalog.imageCalls, 1);
-      expect(find.text('Preço unitário: R\$ 10,00'), findsOneWidget);
-      expect(find.text('Subtotal do item: R\$ 10,00'), findsOneWidget);
+      expect(find.text('Un. R\$ 10,00'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Subtotal do item: R\$ 10,00'),
+        findsOneWidget,
+      );
       expect(find.text('Subtotal: R\$ 10,00'), findsOneWidget);
       expect(find.text('Total: R\$ 10,00'), findsOneWidget);
       expect(find.textContaining('Frete'), findsNothing);
@@ -676,13 +685,22 @@ void main() {
       ),
     ]);
     await pumpCart(tester, cartApi: cartApi, session: session);
-    final buttons = tester
-        .widgetList<IconButton>(find.byType(IconButton))
-        .toList();
-    expect(buttons[0].onPressed, isNull);
-    expect(buttons[1].onPressed, isNotNull);
-    expect(buttons[3].onPressed, isNotNull);
-    expect(buttons[4].onPressed, isNull);
+    final minimumDecrease = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.remove).first,
+    );
+    final minimumIncrease = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.add).first,
+    );
+    final maximumDecrease = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.remove).last,
+    );
+    final maximumIncrease = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.add).last,
+    );
+    expect(minimumDecrease.onPressed, isNull);
+    expect(minimumIncrease.onPressed, isNotNull);
+    expect(maximumDecrease.onPressed, isNotNull);
+    expect(maximumIncrease.onPressed, isNull);
     await tester.tap(find.byIcon(Icons.remove).first);
     await tapVisible(tester, find.byIcon(Icons.add).at(1));
     await tester.pump();
@@ -1039,8 +1057,8 @@ void main() {
       ),
     ]);
     await pumpCart(tester, cartApi: cartApi, session: session);
-    expect(find.text('Preço unitário: R\$ 10,00'), findsOneWidget);
-    expect(find.text('Subtotal do item: R\$ 7,11'), findsOneWidget);
+    expect(find.text('Un. R\$ 10,00'), findsOneWidget);
+    expect(find.bySemanticsLabel('Subtotal do item: R\$ 7,11'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Total: R\$ 8,22'),
       400,
@@ -1048,15 +1066,15 @@ void main() {
     );
     expect(find.text('Subtotal: R\$ 7,11'), findsOneWidget);
     expect(find.text('Total: R\$ 8,22'), findsOneWidget);
-    expect(find.text('Subtotal do item: R\$ 30,00'), findsNothing);
+    expect(find.bySemanticsLabel('Subtotal do item: R\$ 30,00'), findsNothing);
     expect(find.text('Total: R\$ 30,00'), findsNothing);
     expect(find.text('Total: R\$ 7,11'), findsNothing);
     await reveal(tester, find.text('Produto indisponível.'));
     expect(find.text('Produto indisponível.'), findsOneWidget);
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 500));
     await tester.pumpAndSettle();
-    await reveal(tester, find.textContaining('Preço unitário'));
-    expect(find.textContaining('Preço unitário'), findsOneWidget);
+    await reveal(tester, find.textContaining('Un.'));
+    expect(find.textContaining('Un.'), findsOneWidget);
   });
 
   testWidgets('PATCH inutilizável preserva quantidade e total anteriores', (
@@ -1142,7 +1160,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.text(_longName), findsOneWidget);
           expect(find.text(_longOption), findsOneWidget);
-          expect(find.textContaining('Preço unitário'), findsOneWidget);
+          expect(find.textContaining('Un.'), findsOneWidget);
           final buttons = tester.widgetList<IconButton>(
             find.byType(IconButton),
           );
@@ -1189,8 +1207,11 @@ void main() {
             'Quantidade superior à disponibilidade.',
           );
           expect(find.bySemanticsLabel('Quantidade 3'), findsOneWidget);
-          expect(find.text('Preço unitário: R\$ 1.234,56'), findsOneWidget);
-          expect(find.text('Subtotal do item: R\$ 3.703,68'), findsOneWidget);
+          expect(find.text('Un. R\$ 1.234,56'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel('Subtotal do item: R\$ 3.703,68'),
+            findsOneWidget,
+          );
           expect(find.textContaining('Frete'), findsNothing);
           expect(tester.takeException(), isNull);
           await reveal(tester, find.text('Total: R\$ 3.703,68'));

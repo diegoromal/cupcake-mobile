@@ -3,14 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
+import '../../catalog/presentation/customer_bottom_navigation.dart';
 import '../../auth/session/customer_session.dart';
 import '../data/customer_orders_api.dart';
 
 class CustomerOrdersPage extends StatefulWidget {
-  const CustomerOrdersPage({super.key, required this.session, this.api});
+  const CustomerOrdersPage({
+    super.key,
+    required this.session,
+    this.api,
+    this.onNavigationSelected,
+  });
 
   final CustomerSession session;
   final CustomerOrdersApi? api;
+  final ValueChanged<int>? onNavigationSelected;
 
   @override
   State<CustomerOrdersPage> createState() => _CustomerOrdersPageState();
@@ -222,8 +229,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final order = _orders[index];
         return Card(
           color: AppTokens.surface,
+          margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
-            padding: const EdgeInsets.all(AppTokens.spacing16),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -245,16 +253,93 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     _OrderStatusBadge(label: _statusLabel(order.status)),
                   ],
                 ),
-                const SizedBox(height: AppTokens.spacing12),
-                Text(order.fulfillment == 'ENTREGA' ? 'Delivery' : 'Retirada'),
-                const SizedBox(height: AppTokens.spacing4),
-                Text(_dateLabel(order.date)),
-                const Divider(height: AppTokens.spacing24),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: Text(
-                    'R\$ ${order.total.replaceAll('.', ',')}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                const SizedBox(height: AppTokens.spacing8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 12,
+                      color: AppTokens.textMuted,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      _dateLabel(order.date),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+                const Divider(height: 20),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            order.fulfillment == 'ENTREGA'
+                                ? Icons.delivery_dining
+                                : Icons.storefront_outlined,
+                            size: 18,
+                            color: AppTokens.primary,
+                          ),
+                          const SizedBox(width: 7),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Modalidade',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                order.fulfillment == 'ENTREGA'
+                                    ? 'Delivery'
+                                    : 'Retirada',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text('Total', style: TextStyle(fontSize: 9)),
+                        Text(
+                          'R\$ ${order.total.replaceAll('.', ',')}',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontFamily: 'Georgia',
+                                fontWeight: FontWeight.bold,
+                                color: AppTokens.primaryStrong,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 34,
+                  child: OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.arrow_forward, size: 14),
+                    label: const Text('Ver pedido'),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppTokens.surfaceSoft,
+                      disabledForegroundColor: AppTokens.primaryStrong,
+                      side: BorderSide.none,
+                      textStyle: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -268,27 +353,85 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Meus Pedidos'),
+      automaticallyImplyLeading: false,
+      toolbarHeight: 52,
+      titleSpacing: 16,
+      title: Row(
+        children: [
+          ClipOval(
+            child: Image.asset(
+              'assets/cupcake-brand.png',
+              width: 24,
+              height: 24,
+              fit: BoxFit.cover,
+              semanticLabel: 'Cupcake Mobile',
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Meus Pedidos',
+            style: TextStyle(
+              fontFamily: 'Georgia',
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
       actions: [
         IconButton(
-          tooltip: 'Atualizar pedidos',
-          onPressed: _requestInProgress ? null : _load,
-          icon: const Icon(Icons.refresh),
+          tooltip: 'Perfil',
+          onPressed: () => widget.onNavigationSelected?.call(3),
+          icon: const Icon(Icons.account_circle),
         ),
+        const SizedBox(width: 4),
       ],
     ),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spacing16),
-              child: _content(),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Text(
+                  'Meus Pedidos',
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _load,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: _content(),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    ),
+    bottomNavigationBar: SafeArea(
+      top: false,
+      child: CustomerBottomNavigation(
+        selectedIndex: 2,
+        onSelected: (index) {
+          if (index == 2) {
+            _load();
+          } else if (widget.onNavigationSelected case final onSelect?) {
+            onSelect(index);
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
     ),
   );

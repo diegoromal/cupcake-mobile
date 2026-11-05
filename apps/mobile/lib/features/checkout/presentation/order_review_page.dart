@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
+import '../../catalog/data/customer_catalog_api.dart';
 import '../data/customer_order_api.dart';
 import 'payment_page.dart';
 
@@ -15,11 +17,13 @@ class OrderReviewPage extends StatefulWidget {
     required this.mode,
     this.addressId,
     this.orderApi,
+    this.catalogApi,
   });
   final CustomerSession session;
   final String mode;
   final String? addressId;
   final CustomerOrderApi? orderApi;
+  final CustomerCatalogApi? catalogApi;
 
   @override
   State<OrderReviewPage> createState() => _OrderReviewPageState();
@@ -27,6 +31,9 @@ class OrderReviewPage extends StatefulWidget {
 
 class _OrderReviewPageState extends State<OrderReviewPage> {
   late final CustomerOrderApi _api = widget.orderApi ?? CustomerOrderApi();
+  late final CustomerCatalogApi _catalogApi =
+      widget.catalogApi ?? CustomerCatalogApi();
+  final Map<String, Future<Uint8List?>> _reviewImages = {};
   Map<String, dynamic>? _review;
   OrderStatus? _status;
   bool _loading = false;
@@ -52,6 +59,28 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
       pending.review['enderecoId'] == pending.addressId &&
       pending.review['revisaoId'] is String &&
       (pending.review['revisaoId'] as String).isNotEmpty;
+
+  Future<Uint8List?> _loadReviewImage(String productId) async {
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    if (token == null) return null;
+    var result = await _catalogApi.fetchImage(
+      productId: productId,
+      accessToken: token,
+    );
+    if (result.status == CatalogRequestStatus.unauthorized) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (token == null) return null;
+      result = await _catalogApi.fetchImage(
+        productId: productId,
+        accessToken: token,
+      );
+    }
+    return widget.session.isAuthenticated &&
+            result.status == CatalogRequestStatus.success
+        ? result.bytes
+        : null;
+  }
 
   @override
   void initState() {
@@ -334,61 +363,160 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Confira seu pedido',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: AppTokens.spacing16),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _mode == 'ENTREGA' ? 'Delivery' : 'Retirada',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+        Card(
+          color: AppTokens.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppTokens.spacing8,
+                  runSpacing: AppTokens.spacing4,
+                  children: [
+                    Text(
+                      'MODALIDADE',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: AppTokens.spacing8,
+                      children: [
+                        Text(
+                          _mode == 'ENTREGA' ? 'Delivery' : 'Retirada',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: AppTokens.primaryStrong),
+                        ),
+                        TextButton(
+                          onPressed: _canChangeSelection
+                              ? () => Navigator.of(context).pop()
+                              : null,
+                          child: const Text('Alterar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (address is Map<String, dynamic>) ...[
+                  const Divider(height: AppTokens.spacing12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: AppTokens.primary,
+                      ),
+                      const SizedBox(width: AppTokens.spacing8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${address['rua']}, ${address['numero']}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              '${address['bairro']} · ${address['cidade']} · ${address['cep']}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            if (address['complemento'] is String &&
+                                (address['complemento'] as String).isNotEmpty)
+                              Text(address['complemento'] as String),
+                            if (address['referencia'] is String &&
+                                (address['referencia'] as String).isNotEmpty)
+                              Text(address['referencia'] as String),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTokens.spacing8),
+                  Text(
+                    'Frete calculado: R\$ ${review['freteAplicado']}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTokens.primaryStrong,
+                    ),
+                  ),
+                ],
+              ],
             ),
-            TextButton(
-              onPressed: _canChangeSelection
-                  ? () => Navigator.of(context).pop()
-                  : null,
-              child: const Text('Alterar'),
-            ),
-          ],
-        ),
-        if (address is Map<String, dynamic>) ...[
-          const SizedBox(height: 8),
-          Text(
-            '${address['rua']}, ${address['numero']} · ${address['bairro']} · ${address['cidade']} · ${address['cep']}',
           ),
-          if (address['complemento'] is String &&
-              (address['complemento'] as String).isNotEmpty)
-            Text(address['complemento'] as String),
-          if (address['referencia'] is String &&
-              (address['referencia'] as String).isNotEmpty)
-            Text(address['referencia'] as String),
-        ],
-        const SizedBox(height: AppTokens.spacing16),
+        ),
+        const SizedBox(height: AppTokens.spacing8),
         for (final raw in review['itens'] as List) ...[
           Builder(
             builder: (_) {
               final item = raw as Map<String, dynamic>;
+              final productId = item['produtoId'] as String;
+              final image = _reviewImages.putIfAbsent(
+                productId,
+                () => _loadReviewImage(productId),
+              );
               return Card(
                 color: AppTokens.surface,
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  padding: const EdgeInsets.all(AppTokens.spacing12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item['nome'] as String,
-                        style: Theme.of(context).textTheme.titleMedium,
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: FutureBuilder<Uint8List?>(
+                          future: image,
+                          builder: (context, snapshot) {
+                            final bytes = snapshot.data;
+                            if (bytes == null) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: AppTokens.surfaceSoft,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.cake_outlined,
+                                  color: AppTokens.primary,
+                                ),
+                              );
+                            }
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(bytes, fit: BoxFit.cover),
+                            );
+                          },
+                        ),
                       ),
-                      Text(
-                        '${item['quantidade']} × R\$ ${item['precoAplicado']}',
+                      const SizedBox(width: AppTokens.spacing8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item['nome'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              '${item['quantidade']} × R\$ ${item['precoAplicado']}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            for (final rawOption
+                                in item['personalizacoes'] as List)
+                              Text(
+                                _optionLabel(rawOption as Map<String, dynamic>),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            Text(
+                              'Subtotal: R\$ ${item['subtotalAplicado']}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
                       ),
-                      for (final rawOption in item['personalizacoes'] as List)
-                        Text(_optionLabel(rawOption as Map<String, dynamic>)),
-                      Text('Subtotal: R\$ ${item['subtotalAplicado']}'),
                     ],
                   ),
                 ),
@@ -399,17 +527,25 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
         Card(
           color: AppTokens.surface,
           child: Padding(
-            padding: const EdgeInsets.all(AppTokens.spacing16),
+            padding: const EdgeInsets.all(AppTokens.spacing12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(
+                  'Resumo dos valores',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppTokens.spacing8),
                 Text('Itens: R\$ ${review['valorItens']}'),
                 const SizedBox(height: AppTokens.spacing8),
                 Text('Frete: R\$ ${review['freteAplicado']}'),
                 const Divider(height: AppTokens.spacing24),
                 Text(
-                  'Total: R\$ ${review['total']}',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  'Total final: R\$ ${review['total']}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTokens.primaryStrong,
+                    fontFamily: 'Georgia',
+                  ),
                 ),
               ],
             ),

@@ -13,6 +13,7 @@ import '../../cart/presentation/cart_page.dart';
 import '../../orders/presentation/customer_orders_page.dart';
 import '../data/customer_catalog_api.dart';
 import 'product_detail_page.dart';
+import 'customer_bottom_navigation.dart';
 
 class StorefrontPage extends StatefulWidget {
   const StorefrontPage({
@@ -34,6 +35,9 @@ class _StorefrontPageState extends State<StorefrontPage> {
   final _products = <CatalogProduct>[];
   final _seenIds = <String>{};
   final _indeterminateCartAttempts = <String>{};
+  final _scrollController = ScrollController();
+  final _productsSectionKey = GlobalKey();
+  final _imageFutures = <String, Future<Uint8List?>>{};
   List<CatalogCategory> _categories = const [];
   CatalogCategory? _selectedCategory;
   bool _categoriesLoading = true;
@@ -42,6 +46,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _signOutBusy = false;
+  int _selectedNavigationIndex = 0;
   bool _hasMore = false;
   int _nextPage = 1;
   String? _error;
@@ -217,6 +222,9 @@ class _StorefrontPageState extends State<StorefrontPage> {
     return bytes;
   }
 
+  Future<Uint8List?> _imageFor(String productId) =>
+      _imageFutures.putIfAbsent(productId, () => _loadImage(productId));
+
   void _openCart() {
     Navigator.push<void>(
       context,
@@ -243,7 +251,17 @@ class _StorefrontPageState extends State<StorefrontPage> {
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => CustomerOrdersPage(session: widget.session),
+        builder: (_) => CustomerOrdersPage(
+          session: widget.session,
+          onNavigationSelected: (index) {
+            Navigator.pop(context);
+            if (index == 3) {
+              _showProfileMenu();
+            } else {
+              _navigateTo(index);
+            }
+          },
+        ),
       ),
     );
   }
@@ -258,44 +276,132 @@ class _StorefrontPageState extends State<StorefrontPage> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _navigateTo(int index) {
+    if (index == 2) {
+      _openOrders();
+      return;
+    }
+    if (index == 3) {
+      _showProfileMenu();
+      return;
+    }
+    setState(() => _selectedNavigationIndex = index);
+    if (index == 0) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+      );
+    } else {
+      final target = _productsSectionKey.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(
+          target,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+          alignment: 0.04,
+        );
+      }
+    }
+  }
+
+  void _showProfileMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTokens.surface,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.location_on_outlined),
+              title: const Text('Meus endereços'),
+              onTap: () {
+                Navigator.pop(context);
+                _openAddresses();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: Text(_signOutBusy ? 'Saindo…' : 'Sair'),
+              enabled: !_signOutBusy,
+              onTap: () {
+                Navigator.pop(context);
+                unawaited(_signOut());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final metrics = _StorefrontBarMetrics.of(context);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        toolbarHeight: metrics.toolbarHeight,
-        actions: [
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Semantics(header: true, child: const Text('Vitrine')),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    _barAction('Atualizar', _loading ? null : _refresh),
-                    IconButton(
-                      tooltip: 'Meus pedidos',
-                      onPressed: _openOrders,
-                      icon: const Icon(Icons.receipt_long_outlined),
-                    ),
-                    _barAction('Carrinho', _openCart),
-                    _barAction('Sair', _signOutBusy ? null : _signOut),
-                  ],
-                ),
-              ],
+        toolbarHeight: 52,
+        titleSpacing: AppTokens.spacing16,
+        centerTitle: false,
+        backgroundColor: const Color(0xFFFFFAF8),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipOval(
+              child: Image.asset(
+                'assets/cupcake-brand.png',
+                width: 28,
+                height: 28,
+                fit: BoxFit.cover,
+                semanticLabel: 'Cupcake Mobile',
+              ),
             ),
+            const SizedBox(width: AppTokens.spacing8),
+            const Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Cupcake Mobile',
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: AppTokens.primaryStrong,
+                    fontFamily: 'Georgia',
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Carrinho',
+            onPressed: _openCart,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            icon: const Icon(Icons.shopping_bag_outlined),
           ),
+          IconButton(
+            tooltip: 'Perfil',
+            onPressed: _showProfileMenu,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            icon: const Icon(Icons.account_circle_outlined),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Meus endereços',
-        onPressed: _openAddresses,
-        child: const Icon(Icons.location_on_outlined),
-      ),
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             if (widget.session.refreshUnavailable)
@@ -310,58 +416,441 @@ class _StorefrontPageState extends State<StorefrontPage> {
                   ),
                 ],
               ),
-            _categorySelector(),
-            Expanded(
-              child: _loading
-                  ? _StatusState(
-                      label: _selectedCategory == null
-                          ? 'Carregando produtos…'
-                          : 'Carregando produtos de ${_selectedCategory!.name}…',
-                      loading: true,
-                    )
-                  : _error != null && _products.isEmpty
-                  ? _StatusState(
-                      label: _error!,
-                      actionLabel: 'Tentar carregar novamente',
-                      onAction: () => _load(reset: true),
-                      error: true,
-                    )
-                  : _products.isEmpty
-                  ? _StatusState(
-                      label: _selectedCategory == null
-                          ? 'Não há produtos disponíveis no momento.'
-                          : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
-                      actionLabel: 'Atualizar',
-                      onAction: _refresh,
-                    )
-                  : _productList(),
-            ),
+            Expanded(child: _storefrontContent()),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: CustomerBottomNavigation(
+          selectedIndex: _selectedNavigationIndex,
+          onSelected: _navigateTo,
         ),
       ),
     );
   }
 
-  Widget _barAction(String label, VoidCallback? onPressed) => TextButton(
-    style: TextButton.styleFrom(
-      minimumSize: const Size(AppTokens.touchTarget, AppTokens.touchTarget),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  Widget _storefrontContent() => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 360 ? 2 : 1;
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: AppTokens.spacing16),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        'Olá!',
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTokens.primaryStrong,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: AppTokens.surfaceSoft,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.coffee_outlined,
+                      color: AppTokens.primary,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _fulfillmentDecoration(),
+            _searchDecoration(),
+            if (_products.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: _featuredProduct(_products.first),
+              ),
+            _categorySelector(),
+            Padding(
+              key: _productsSectionKey,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        'Destaques Artesanais',
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTokens.text,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_loading && _products.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: _StatusState(
+                  label: 'Carregando produtos…',
+                  loading: true,
+                ),
+              )
+            else if (_error != null && _products.isEmpty)
+              _StatusState(
+                label: _error!,
+                actionLabel: 'Tentar carregar novamente',
+                onAction: () => _load(reset: true),
+                error: true,
+              )
+            else if (_products.isEmpty)
+              _StatusState(
+                label: _selectedCategory == null
+                    ? 'Não há produtos disponíveis no momento.'
+                    : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
+                actionLabel: 'Atualizar',
+                onAction: _refresh,
+              )
+            else
+              for (
+                var rowStart = 0;
+                rowStart < _products.length;
+                rowStart += columns
+              )
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    rowStart + columns < _products.length ? 8 : 0,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (
+                        var index = rowStart;
+                        index < math.min(rowStart + columns, _products.length);
+                        index++
+                      ) ...[
+                        if (index > rowStart) const SizedBox(width: 8),
+                        Expanded(child: _buildProductCard(_products[index])),
+                      ],
+                      if (math.min(rowStart + columns, _products.length) -
+                              rowStart <
+                          columns)
+                        const Expanded(child: SizedBox.shrink()),
+                    ],
+                  ),
+                ),
+            if (_error != null && _products.isNotEmpty)
+              _StatusState(
+                label: _error!,
+                actionLabel: 'Tentar carregar novamente',
+                onAction: () => _load(reset: false),
+                error: true,
+              )
+            else if (_loadingMore)
+              const _StatusState(
+                label: 'Carregando mais produtos…',
+                loading: true,
+              )
+            else if (_hasMore)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _load(reset: false),
+                    icon: const Icon(Icons.expand_more),
+                    label: const Text('Carregar mais produtos'),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    },
+  );
+
+  Widget _fulfillmentDecoration() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+    child: Container(
+      height: 40,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE8E0),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTokens.surface,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.delivery_dining,
+                      size: 16,
+                      color: AppTokens.primary,
+                    ),
+                    const SizedBox(width: 5),
+                    const Text(
+                      'Delivery',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.storefront_outlined,
+                    size: 15,
+                    color: AppTokens.textMuted,
+                  ),
+                  const SizedBox(width: 5),
+                  const Text(
+                    'Retirada',
+                    style: TextStyle(color: AppTokens.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
-    onPressed: onPressed,
-    child: Text(label, textAlign: TextAlign.center),
+  );
+
+  Widget _searchDecoration() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    child: Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppTokens.surfaceSoft,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search, size: 18, color: AppTokens.textMuted),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Buscar cupcakes, sabores ou coleções',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: AppTokens.text),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Icon(Icons.tune, size: 18, color: AppTokens.primary),
+        ],
+      ),
+    ),
+  );
+
+  Widget _featuredProduct(CatalogProduct product) => ClipRRect(
+    borderRadius: BorderRadius.circular(14),
+    child: Material(
+      color: AppTokens.primaryStrong,
+      child: InkWell(
+        onTap: () => _openProduct(product),
+        child: SizedBox(
+          height: 164,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (product.imageAvailable)
+                FutureBuilder<Uint8List?>(
+                  future: _imageFor(product.id),
+                  builder: (context, snapshot) => snapshot.data == null
+                      ? const _ImageFallback()
+                      : Image.memory(snapshot.data!, fit: BoxFit.cover),
+                )
+              else
+                const _ImageFallback(),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x10000000), Color(0xD92B160F)],
+                    stops: [0.25, 1],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: 12,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            product.category.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFFFD6C2),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            product.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Georgia',
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _formatPrice(product.price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFFFB996),
+                              fontFamily: 'Georgia',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTokens.primary,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 8,
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.visibility_outlined,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                'Ver produto',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
   );
 
   Widget _categorySelector() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      if (_categoriesLoading)
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: const Text(
+                  'Categorias',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTokens.text,
+                  ),
+                ),
+              ),
+            ),
+            if (_categories.isNotEmpty)
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: TextButton(
+                  onPressed: () => _selectCategory(null),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(44, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  ),
+                  child: const Text(
+                    'Ver todas',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTokens.primaryStrong,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      if (_categoriesLoading && _categories.isEmpty)
         const Padding(
-          padding: EdgeInsets.all(AppTokens.spacing12),
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
           child: Text('Carregando categorias…'),
         ),
       if (_categoriesError != null)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -374,10 +863,10 @@ class _StorefrontPageState extends State<StorefrontPage> {
           ),
         ),
       SizedBox(
-        height: 56,
+        height: 40,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
             _categoryChip(null, 'Todas'),
             for (final category in _categories)
@@ -394,167 +883,49 @@ class _StorefrontPageState extends State<StorefrontPage> {
   Widget _categoryChip(CatalogCategory? category, String label) => Padding(
     padding: const EdgeInsets.only(right: AppTokens.spacing12),
     child: ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+      constraints: const BoxConstraints(minHeight: 36, minWidth: 44),
       child: ChoiceChip(
         label: Text(label),
         selected: _selectedCategory?.id == category?.id,
         onSelected: (_) => _selectCategory(category),
-        showCheckmark: true,
-        materialTapTargetSize: MaterialTapTargetSize.padded,
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          color: _selectedCategory?.id == category?.id
+              ? Colors.white
+              : AppTokens.text,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
+        backgroundColor: AppTokens.surfaceSoft,
+        selectedColor: AppTokens.primaryStrong,
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     ),
   );
-
-  Widget _productList() => LayoutBuilder(
-    builder: (context, constraints) {
-      final columns = constraints.maxWidth >= 360 && _products.length > 1
-          ? 2
-          : 1;
-      final entries = _catalogEntries(columns);
-      return RefreshIndicator(
-        onRefresh: _refresh,
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            AppTokens.spacing16,
-            AppTokens.spacing16,
-            AppTokens.spacing16,
-            AppTokens.spacing24,
-          ),
-          itemCount: entries.length + 1,
-          itemBuilder: (context, index) {
-            if (index == entries.length) {
-              if (_error != null) {
-                return _StatusState(
-                  label: _error!,
-                  actionLabel: 'Tentar carregar novamente',
-                  onAction: () => _load(reset: false),
-                  error: true,
-                );
-              }
-              if (_loadingMore) {
-                return const _StatusState(
-                  label: 'Carregando mais produtos…',
-                  loading: true,
-                );
-              }
-              if (_hasMore) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTokens.spacing16),
-                    child: OutlinedButton.icon(
-                      onPressed: () => _load(reset: false),
-                      icon: const Icon(Icons.expand_more),
-                      label: const Text('Carregar mais produtos'),
-                    ),
-                  ),
-                );
-              }
-              return Semantics(
-                liveRegion: true,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTokens.spacing16),
-                  child: const Center(
-                    child: Text('Fim dos produtos disponíveis.'),
-                  ),
-                ),
-              );
-            }
-
-            final entry = entries[index];
-            if (entry.heading != null) {
-              return Padding(
-                padding: const EdgeInsets.only(
-                  top: AppTokens.spacing16,
-                  bottom: AppTokens.spacing12,
-                ),
-                child: Semantics(
-                  header: true,
-                  child: Text(
-                    entry.heading!,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-              );
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppTokens.spacing12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (
-                    var productIndex = 0;
-                    productIndex < entry.products!.length;
-                    productIndex++
-                  ) ...[
-                    if (productIndex > 0)
-                      const SizedBox(width: AppTokens.spacing12),
-                    Expanded(
-                      child: _buildProductCard(entry.products![productIndex]),
-                    ),
-                  ],
-                  if (entry.products!.length < columns)
-                    const Expanded(child: SizedBox.shrink()),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    },
-  );
-
-  List<_CatalogEntry> _catalogEntries(int columns) {
-    final entries = <_CatalogEntry>[];
-    var categoryStart = 0;
-    while (categoryStart < _products.length) {
-      final category = _products[categoryStart].category;
-      entries.add(_CatalogEntry.heading(category.name));
-      var categoryEnd = categoryStart + 1;
-      while (categoryEnd < _products.length &&
-          _products[categoryEnd].category.id == category.id) {
-        categoryEnd++;
-      }
-      for (
-        var rowStart = categoryStart;
-        rowStart < categoryEnd;
-        rowStart += columns
-      ) {
-        final rowEnd = math.min(rowStart + columns, categoryEnd);
-        entries.add(
-          _CatalogEntry.products(_products.sublist(rowStart, rowEnd)),
-        );
-      }
-      categoryStart = categoryEnd;
-    }
-    return entries;
-  }
 
   Widget _buildProductCard(CatalogProduct product) => _ProductCard(
     key: ValueKey(product.id),
     product: product,
     loadImage: _loadImage,
-    onTap: () => Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProductDetailPage(
-          productId: product.id,
-          session: widget.session,
-          api: widget.api,
-          cartApi: widget.cartApi,
-          onOpenCart: _openCart,
-          indeterminateCartAttempts: _indeterminateCartAttempts,
-        ),
+    onTap: () => _openProduct(product),
+  );
+
+  void _openProduct(CatalogProduct product) => Navigator.push<void>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ProductDetailPage(
+        productId: product.id,
+        session: widget.session,
+        api: widget.api,
+        cartApi: widget.cartApi,
+        onOpenCart: _openCart,
+        indeterminateCartAttempts: _indeterminateCartAttempts,
       ),
     ),
   );
-}
-
-class _CatalogEntry {
-  const _CatalogEntry.heading(this.heading) : products = null;
-  const _CatalogEntry.products(this.products) : heading = null;
-  final String? heading;
-  final List<CatalogProduct>? products;
 }
 
 class _ProductCard extends StatefulWidget {
@@ -610,13 +981,18 @@ class _ProductCardState extends State<_ProductCard> {
     color: AppTokens.surface,
     margin: EdgeInsets.zero,
     clipBehavior: Clip.antiAlias,
+    elevation: 0.5,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: Color(0xFFF4E6E0), width: 0.6),
+    ),
     child: InkWell(
       onTap: widget.onTap,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final image = SizedBox(
             width: double.infinity,
-            height: 132,
+            height: 112,
             child: widget.product.imageAvailable
                 ? FutureBuilder<Uint8List?>(
                     future: _image,
@@ -634,21 +1010,64 @@ class _ProductCardState extends State<_ProductCard> {
                 : const _ImageFallback(),
           );
           final details = Padding(
-            padding: const EdgeInsets.all(AppTokens.spacing16),
+            padding: const EdgeInsets.fromLTRB(8, 9, 8, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  widget.product.name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: AppTokens.spacing12),
-                Text(
-                  _formatPrice(widget.product.price),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTokens.primaryStrong,
+                  widget.product.category.name.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTokens.primary,
+                    fontSize: 8,
+                    letterSpacing: 0.25,
+                    fontWeight: FontWeight.w600,
                   ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  widget.product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTokens.text,
+                    fontFamily: 'Georgia',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _formatPrice(widget.product.price),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppTokens.primaryStrong,
+                          fontFamily: 'Georgia',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE3D9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward,
+                        size: 15,
+                        color: AppTokens.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -728,97 +1147,4 @@ String _formatPrice(String decimal) {
     (_) => '.',
   );
   return 'R\$ $whole,${parts[1]}';
-}
-
-class _StorefrontBarMetrics {
-  const _StorefrontBarMetrics({required this.toolbarHeight});
-
-  final double toolbarHeight;
-
-  static const _labels = ['Atualizar', 'Carrinho', 'Sair'];
-  static const _widthSlack = 4.0;
-
-  static _StorefrontBarMetrics of(BuildContext context) {
-    final view = View.of(context);
-    final width = math.max(
-      AppTokens.touchTarget,
-      view.physicalSize.width / view.devicePixelRatio -
-          MediaQuery.paddingOf(context).horizontal,
-    );
-    final title = _measure(
-      context,
-      'Vitrine',
-      Theme.of(context).textTheme.titleLarge,
-      width,
-    );
-    var x = 0.0;
-    var rowHeight = 0.0;
-    var buttons = 0.0;
-    var tallest = title.height;
-    for (final label in _labels) {
-      final size = _measureAction(context, label, width);
-      if (x > 0 && x + size.width > width) {
-        buttons += rowHeight;
-        x = 0;
-        rowHeight = 0;
-      }
-      x += size.width;
-      rowHeight = math.max(rowHeight, size.height);
-      tallest = math.max(tallest, size.height);
-    }
-    buttons += rowHeight;
-    return _StorefrontBarMetrics(
-      toolbarHeight: math.max(kToolbarHeight, title.height + buttons + tallest),
-    );
-  }
-
-  static Size _measure(
-    BuildContext context,
-    String label,
-    TextStyle? style,
-    double maxWidth,
-  ) {
-    final painter = TextPainter(
-      text: TextSpan(text: label, style: style),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout(maxWidth: maxWidth);
-    return Size(painter.width, math.max(painter.height, 24));
-  }
-
-  static Size _measureAction(
-    BuildContext context,
-    String label,
-    double maxWidth,
-  ) {
-    final style = Theme.of(context).textTheme.labelLarge;
-    final fontSize = style?.fontSize ?? 14;
-    final multiplier = MediaQuery.textScalerOf(context).scale(fontSize) / 14;
-    final padding = ButtonStyleButton.scaledPadding(
-      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      const EdgeInsets.symmetric(horizontal: 8),
-      const EdgeInsets.symmetric(horizontal: 4),
-      multiplier,
-    ).resolve(Directionality.of(context));
-    final painter = TextPainter(
-      text: TextSpan(text: label, style: style),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout();
-    final naturalWidth = math.max(
-      AppTokens.touchTarget,
-      painter.width + padding.horizontal + _widthSlack,
-    );
-    if (naturalWidth <= maxWidth) {
-      return Size(
-        naturalWidth,
-        math.max(AppTokens.touchTarget, painter.height + padding.vertical),
-      );
-    }
-    painter.layout(maxWidth: math.max(0, maxWidth - padding.horizontal));
-    return Size(
-      maxWidth,
-      math.max(AppTokens.touchTarget, painter.height + padding.vertical),
-    );
-  }
 }

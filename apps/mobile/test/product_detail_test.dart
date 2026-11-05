@@ -203,7 +203,12 @@ Widget app(
 );
 
 Future<void> scrollToContent(WidgetTester tester, Finder target) async {
-  final scrollable = find.byType(Scrollable).last;
+  final scrollable = find
+      .byWidgetPredicate(
+        (widget) =>
+            widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      )
+      .first;
   final bottom =
       tester.view.physicalSize.height / tester.view.devicePixelRatio - 190;
   for (var attempt = 0; attempt < 12; attempt++) {
@@ -213,6 +218,13 @@ Future<void> scrollToContent(WidgetTester tester, Finder target) async {
     await tester.drag(scrollable, const Offset(0, -160));
     await tester.pumpAndSettle();
   }
+}
+
+Future<void> _openStorefrontProduct(WidgetTester tester) async {
+  await scrollToContent(tester, find.text('Produtos disponíveis'));
+  final productCard = find.byKey(ValueKey<String>(id));
+  await scrollToContent(tester, productCard);
+  await tester.tap(productCard);
 }
 
 void main() {
@@ -259,10 +271,13 @@ void main() {
         app(active, catalog, storefront: true, cartApi: cart),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Nome antigo'));
+      await _openStorefrontProduct(tester);
       await tester.pumpAndSettle();
+      await scrollToContent(tester, find.text('Cobertura'));
       expect(find.byType(Card), findsOneWidget);
-      final availabilityBadge = tester.getRect(find.text('Disponível').first);
+      final availabilityBadge = tester.getRect(
+        find.text('Disponível em estoque'),
+      );
       expect(availabilityBadge.top, lessThan(400));
       await scrollToContent(tester, find.text('Cobertura'));
       await tester.tap(find.text('Cobertura'));
@@ -271,7 +286,7 @@ void main() {
       await tester.tap(find.byTooltip('Aumentar quantidade'));
       await tester.pumpAndSettle();
       expect(find.text('2'), findsOneWidget);
-      expect(find.text('Subtotal: R\$ 26,60'), findsOneWidget);
+      expect(find.text('R\$ 26,60'), findsOneWidget);
       await tester.pump(); // CTA permanece fixo no rodapé.
       await tester.tap(find.text('Adicionar ao carrinho'));
       await tester.pump();
@@ -295,7 +310,7 @@ void main() {
       expect(find.text('Detalhes do Produto'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Carrinho'));
+      await tester.tap(find.byTooltip('Carrinho'));
       await tester.pumpAndSettle();
       expect(cart.cartReads, 1);
       expect(find.text('Cupcake atual'), findsOneWidget);
@@ -327,7 +342,7 @@ void main() {
       app(active, catalog, storefront: true, cartApi: cart),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome antigo'));
+    await _openStorefrontProduct(tester);
     await tester.pumpAndSettle();
     await tester.pump(); // CTA permanece fixo no rodapé.
     await tester.tap(find.text('Adicionar ao carrinho'));
@@ -435,7 +450,7 @@ void main() {
       app(active, catalog, storefront: true, cartApi: cart),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome antigo'));
+    await _openStorefrontProduct(tester);
     await tester.pumpAndSettle();
     await tester.pump(); // CTA permanece fixo no rodapé.
     await tester.tap(find.text('Adicionar ao carrinho'));
@@ -443,7 +458,7 @@ void main() {
     expect(cart.additions, hasLength(1));
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome antigo'));
+    await _openStorefrontProduct(tester);
     await tester.pumpAndSettle();
     await tester.pump(); // CTA permanece fixo no rodapé.
     await scrollToContent(
@@ -638,8 +653,7 @@ void main() {
       await scrollToContent(tester, find.text('Tentar novamente'));
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
-      await scrollToContent(tester, find.text('Preço unitário: R\$ 11,25'));
-      expect(find.text('Preço unitário: R\$ 11,25'), findsOneWidget);
+      expect(find.text('R\$ 11,25'), findsOneWidget);
       expect(api.previewSelections, [
         [option.id],
         <String>[],
@@ -713,7 +727,7 @@ void main() {
     expect(find.text(longName), findsOneWidget);
     await tester.scrollUntilVisible(find.text(longDescription), 300);
     expect(find.text(longDescription), findsOneWidget);
-    expect(find.text('R\$ 1.234,50'), findsOneWidget);
+    expect(find.text('R\$ 1.234,50'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
   testWidgets('loading, retry and description absent stay usable', (
@@ -747,7 +761,7 @@ void main() {
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(find.text('Sem descrição'), findsOneWidget);
-    expect(find.text('R\$ 2,00'), findsOneWidget);
+    expect(find.text('R\$ 2,00'), findsWidgets);
     expect(find.text('Chocolate'), findsNothing);
     expect(
       find.bySemanticsLabel('Imagem do produto indisponível'),
@@ -814,8 +828,8 @@ void main() {
       await tester.pumpWidget(app(active, api, scale: 1.5));
       await tester.pumpAndSettle();
       expect(find.text('Cupcake atual'), findsOneWidget);
-      await scrollToContent(tester, find.text('R\$ 12,30'));
-      expect(find.text('R\$ 12,30'), findsOneWidget);
+      await scrollToContent(tester, find.text('R\$ 12,30').first);
+      expect(find.text('R\$ 12,30'), findsWidgets);
       expect(find.text('Chocolate'), findsOneWidget);
       expect(
         find.bySemanticsLabel('Imagem do produto indisponível'),
@@ -840,13 +854,13 @@ void main() {
     ]);
     await tester.pumpWidget(app(active, api, storefront: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome antigo'));
+    await _openStorefrontProduct(tester);
     await tester.pumpAndSettle();
     expect(api.ids, [id]);
     expect(find.text('Cupcake atual'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('Nome antigo'), findsOneWidget);
+    expect(find.text('Nome antigo'), findsWidgets);
     expect(api.pageCalls, 1);
   });
 
@@ -865,7 +879,7 @@ void main() {
     ]);
     await tester.pumpWidget(app(active, api, storefront: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome antigo'));
+    await _openStorefrontProduct(tester);
     await tester.pumpAndSettle();
     expect(find.text('Cupcake atual'), findsOneWidget);
     await active.signOut();

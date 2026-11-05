@@ -370,24 +370,89 @@ class _PaymentPageState extends State<PaymentPage> {
                   Card(
                     color: AppTokens.surface,
                     child: Padding(
-                      padding: const EdgeInsets.all(AppTokens.spacing16),
+                      padding: const EdgeInsets.all(AppTokens.spacing12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _CompactOrderNumber(
-                            value: widget.orderNumber,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _result == 'APROVADO'
-                                ? 'Pagamento aprovado'
-                                : 'Aguardando pagamento',
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.receipt_long_outlined,
+                                color: AppTokens.primary,
+                              ),
+                              const SizedBox(width: AppTokens.spacing8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'IDENTIFICAÇÃO',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelSmall,
+                                    ),
+                                    _CompactOrderNumber(
+                                      value: widget.orderNumber,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTokens.surfaceSoft,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    _result == 'APROVADO'
+                                        ? 'Pago'
+                                        : 'Aguardando pagamento',
+                                    maxLines: 2,
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: AppTokens.primaryStrong,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            'Total a pagar: $_totalLabel',
-                            style: Theme.of(context).textTheme.titleLarge,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTokens.surfaceSoft,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              spacing: AppTokens.spacing8,
+                              runSpacing: AppTokens.spacing4,
+                              children: [
+                                const Text('Total a pagar'),
+                                Text(
+                                  _totalLabel,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        color: AppTokens.primaryStrong,
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -399,34 +464,60 @@ class _PaymentPageState extends State<PaymentPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  RadioGroup<String>(
-                    groupValue: _method,
-                    onChanged: (value) {
-                      if (!locked) _selectMethod(value);
-                    },
-                    child: Card(
-                      color: AppTokens.surface,
-                      child: Column(
-                        children: [
-                          RadioListTile<String>(
-                            value: 'pix',
-                            enabled: !locked,
-                            title: const Text('Pix'),
-                          ),
-                          const Divider(height: 1),
-                          RadioListTile<String>(
-                            value: 'cartao',
-                            enabled: !locked,
-                            title: const Text('Cartão'),
-                          ),
-                        ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PaymentMethodCard(
+                          label: 'Pix',
+                          icon: Icons.qr_code_2,
+                          selected: _method == 'pix',
+                          enabled: !locked,
+                          onSelected: () => _selectMethod('pix'),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppTokens.spacing8),
+                      Expanded(
+                        child: _PaymentMethodCard(
+                          label: 'Cartão',
+                          icon: Icons.credit_card_outlined,
+                          selected: _method == 'cartao',
+                          enabled: !locked,
+                          onSelected: () => _selectMethod('cartao'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppTokens.spacing16),
                   if (_method == null)
-                    const Text(
-                      'Escolha uma forma de pagamento para continuar.',
+                    Card(
+                      color: AppTokens.surface,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTokens.spacing16,
+                          vertical: AppTokens.spacing24,
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                color: AppTokens.surfaceSoft,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.payments_outlined,
+                                color: AppTokens.primary,
+                              ),
+                            ),
+                            const SizedBox(height: AppTokens.spacing8),
+                            const Text(
+                              'Escolha uma forma de pagamento para continuar.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   if (_method != null && _result == null && !_uncertain)
                     Text(
@@ -454,6 +545,71 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
     );
   }
+}
+
+class _PaymentMethodCard extends StatelessWidget {
+  const _PaymentMethodCard({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    enabled: enabled,
+    selected: selected,
+    label: label,
+    child: ExcludeSemantics(
+      child: Material(
+        color: selected ? AppTokens.surfaceSoft : AppTokens.surface,
+        borderRadius: BorderRadius.circular(AppTokens.radius12),
+        child: InkWell(
+          onTap: enabled ? onSelected : null,
+          borderRadius: BorderRadius.circular(AppTokens.radius12),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.all(AppTokens.spacing8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTokens.radius12),
+              border: Border.all(
+                color: selected ? AppTokens.primary : AppTokens.border,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Icon(icon, size: 18, color: AppTokens.primaryStrong),
+                    Icon(
+                      selected
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      size: 16,
+                      color: selected ? AppTokens.primary : AppTokens.disabled,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTokens.spacing8),
+                Text(label, style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _CompactOrderNumber extends StatelessWidget {

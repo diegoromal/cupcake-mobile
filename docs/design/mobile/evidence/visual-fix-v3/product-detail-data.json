@@ -1,0 +1,54 @@
+{
+  "purpose": "Dados sintéticos usados exclusivamente para validação visual F-RT-04 no staging.",
+  "createdVia": [
+    "POST /admin/personalizacoes",
+    "POST /admin/produtos/:produtoId/personalizacoes"
+  ],
+  "modifiedVia": "PATCH /admin/produtos/:id e PATCH /admin/categorias/:id",
+  "product": {
+    "id": "1065a78d-535a-49da-b7f3-3473fc93a536",
+    "name": "Noir Cacau & Framboesa",
+    "description": "Massa aveludada de cacau 100%, recheio trufado de chocolate meio amargo e finalizado com ganache e framboesa fresca.",
+    "basePrice": "18.90",
+    "categoryId": "371cbe66-4e42-4c9e-bcfa-b45e2d1a5f3a",
+    "category": "Chocolate Belga",
+    "image": "Imagem sintética preexistente do produto D106; corresponde à foto da referência."
+  },
+  "personalizations": [
+    {
+      "id": "aa3a4e35-dc48-463b-a655-d8b2e1951a90",
+      "name": "Calda extra de framboesa",
+      "description": "Redução artesanal morna servida à parte",
+      "available": true,
+      "priceAdjustment": "3.50",
+      "selectedInScreenshot": true
+    },
+    {
+      "id": "c7dadeca-6f1e-4fca-8278-4594207661bf",
+      "name": "Pérolas crocantes de chocolate",
+      "description": "Crispies belgas de cacau selecionado",
+      "available": true,
+      "priceAdjustment": "2.50",
+      "selectedInScreenshot": false
+    },
+    {
+      "id": "3c510ca7-797b-45de-a847-c90678329f75",
+      "name": "Toque de flor de sal",
+      "description": "Realce de sabor nas notas de chocolate amargo",
+      "available": true,
+      "priceAdjustment": "0.00",
+      "selectedInScreenshot": false
+    },
+    {
+      "id": "2033d49c-dc98-42db-9bd1-a116b270548b",
+      "name": "Creme trufado de avelã",
+      "description": "Feito com avelãs torradas e cacau",
+      "available": false,
+      "priceAdjustment": "4.00",
+      "selectedInScreenshot": false
+    }
+  ],
+  "backupBeforeChanges": "/home/deploy/cupcake-staging/backups/postgres/20261105T121747Z-f-rt-04-pre-fixture.dump",
+  "displayOrdering": "Opções disponíveis primeiro, em ordem alfabética; indisponíveis ao final. Ordenação apenas de apresentação, sem alterar seleção ou preço.",
+  "apiOrdering": "Alfabética por nome no contrato atual do catálogo."
+}
