@@ -105,14 +105,7 @@ void main() {
     expect(find.text('Pagamento aprovado'), findsNWidgets(2));
     expect(find.text('Total: R\$ 29,50'), findsOneWidget);
     expect(find.text('Forma de pagamento: Pix'), findsOneWidget);
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, 'Ver pedido'),
-          )
-          .onPressed,
-      isNull,
-    );
+    expect(find.text('Ver pedido'), findsNothing);
     expect(find.text('Voltar para o início'), findsOneWidget);
   });
 
@@ -178,18 +171,7 @@ void main() {
     expect(find.byType(PaymentResultPage), findsOneWidget);
     expect(find.text('Pagamento aprovado'), findsNWidgets(2));
     expect(find.text('Forma de pagamento: Pix'), findsOneWidget);
-    expect(
-      find.textContaining('consulta do pedido ainda não está disponível'),
-      findsOneWidget,
-    );
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, 'Ver pedido'),
-          )
-          .onPressed,
-      isNull,
-    );
+    expect(find.text('Ver pedido'), findsNothing);
     expect(api.startAttempts, hasLength(1));
     session.dispose();
   });

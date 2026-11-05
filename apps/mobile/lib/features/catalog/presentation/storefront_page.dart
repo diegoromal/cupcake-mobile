@@ -10,6 +10,7 @@ import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
 import '../../cart/data/customer_cart_api.dart';
 import '../../cart/presentation/cart_page.dart';
+import '../../checkout/presentation/fulfillment_mode.dart';
 import '../../orders/presentation/customer_orders_page.dart';
 import '../data/customer_catalog_api.dart';
 import 'product_detail_page.dart';
@@ -33,6 +34,11 @@ class StorefrontPage extends StatefulWidget {
 class _StorefrontPageState extends State<StorefrontPage> {
   static const _measurePerformance = bool.fromEnvironment('D29_PERF');
   final _products = <CatalogProduct>[];
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  final _fulfillmentMode = ValueNotifier<FulfillmentMode?>(
+    FulfillmentMode.delivery,
+  );
   final _seenIds = <String>{};
   final _indeterminateCartAttempts = <String>{};
   final _scrollController = ScrollController();
@@ -50,8 +56,21 @@ class _StorefrontPageState extends State<StorefrontPage> {
   bool _hasMore = false;
   int _nextPage = 1;
   String? _error;
+  String _searchQuery = '';
   int _requestGeneration = 0;
   Stopwatch? _firstPageWatch;
+
+  List<CatalogProduct> get _visibleProducts {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return _products;
+    return _products
+        .where(
+          (product) =>
+              product.name.toLowerCase().contains(query) ||
+              product.category.name.toLowerCase().contains(query),
+        )
+        .toList();
+  }
 
   @override
   void initState() {
@@ -233,6 +252,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           session: widget.session,
           cartApi: widget.cartApi ?? CustomerCartApi(),
           catalogApi: widget.api,
+          modeSelection: _fulfillmentMode,
         ),
       ),
     );
@@ -278,10 +298,17 @@ class _StorefrontPageState extends State<StorefrontPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _fulfillmentMode.dispose();
     super.dispose();
   }
 
   void _navigateTo(int index) {
+    if (index == 1) {
+      _openCart();
+      return;
+    }
     if (index == 2) {
       _openOrders();
       return;
@@ -476,10 +503,10 @@ class _StorefrontPageState extends State<StorefrontPage> {
             ),
             _fulfillmentDecoration(),
             _searchDecoration(),
-            if (_products.isNotEmpty)
+            if (_visibleProducts.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                child: _featuredProduct(_products.first),
+                child: _featuredProduct(_visibleProducts.first),
               ),
             _categorySelector(),
             Padding(
@@ -519,9 +546,11 @@ class _StorefrontPageState extends State<StorefrontPage> {
                 onAction: () => _load(reset: true),
                 error: true,
               )
-            else if (_products.isEmpty)
+            else if (_visibleProducts.isEmpty)
               _StatusState(
-                label: _selectedCategory == null
+                label: _searchQuery.trim().isNotEmpty
+                    ? 'Nenhum produto carregado corresponde a “${_searchQuery.trim()}”.'
+                    : _selectedCategory == null
                     ? 'Não há produtos disponíveis no momento.'
                     : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
                 actionLabel: 'Atualizar',
@@ -530,7 +559,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
             else
               for (
                 var rowStart = 0;
-                rowStart < _products.length;
+                rowStart < _visibleProducts.length;
                 rowStart += columns
               )
                 Padding(
@@ -538,20 +567,29 @@ class _StorefrontPageState extends State<StorefrontPage> {
                     16,
                     0,
                     16,
-                    rowStart + columns < _products.length ? 8 : 0,
+                    rowStart + columns < _visibleProducts.length ? 8 : 0,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       for (
                         var index = rowStart;
-                        index < math.min(rowStart + columns, _products.length);
+                        index <
+                            math.min(
+                              rowStart + columns,
+                              _visibleProducts.length,
+                            );
                         index++
                       ) ...[
                         if (index > rowStart) const SizedBox(width: 8),
-                        Expanded(child: _buildProductCard(_products[index])),
+                        Expanded(
+                          child: _buildProductCard(_visibleProducts[index]),
+                        ),
                       ],
-                      if (math.min(rowStart + columns, _products.length) -
+                      if (math.min(
+                                rowStart + columns,
+                                _visibleProducts.length,
+                              ) -
                               rowStart <
                           columns)
                         const Expanded(child: SizedBox.shrink()),
@@ -596,84 +634,77 @@ class _StorefrontPageState extends State<StorefrontPage> {
         color: const Color(0xFFFFE8E0),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTokens.surface,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              alignment: Alignment.center,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.delivery_dining,
-                      size: 16,
-                      color: AppTokens.primary,
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      'Delivery',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
+      child: ValueListenableBuilder<FulfillmentMode?>(
+        valueListenable: _fulfillmentMode,
+        builder: (context, mode, _) => SegmentedButton<FulfillmentMode>(
+          segments: const [
+            ButtonSegment(
+              value: FulfillmentMode.delivery,
+              label: Text('Delivery'),
+              icon: Icon(Icons.delivery_dining, size: 16),
             ),
-          ),
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.storefront_outlined,
-                    size: 15,
-                    color: AppTokens.textMuted,
-                  ),
-                  const SizedBox(width: 5),
-                  const Text(
-                    'Retirada',
-                    style: TextStyle(color: AppTokens.textMuted),
-                  ),
-                ],
-              ),
+            ButtonSegment(
+              value: FulfillmentMode.pickup,
+              label: Text('Retirada'),
+              icon: Icon(Icons.storefront_outlined, size: 16),
             ),
+          ],
+          selected: mode == null ? const {} : {mode},
+          emptySelectionAllowed: true,
+          onSelectionChanged: (selection) =>
+              _fulfillmentMode.value = selection.firstOrNull,
+          showSelectedIcon: false,
+          style: SegmentedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            selectedBackgroundColor: AppTokens.surface,
+            foregroundColor: AppTokens.textMuted,
+            selectedForegroundColor: AppTokens.primaryStrong,
+            visualDensity: VisualDensity.compact,
+            side: BorderSide.none,
           ),
-        ],
+        ),
       ),
     ),
   );
 
   Widget _searchDecoration() => Padding(
     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-    child: Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppTokens.surfaceSoft,
+    child: Material(
+      color: AppTokens.surfaceSoft,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 18, color: AppTokens.textMuted),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Buscar cupcakes, sabores ou coleções',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: AppTokens.text),
-            ),
+        onTap: () => FocusScope.of(context).requestFocus(_searchFocusNode),
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppTokens.surfaceSoft,
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(width: 6),
-          const Icon(Icons.tune, size: 18, color: AppTokens.primary),
-        ],
+          child: Row(
+            children: [
+              const Icon(Icons.search, size: 18, color: AppTokens.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('storefront-search'),
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar cupcakes, sabores ou coleções',
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.tune, size: 18, color: AppTokens.primary),
+            ],
+          ),
+        ),
       ),
     ),
   );

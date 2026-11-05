@@ -13,8 +13,8 @@ class CustomerBottomNavigation extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   static const _items = <(IconData, String)>[
-    (Icons.home_outlined, 'Início'),
     (Icons.local_cafe_outlined, 'Cardápio'),
+    (Icons.shopping_bag_outlined, 'Carrinho'),
     (Icons.receipt_long_outlined, 'Pedidos'),
     (Icons.person_outline, 'Perfil'),
   ];
