@@ -63,10 +63,13 @@ class _StorefrontPageState extends State<StorefrontPage> {
   List<CatalogProduct> get _visibleProducts {
     final query = _searchQuery.trim().toLowerCase();
     if (query.isEmpty) return _products;
-    return _products.where((product) =>
-      product.name.toLowerCase().contains(query) ||
-      product.category.name.toLowerCase().contains(query)
-    ).toList();
+    return _products
+        .where(
+          (product) =>
+              product.name.toLowerCase().contains(query) ||
+              product.category.name.toLowerCase().contains(query),
+        )
+        .toList();
   }
 
   @override
@@ -499,7 +502,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
               ),
             ),
             _fulfillmentDecoration(),
-        _searchDecoration(),
+            _searchDecoration(),
             if (_visibleProducts.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -571,13 +574,22 @@ class _StorefrontPageState extends State<StorefrontPage> {
                     children: [
                       for (
                         var index = rowStart;
-                        index < math.min(rowStart + columns, _visibleProducts.length);
+                        index <
+                            math.min(
+                              rowStart + columns,
+                              _visibleProducts.length,
+                            );
                         index++
                       ) ...[
                         if (index > rowStart) const SizedBox(width: 8),
-                        Expanded(child: _buildProductCard(_visibleProducts[index])),
+                        Expanded(
+                          child: _buildProductCard(_visibleProducts[index]),
+                        ),
                       ],
-                      if (math.min(rowStart + columns, _visibleProducts.length) -
+                      if (math.min(
+                                rowStart + columns,
+                                _visibleProducts.length,
+                              ) -
                               rowStart <
                           columns)
                         const Expanded(child: SizedBox.shrink()),
@@ -626,12 +638,21 @@ class _StorefrontPageState extends State<StorefrontPage> {
         valueListenable: _fulfillmentMode,
         builder: (context, mode, _) => SegmentedButton<FulfillmentMode>(
           segments: const [
-            ButtonSegment(value: FulfillmentMode.delivery, label: Text('Delivery'), icon: Icon(Icons.delivery_dining, size: 16)),
-            ButtonSegment(value: FulfillmentMode.pickup, label: Text('Retirada'), icon: Icon(Icons.storefront_outlined, size: 16)),
+            ButtonSegment(
+              value: FulfillmentMode.delivery,
+              label: Text('Delivery'),
+              icon: Icon(Icons.delivery_dining, size: 16),
+            ),
+            ButtonSegment(
+              value: FulfillmentMode.pickup,
+              label: Text('Retirada'),
+              icon: Icon(Icons.storefront_outlined, size: 16),
+            ),
           ],
           selected: mode == null ? const {} : {mode},
           emptySelectionAllowed: true,
-          onSelectionChanged: (selection) => _fulfillmentMode.value = selection.firstOrNull,
+          onSelectionChanged: (selection) =>
+              _fulfillmentMode.value = selection.firstOrNull,
           showSelectedIcon: false,
           style: SegmentedButton.styleFrom(
             backgroundColor: Colors.transparent,
@@ -655,33 +676,35 @@ class _StorefrontPageState extends State<StorefrontPage> {
         borderRadius: BorderRadius.circular(12),
         onTap: () => FocusScope.of(context).requestFocus(_searchFocusNode),
         child: Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppTokens.surfaceSoft,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 18, color: AppTokens.textMuted),
-          const SizedBox(width: 8),
-          Expanded(child: TextField(
-            key: const ValueKey('storefront-search'),
-            controller: _searchController,
-            focusNode: _searchFocusNode,
-            textInputAction: TextInputAction.search,
-            onChanged: (value) => setState(() => _searchQuery = value),
-            decoration: const InputDecoration(
-              hintText: 'Buscar cupcakes, sabores ou coleções',
-              border: InputBorder.none,
-              isDense: true,
-            ),
-          )),
-          const SizedBox(width: 6),
-          const Icon(Icons.tune, size: 18, color: AppTokens.primary),
-        ],
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppTokens.surfaceSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search, size: 18, color: AppTokens.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('storefront-search'),
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar cupcakes, sabores ou coleções',
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.tune, size: 18, color: AppTokens.primary),
+            ],
+          ),
         ),
-      ),
       ),
     ),
   );

@@ -57,7 +57,6 @@ class _AuthApi extends CustomerAuthApi {
   }
 }
 
-
 class _CatalogApi extends CustomerCatalogApi {
   _CatalogApi(this.responses, {this.categoryResponses});
   final List<Future<CatalogPageResult> Function(int)> responses;
@@ -870,7 +869,10 @@ void main() {
     expect(find.text('Cupcake baunilha'), findsNothing);
     await tester.enterText(search, 'inexistente');
     await tester.pumpAndSettle();
-    expect(find.textContaining('Nenhum produto carregado corresponde'), findsOneWidget);
+    expect(
+      find.textContaining('Nenhum produto carregado corresponde'),
+      findsOneWidget,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
