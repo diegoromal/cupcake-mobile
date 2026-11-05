@@ -674,74 +674,111 @@ class _CartLine extends StatelessWidget {
     clipBehavior: Clip.antiAlias,
     semanticContainer: false,
     child: Padding(
-      padding: const EdgeInsets.all(AppTokens.spacing16),
-      child: Column(
+      padding: const EdgeInsets.all(AppTokens.spacing12),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: 112,
-            width: double.infinity,
-            child: _CartImage(future: image, name: item.name),
-          ),
-          const SizedBox(height: AppTokens.spacing12),
-          Text(item.name, style: Theme.of(context).textTheme.titleMedium),
-          for (final option in item.personalizations) ...[
-            const SizedBox(height: AppTokens.spacing12),
-            Text(option.name, style: Theme.of(context).textTheme.bodyLarge),
-          ],
-          if (item.unitPrice != null) ...[
-            const SizedBox(height: AppTokens.spacing12),
-            Text('Preço unitário: ${_formatPrice(item.unitPrice!)}'),
-          ],
-          if (item.subtotal != null) ...[
-            const SizedBox(height: AppTokens.spacing12),
-            Text('Subtotal do item: ${_formatPrice(item.subtotal!)}'),
-          ],
-          if (item.reason != null) ...[
-            const SizedBox(height: AppTokens.spacing12),
-            Text(item.reason!, style: const TextStyle(color: AppTokens.danger)),
-          ],
-          const SizedBox(height: AppTokens.spacing12),
-          Wrap(
-            spacing: AppTokens.spacing12,
-            runSpacing: AppTokens.spacing12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _CartAction(
-                label: 'Diminuir quantidade',
-                icon: Icons.remove,
-                onPressed: onDecrease,
-              ),
-              Semantics(
-                label: 'Quantidade ${item.quantity}',
-                child: ExcludeSemantics(child: Text('${item.quantity}')),
-              ),
-              _CartAction(
-                label: 'Aumentar quantidade',
-                icon: Icons.add,
-                onPressed: onIncrease,
-              ),
-              _CartAction(
-                label: 'Remover item',
-                icon: Icons.delete_outline,
-                onPressed: onRemove,
-              ),
-            ],
-          ),
-          if (busyLabel != null) ...[
-            const SizedBox(height: AppTokens.spacing12),
-            Semantics(liveRegion: true, child: Text(busyLabel!)),
-          ],
-          if (error != null) ...[
-            const SizedBox(height: AppTokens.spacing12),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                error!,
-                style: const TextStyle(color: AppTokens.danger),
-              ),
+            width: 72,
+            height: 72,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppTokens.radius12),
+              child: _CartImage(future: image, name: item.name),
             ),
-          ],
+          ),
+          const SizedBox(width: AppTokens.spacing8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    _CartAction(
+                      label: 'Remover item',
+                      icon: Icons.delete_outline,
+                      onPressed: onRemove,
+                    ),
+                  ],
+                ),
+                for (final option in item.personalizations)
+                  Text(
+                    option.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                if (item.unitPrice != null)
+                  Semantics(
+                    label: 'Preço unitário: ${_formatPrice(item.unitPrice!)}',
+                    child: ExcludeSemantics(
+                      child: Text(
+                        'Un. ${_formatPrice(item.unitPrice!)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ),
+                if (item.reason != null)
+                  Text(
+                    item.reason!,
+                    style: const TextStyle(color: AppTokens.danger),
+                  ),
+                if (item.subtotal != null)
+                  Semantics(
+                    label: 'Subtotal do item: ${_formatPrice(item.subtotal!)}',
+                    child: ExcludeSemantics(
+                      child: Text(
+                        _formatPrice(item.subtotal!),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: AppTokens.primaryStrong,
+                              fontFamily: 'Georgia',
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ),
+                Wrap(
+                  spacing: AppTokens.spacing4,
+                  runSpacing: 0,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _CartAction(
+                      label: 'Diminuir quantidade',
+                      icon: Icons.remove,
+                      onPressed: onDecrease,
+                    ),
+                    Semantics(
+                      label: 'Quantidade ${item.quantity}',
+                      child: ExcludeSemantics(child: Text('${item.quantity}')),
+                    ),
+                    _CartAction(
+                      label: 'Aumentar quantidade',
+                      icon: Icons.add,
+                      onPressed: onIncrease,
+                    ),
+                  ],
+                ),
+                if (busyLabel != null)
+                  Semantics(liveRegion: true, child: Text(busyLabel!)),
+                if (error != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      error!,
+                      style: const TextStyle(color: AppTokens.danger),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     ),

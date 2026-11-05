@@ -207,9 +207,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Cupcake de chocolate'), findsOneWidget);
+    expect(find.text('Cupcake de chocolate'), findsWidgets);
 
-    await tester.tap(find.text('Cupcake de chocolate'));
+    await tester.tap(find.text('Cupcake de chocolate').first);
     await tester.pumpAndSettle();
     expect(find.text('Massa de chocolate'), findsOneWidget);
     await tester.drag(find.byType(ListView).last, const Offset(0, -700));
@@ -220,7 +220,7 @@ void main() {
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Carrinho'));
+    await tester.tap(find.byTooltip('Carrinho'));
     await tester.pumpAndSettle();
     expect(find.text('Subtotal: R\$ 12,50'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -252,7 +252,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(order.reviews, 1);
     expect(find.text('Revisar Pedido'), findsOneWidget);
-    expect(find.text('Total: R\$ 12.50'), findsOneWidget);
+    expect(find.text('Total final: R\$ 12.50'), findsOneWidget);
 
     await tester.tap(find.text('Confirmar pedido'));
     await tester.pumpAndSettle();

@@ -236,3 +236,67 @@ Foram alterados somente este relatório e as capturas PNG em `evidence/visual-au
 - Uma tentativa de pagamento sintético foi submetida nesta continuação e recusada pelo simulador de staging. Não houve nova tentativa; o pedido permaneceu pendente e o item continuou no carrinho. A suíte focada do serviço de pagamentos passou (9 testes), incluindo a cobertura de limpeza do carrinho em aprovação e preservação em recusa; a limpeza após aprovação não foi confirmada no runtime.
 
 F-RT-03, F-RT-05 e F-RT-08 permanecem parciais pelas limitações de capacidade e rota descritas acima; os demais foram confirmados visualmente no runtime. O detalhe do pedido continua fora do escopo por não haver rota implementada.
+
+## Reavaliação de fidelidade — `task/corrigir-visual-fiel-referencias`
+
+Em 04/11/2026, as telas foram comparadas novamente com os PNGs aprovados em um iPhone Air, em 420 × 912 pt, com a API de staging. As capturas runtime estão em `evidence/visual-fix/`. Esta reavaliação não considera os findings resolvidos apenas porque a composição funcional ou um componente específico melhorou.
+
+| Finding | Estado nesta reavaliação | Evidência objetiva |
+|---|---|---|
+| F-RT-03 | ABERTO | A marca, busca decorativa, destaque, categorias e barra inferior aparecem. A composição ainda difere em densidade, espaçamento e grade; não há nome de cliente disponível e a conta sintética tem somente um produto elegível. `after-storefront.png`. |
+| F-RT-04 | ABERTO | O tema agora reduz a tipografia, alinha o título e fixa a compra na base; a proporção da imagem, margens e espaçamento do conteúdo ainda diferem. A fixture não tem personalizações. `after-product-detail.png`. |
+| F-RT-05 | PARCIALMENTE RESOLVIDO | O card de produto foi compactado com imagem, preço unitário, subtotal e controles. Modalidade, endereço e frete não são fornecidos pelo endpoint do carrinho; nenhum valor ou seleção foi inventado. `after-cart.png`. |
+| F-RT-06 | RESOLVIDO | A revisão agora agrupa modalidade, endereço quando aplicável, imagens reais disponíveis dos produtos, resumo de valores e CTA inferior. A captura usa Retirada, estado válido do fluxo, enquanto a referência mostra Delivery. `after-order-review.png`. |
+| F-RT-07 | RESOLVIDO | O ID fica compacto com tooltip para o valor integral; status e total estão agrupados e os meios de pagamento reproduzem os dois cartões lado a lado. `after-payment.png`. |
+| F-RT-08 | ABERTO | O título, status, ID, data, modalidade e preço estão compactos, e a barra inferior aprovada aparece com Pedidos selecionado. A organização interna do card ainda difere e não há CTA de detalhe porque a rota não existe em `NAVIGATION.md`. `after-orders.png`. |
+
+**Resultado:** as telas de revisão e pagamento atendem à composição de referência nesta captura de runtime. F-RT-03, F-RT-04 e F-RT-08 permanecem abertos; F-RT-05 permanece parcial por dados ausentes no contrato atual. Esta branch não deve ser considerada pronta para revisão de fidelidade.
+
+## Segunda rodada de fidelidade — `visual-fix-v2`
+
+Em 04/11/2026, storefront, detalhe do produto e pedidos foram comparados novamente em sequência com as referências, a captura anterior (`evidence/visual-fix/after-*.png`) e as novas capturas integrais do iPhone Air (420 × 912 pt) em `evidence/visual-fix-v2/`.
+
+| Finding | Estado após v2 | Comparação objetiva e diferença remanescente |
+|---|---|---|
+| F-RT-03 — Vitrine | **RESOLVIDO VISUALMENTE** | A composição reproduz a ordem e os componentes da referência: marca Cupcake, saudação, modalidade, busca, destaque, categorias, grade de duas colunas e navegação inferior. Frente à captura anterior, foi removido o texto final que ocupava a área acima da navegação. O único produto elegível aparece no destaque e no único card, deixando a coluna direita e parte inferior vazias; a saudação não inclui nome porque o perfil de sessão expõe apenas o tipo de conta. Essas diferenças de densidade e saudação refletem os dados reais disponíveis e não alteram a estrutura aprovada. A identidade usa o asset aprovado `cupcake-brand.png`; a arte redonda marrom difere do pequeno símbolo claro da referência. |
+| F-RT-04 — Produto | **ABERTO** | A imagem agora é edge-to-edge e tem proporção próxima da referência. Título, categoria, preço e CTA foram compactados, e a barra fixa reúne quantidade e valor no botão. Ainda faltam os cartões de personalização vistos na referência: o produto real de staging não tem opções. A descrição disponível (“Fixture sintetica D106”) também difere do texto aprovado. O preço aparece como preço base no conteúdo e no CTA, enquanto a referência usa os dados de produto e adicionais que não existem nesta fixture. Não foram criadas opções ou descrição fictícias. |
+| F-RT-08 — Pedidos | **RESOLVIDO VISUALMENTE** | O cabeçalho agora usa marca e perfil sem seta de retorno, há título de seção, e cada card reproduz a hierarquia de identificador/status, data, modalidade/total e CTA “Ver pedido”. O CTA permanece visualmente presente e desabilitado porque o app não tem rota de detalhe de pedido. A captura de staging contém pedidos expirados e repetição de identificadores compactos; a referência tem estados e valores variados. Esta é uma limitação de massa de dados, não de layout. |
+
+**Limitação funcional separada:** não existe rota de detalhe do pedido documentada em `NAVIGATION.md`; o CTA de pedidos não navega. O contrato do carrinho continua sem modalidade, endereço ou frete. Nenhuma API, banco, contrato ou regra de negócio foi alterada nesta rodada.
+
+### Checagem visual por eixo
+
+| Tela | Composição, alinhamento e proporções | Espaçamento, tipografia, cores e componentes | Navegação e densidade |
+|---|---|---|---|
+| Vitrine | Mesma sequência vertical da referência; margens laterais de 16 pt; destaque largo e card ocupando uma coluna da grade. Não há botão flutuante. | Georgia nos títulos serifados, texto sans nos controles e paleta creme/marrom; marca usa asset aprovado. Ainda há uma única imagem/produto repetida no destaque e no card. | Navegação inferior com Início selecionado; não há menu textual superior. A área de status do iOS permanece fora do controle da tela. |
+| Produto | Hero edge-to-edge com proporção próxima à referência; categoria, título e preço alinhados à esquerda; controles de quantidade e CTA fixos na base. | Espaçamentos e hierarquia foram compactados. Cores, cantos e imagem seguem os assets/runtime disponíveis. Os cartões de opções aprovados estão ausentes pois a fixture não tem personalizações; a descrição real também é diferente. | Sem bottom navigation, como na referência; botão de voltar permanece no app bar. O valor do preview fica no CTA. |
+| Pedidos | Cabeçalho sem seta de retorno, título de seção e card em blocos de identificação, data, modalidade/total e CTA. | Card, badge e botão usam fundo claro e marrom; status/datas reais são todos expirados e diferem da variedade da referência. Tipos de texto mantêm hierarquia título, apoio e valor. | Pedidos selecionado na navegação inferior; “Ver pedido” aparece desabilitado pela falta de rota. Densidade visual aproxima a referência, mas dados repetidos reduzem variedade. |
+
+As capturas v2 incluem status bar e Dynamic Island do iOS, que não aparecem nos PNGs aprovados; o conteúdo do app começa após a safe area do sistema.
+
+**Resultado da rodada:** F-RT-03 está visualmente próximo da referência considerando o único produto e o perfil de sessão reais. F-RT-04 continua aberto porque a fixture não fornece personalizações e sua composição fica visivelmente mais esparsa que a aprovada. F-RT-08 atende visualmente à referência, mas não habilita navegação para detalhe inexistente. O estado geral permanece **NOT READY FOR REVIEW** enquanto F-RT-04 estiver aberto.
+
+| Tela | Referência | BEFORE v2 | AFTER v2 |
+|---|---|---|---|
+| Vitrine | `catalog/storefront.png` | `evidence/visual-fix/after-storefront.png` | `evidence/visual-fix-v2/storefront.png` |
+| Produto | `catalog/product-detail.png` | `evidence/visual-fix/after-product-detail.png` | `evidence/visual-fix-v2/product-detail.png` |
+| Pedidos | `orders/order-list.png` | `evidence/visual-fix/after-orders.png` | `evidence/visual-fix-v2/orders.png` |
+
+## Terceira rodada — fechamento de F-RT-04 (`visual-fix-v3`)
+
+Em 05/11/2026, o fluxo administrativo existente foi usado no staging para criar quatro personalizações sintéticas e associá-las ao produto sintético D106. O produto e a categoria sintéticos receberam os dados visuais da referência pela API administrativa. Nenhuma regra de negócio ou endpoint foi alterado. Os IDs, valores, rotas e backup anterior às gravações estão registrados em `evidence/visual-fix-v3/product-detail-data.json`.
+
+| Eixo | Resultado da comparação |
+|---|---|
+| Imagem, título, descrição, preço e categoria | Coincidem com a composição aprovada; a foto sintética preexistente corresponde à referência. |
+| Personalizações, descrições e preços adicionais | Os quatro cards aparecem completos. A calda está selecionada; o preço do CTA mostra R$ 22,40. Creme de avelã está desabilitado, riscado e identificado como indisponível. |
+| Quantidade, seleção, CTA e faixa inferior | Quantidade 1 e ação fixa permanecem visíveis; estado selecionado e subtotal atualizado correspondem à referência. |
+| Espaçamento, tipografia e hierarquia | Cards compactos separam descrição e preço; ordem visual coincide com a referência, com disponíveis primeiro e indisponível por último. |
+| Safe area e proporções | A captura integral do iPhone Air (420 × 912 pt) inclui status bar, Dynamic Island e safe area, ausentes no PNG de referência. Hero ajustado para 290 pt; os quatro cards cabem acima da faixa fixa. |
+| Diferenças restantes | Barra de status e safe area do sistema permanecem visíveis; o viewport de runtime tem 420 × 912 pt, enquanto a referência é um PNG de proporção diferente. Há pequenas diferenças de escala tipográfica e densidade dos cards. |
+
+**F-RT-04: RESOLVIDO.** Captura final: `evidence/visual-fix-v3/product-detail.png`; referência canônica: `catalog/product-detail.png`. O cenário foi alimentado pelo staging via API real, sem fixture no app ou alteração da API. `flutter analyze`, `flutter test` e `git diff --check` passaram após a implementação. Estado do fechamento visual: **READY FOR REVIEW**.
+
+| Tela | Referência | Captura v2 | Captura v3 |
+|---|---|---|---|
+| Produto | `catalog/product-detail.png` | `evidence/visual-fix-v2/product-detail.png` | `evidence/visual-fix-v3/product-detail.png` |

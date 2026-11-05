@@ -219,7 +219,7 @@ void main() {
     expect(session.state, CustomerSessionState.authenticated);
     expect(find.text('Área do entregador'), findsOneWidget);
     expect(find.text('Nenhuma entrega atribuída no momento.'), findsOneWidget);
-    expect(find.text('Vitrine'), findsNothing);
+    expect(find.text('Cupcake Mobile'), findsNothing);
     expect(session.accessToken, isNotNull);
     expect(ordersApi.tokens, [session.accessToken]);
 

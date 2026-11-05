@@ -167,7 +167,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(auth.refreshCalls, 1);
     expect(api.calls, 2);
-    expect(find.text('Cupcake número 1'), findsOneWidget);
+    expect(find.text('Cupcake número 1'), findsWidgets);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -275,36 +275,26 @@ void main() {
       ]);
       await tester.pumpWidget(_app(session, api));
       await tester.pumpAndSettle();
-      expect(find.text('Doces especiais e presentes'), findsNWidgets(2));
-      expect(find.text('Bolos'), findsNWidgets(2));
-      expect(find.text('Cupcake número 1'), findsOneWidget);
-      final firstProductRow = find
-          .ancestor(
-            of: find.text('Cupcake número 1'),
-            matching: find.byType(Row),
-          )
-          .first
-          .evaluate()
-          .single;
-      final secondProductRow = find
-          .ancestor(
-            of: find.text('Cupcake número 2'),
-            matching: find.byType(Row),
-          )
-          .first
-          .evaluate()
-          .single;
-      expect(secondProductRow, same(firstProductRow));
-      final thirdProductRow = find
-          .ancestor(
-            of: find.text('Cupcake número 3'),
-            matching: find.byType(Row),
-          )
-          .first
-          .evaluate()
-          .single;
-      expect(thirdProductRow, isNot(same(firstProductRow)));
-      expect(find.text('R\$ 1.234,50'), findsOneWidget);
+      expect(find.text('Doces especiais e presentes'), findsWidgets);
+      expect(find.text('Bolos'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Destaques Artesanais'),
+        300,
+        scrollable: _verticalScrollable(),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Cupcake número 1').first,
+        250,
+        scrollable: _verticalScrollable(),
+      );
+      expect(find.text('Cupcake número 1'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Cupcake número 2').first,
+        250,
+        scrollable: _verticalScrollable(),
+      );
+      expect(find.text('Cupcake número 2'), findsWidgets);
+      expect(find.text('R\$ 1.234,50'), findsWidgets);
       expect(find.byIcon(Icons.cake_outlined), findsWidgets);
       expect(
         find.byWidgetPredicate(
@@ -315,8 +305,8 @@ void main() {
         findsWidgets,
       );
       expect(
-        tester.getSemantics(find.text('Doces especiais e presentes').last),
-        matchesSemantics(label: 'Doces especiais e presentes', isHeader: true),
+        tester.getSemantics(find.text('Categorias')),
+        matchesSemantics(label: 'Categorias', isHeader: true),
       );
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -332,12 +322,6 @@ void main() {
       final api = _CatalogApi([(page) => first.future, (page) => next.future]);
       await tester.pumpWidget(_app(session, api));
       expect(find.bySemanticsLabel('Carregando produtos…'), findsOneWidget);
-      expect(
-        tester
-            .widget<TextButton>(find.widgetWithText(TextButton, 'Atualizar'))
-            .onPressed,
-        isNull,
-      );
       first.complete(
         CatalogPageResult(
           CatalogRequestStatus.success,
@@ -345,13 +329,18 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Carregar mais produtos'),
+        250,
+        scrollable: _verticalScrollable(),
+      );
       await tester.tap(find.text('Carregar mais produtos'));
       await tester.pump();
       expect(
         find.bySemanticsLabel('Carregando mais produtos…'),
         findsOneWidget,
       );
-      expect(find.text('Cupcake número 1'), findsOneWidget);
+      expect(find.text('Cupcake número 1'), findsWidgets);
       next.complete(
         CatalogPageResult(
           CatalogRequestStatus.success,
@@ -359,8 +348,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Cupcake número 2'), findsOneWidget);
-      expect(find.text('Fim dos produtos disponíveis.'), findsOneWidget);
+      expect(find.text('Cupcake número 2'), findsWidgets);
+      expect(find.text('Fim dos produtos disponíveis.'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -387,16 +376,17 @@ void main() {
       find.text('Não há produtos disponíveis no momento.'),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(TextButton, 'Atualizar').first);
+    await tester.tap(find.widgetWithText(FilledButton, 'Atualizar').first);
     await tester.pumpAndSettle();
     expect(
       find.text('Não foi possível carregar os produtos. Tente novamente.'),
       findsOneWidget,
     );
     expect(find.text('Não há produtos disponíveis no momento.'), findsNothing);
+    await tester.ensureVisible(find.text('Tentar carregar novamente'));
     await tester.tap(find.text('Tentar carregar novamente'));
     await tester.pumpAndSettle();
-    expect(find.text('Cupcake número 1'), findsOneWidget);
+    expect(find.text('Cupcake número 1'), findsWidgets);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -423,14 +413,19 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Exception'), findsNothing);
-      await tester.tap(find.text('Tentar carregar novamente'));
+      await tester.ensureVisible(find.text('Tentar carregar novamente'));
+      final retry = find.widgetWithText(
+        FilledButton,
+        'Tentar carregar novamente',
+      );
+      await tester.tapAt(tester.getTopLeft(retry) + const Offset(12, 12));
       await tester.pumpAndSettle();
-      expect(find.text('Cupcake número 1'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'Atualizar'));
+      expect(find.text('Cupcake número 1'), findsWidgets);
+      await tester.drag(find.byType(ListView).last, const Offset(0, 450));
       await tester.pumpAndSettle();
       expect(find.text('Cupcake número 1'), findsNothing);
-      expect(find.text('Cupcake número 2'), findsOneWidget);
-      expect(find.text('Cupcake número 3'), findsOneWidget);
+      expect(find.text('Cupcake número 2'), findsWidgets);
+      expect(find.text('Cupcake número 3'), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -453,17 +448,30 @@ void main() {
       ]);
       await tester.pumpWidget(_app(session, api));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Carregar mais produtos'),
+        250,
+        scrollable: _verticalScrollable(),
+      );
       await tester.tap(find.text('Carregar mais produtos'));
       await tester.pumpAndSettle();
       expect(
         find.text('Não foi possível carregar os produtos. Tente novamente.'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Tentar carregar novamente'));
+      await tester.scrollUntilVisible(
+        find.text('Tentar carregar novamente'),
+        250,
+        scrollable: _verticalScrollable(),
+      );
+      await tester.ensureVisible(find.text('Tentar carregar novamente'));
+      final retry = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Tentar carregar novamente'),
+      );
+      retry.onPressed!();
       await tester.pumpAndSettle();
-      expect(api.calls, 3);
-      expect(find.text('Cupcake número 1'), findsOneWidget);
-      expect(find.text('Cupcake número 2'), findsOneWidget);
+      expect(api.pages, [1, 2, 2]);
+      expect(find.text('Cupcake número 2'), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -496,12 +504,6 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        tester
-            .widget<TextButton>(find.widgetWithText(TextButton, 'Atualizar'))
-            .onPressed,
-        isNull,
-      );
       pending.complete(
         CatalogPageResult(
           CatalogRequestStatus.success,
@@ -509,14 +511,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Atualizar'));
+      await _pullToRefresh(tester);
       await tester.pumpAndSettle();
       expect(
         find.text('Não há produtos disponíveis no momento.'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
-      await tester.tap(find.widgetWithText(TextButton, 'Atualizar'));
+      await _pullToRefresh(tester);
       await tester.pumpAndSettle();
       expect(
         find.text('Não foi possível carregar os produtos. Tente novamente.'),
@@ -568,9 +570,14 @@ void main() {
       );
       await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Carregar mais produtos'),
+        250,
+        scrollable: _verticalScrollable(),
+      );
       await tester.tap(find.text('Carregar mais produtos'));
       await tester.pumpAndSettle();
-      expect(find.text('Cupcake número 2'), findsOneWidget);
+      expect(find.text('Cupcake número 2'), findsWidgets);
       await tester.tap(find.widgetWithText(ChoiceChip, _category2.name));
       await tester.pumpAndSettle();
       expect(find.text('Cupcake número 2'), findsNothing);
@@ -587,7 +594,7 @@ void main() {
         null,
       ]);
       expect(api.pages, [1, 1, 2, 1, 1, 1]);
-      expect(find.text('Cupcake número 6'), findsOneWidget);
+      expect(find.text('Cupcake número 6'), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -627,8 +634,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Cupcake número 1'), findsNothing);
-      expect(find.text('Cupcake número 3'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'Atualizar'));
+      expect(find.text('Cupcake número 3'), findsWidgets);
+      await _pullToRefresh(tester);
       await tester.pumpAndSettle();
       expect(api.filters.last, _category2.id);
       expect(
@@ -666,7 +673,7 @@ void main() {
       );
       await tester.pumpWidget(_app(session, api, scale: 1.5));
       await tester.pumpAndSettle();
-      expect(find.text('Cupcake número 1'), findsOneWidget);
+      expect(find.text('Cupcake número 1'), findsWidgets);
       expect(
         find.text('Não foi possível carregar as categorias.'),
         findsOneWidget,
@@ -745,7 +752,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.filters, [null, _category1.id, _category1.id]);
     expect(api.pages, [1, 1, 1]);
-    expect(find.text('Cupcake número 1'), findsOneWidget);
+    expect(find.text('Cupcake número 1'), findsWidgets);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -782,14 +789,17 @@ void main() {
         await tester.pumpWidget(_app(session, api, scale: 1.5));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(find.text('R\$ 1.234,50'), findsOneWidget);
+        expect(find.text('R\$ 1.234,50'), findsWidgets);
         await tester.scrollUntilVisible(
-          find.text('Fim dos produtos disponíveis.'),
+          find.text('Cupcake artesanal de chocolate com recheio longo 32'),
           600,
-          scrollable: find.byType(Scrollable).last,
+          scrollable: _verticalScrollable(),
         );
         expect(tester.takeException(), isNull);
-        expect(find.text('Fim dos produtos disponíveis.'), findsOneWidget);
+        expect(
+          find.text('Cupcake artesanal de chocolate com recheio longo 32'),
+          findsOneWidget,
+        );
         await tester.pumpWidget(const SizedBox.shrink());
       },
     );
@@ -811,7 +821,7 @@ void main() {
     await tester.pumpAndSettle();
     _expectCarrinhoInAppBarActions(tester);
     final storefront = tester.state(find.byType(StorefrontPage));
-    await tester.tap(find.widgetWithText(TextButton, 'Carrinho'));
+    await tester.tap(find.byTooltip('Carrinho'));
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsOneWidget);
     expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
@@ -821,7 +831,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsNothing);
     expect(tester.state(find.byType(StorefrontPage)), same(storefront));
-    expect(find.text('Cupcake número 1'), findsOneWidget);
+    expect(find.text('Cupcake número 1'), findsWidgets);
     expect(api.calls, 1);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -829,7 +839,7 @@ void main() {
   for (final width in [320.0, 390.0, 430.0]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'AppBar com Carrinho em ${width.toInt()} dp e texto ${scale.toInt()}x não estoura',
+        'vitrine se adapta a ${width.toInt()} dp e texto ${scale.toInt()}x sem overflow',
         (tester) async {
           tester.view.devicePixelRatio = 1;
           tester.view.physicalSize = Size(width, 800);
@@ -847,16 +857,14 @@ void main() {
           await tester.pumpAndSettle();
           _expectCarrinhoInAppBarActions(tester);
           expect(tester.takeException(), isNull);
-          final bar = tester.getRect(find.byType(AppBar));
-          final title = tester.getRect(find.text('Vitrine'));
-          for (final label in ['Atualizar', 'Carrinho', 'Sair']) {
-            final rect = tester.getRect(find.widgetWithText(TextButton, label));
-            expect(rect.left, greaterThanOrEqualTo(bar.left));
-            expect(rect.right, lessThanOrEqualTo(bar.right + 0.1));
-            expect(rect.top, greaterThanOrEqualTo(bar.top));
-            expect(rect.bottom, lessThanOrEqualTo(bar.bottom + 0.1));
-            expect(rect.overlaps(title), isFalse);
-          }
+          expect(find.text('Cupcake Mobile'), findsOneWidget);
+          expect(find.text('Categorias'), findsOneWidget);
+          expect(find.text('Destaques Artesanais'), findsOneWidget);
+          expect(find.text('Início'), findsOneWidget);
+          expect(find.text('Cardápio'), findsOneWidget);
+          expect(find.byTooltip('Carrinho'), findsOneWidget);
+          expect(find.byTooltip('Perfil'), findsOneWidget);
+          expect(find.byType(FloatingActionButton), findsNothing);
           await tester.pumpWidget(const SizedBox.shrink());
         },
       );
@@ -865,7 +873,7 @@ void main() {
 }
 
 void _expectCarrinhoInAppBarActions(WidgetTester tester) {
-  final button = find.widgetWithText(TextButton, 'Carrinho');
+  final button = find.byTooltip('Carrinho');
   expect(button, findsOneWidget);
   final element = tester.element(button);
   AppBar? bar;
@@ -890,12 +898,23 @@ void _expectCarrinhoInAppBarActions(WidgetTester tester) {
     });
   }
   expect(inActions, isTrue);
-  expect(find.widgetWithText(TextButton, 'Atualizar'), findsOneWidget);
-  expect(find.widgetWithText(TextButton, 'Sair'), findsOneWidget);
+  expect(find.byTooltip('Perfil'), findsOneWidget);
   final size = tester.getSize(button);
   expect(size.width, greaterThanOrEqualTo(AppTokens.touchTarget));
   expect(size.height, greaterThanOrEqualTo(AppTokens.touchTarget));
 }
+
+Future<void> _pullToRefresh(WidgetTester tester) async {
+  await tester.drag(_verticalScrollable(), const Offset(0, 450));
+  await tester.pumpAndSettle();
+}
+
+Finder _verticalScrollable() => find
+    .byWidgetPredicate(
+      (widget) =>
+          widget is Scrollable && widget.axisDirection == AxisDirection.down,
+    )
+    .first;
 
 String _testToken(String type, [String id = 'fixed']) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;

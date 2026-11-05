@@ -368,35 +368,41 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         const SizedBox(width: AppTokens.spacing8),
         Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_priceLoading)
-                const LinearProgressIndicator()
-              else if (_unitPrice != null)
-                Text(
-                  'Subtotal: ${_formatSubtotal(_unitPrice!, _quantity)}',
-                  textAlign: TextAlign.end,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTokens.primaryStrong,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              const SizedBox(height: AppTokens.spacing4),
-              FilledButton(
-                onPressed:
-                    _adding ||
-                        _currentIndeterminate ||
-                        _priceLoading ||
-                        _unitPrice == null ||
-                        _addStatus == CartRequestStatus.unauthorized ||
-                        _addStatus == CartRequestStatus.forbidden
-                    ? null
-                    : () => unawaited(_addToCart()),
-                child: Text(_adding ? 'Adicionando…' : 'Adicionar ao carrinho'),
-              ),
-            ],
+          child: SizedBox(
+            height: 52,
+            child: FilledButton(
+              onPressed:
+                  _adding ||
+                      _currentIndeterminate ||
+                      _priceLoading ||
+                      _unitPrice == null ||
+                      _addStatus == CartRequestStatus.unauthorized ||
+                      _addStatus == CartRequestStatus.forbidden
+                  ? null
+                  : () => unawaited(_addToCart()),
+              child: _adding
+                  ? const Text('Adicionando…')
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shopping_bag_outlined, size: 17),
+                          const SizedBox(width: 7),
+                          const Text('Adicionar ao carrinho', maxLines: 1),
+                          if (_unitPrice != null) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatSubtotal(_unitPrice!, _quantity),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+            ),
           ),
         ),
       ],
@@ -448,16 +454,18 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       );
     }
     final product = _product!;
+    final personalizationOptions = [...product.personalizations]
+      ..sort((left, right) {
+        if (left.available != right.available) {
+          return left.available ? -1 : 1;
+        }
+        return left.name.compareTo(right.name);
+      });
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppTokens.spacing16,
-        AppTokens.spacing16,
-        AppTokens.spacing16,
-        AppTokens.spacing24,
-      ),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, AppTokens.spacing24),
       children: [
         SizedBox(
-          height: 240,
+          height: 290,
           child: Semantics(
             container: true,
             explicitChildNodes: true,
@@ -493,7 +501,24 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         horizontal: AppTokens.spacing12,
                         vertical: AppTokens.spacing8,
                       ),
-                      child: Text('Disponível'),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 13,
+                            color: AppTokens.primaryStrong,
+                          ),
+                          SizedBox(width: 5),
+                          Text(
+                            'Disponível em estoque',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -501,70 +526,178 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ),
         ),
-        const SizedBox(height: AppTokens.spacing24),
-        Text(
-          product.category.name,
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
         const SizedBox(height: AppTokens.spacing12),
-        Semantics(
-          header: true,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
           child: Text(
-            product.name,
-            style: Theme.of(context).textTheme.headlineMedium,
+            product.category.name.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppTokens.primaryStrong,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-        const SizedBox(height: AppTokens.spacing12),
-        const Text('Preço base'),
-        Text(_formatPrice(product.price)),
+        const SizedBox(height: AppTokens.spacing4),
+        Semantics(
+          header: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.spacing16,
+            ),
+            child: Text(
+              product.name,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontFamily: 'Georgia',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppTokens.spacing4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+          child: Row(
+            children: [
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _formatPrice(product.price),
+                    style: const TextStyle(
+                      color: AppTokens.primaryStrong,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppTokens.spacing8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTokens.surfaceSoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text('Preço Base', style: TextStyle(fontSize: 10)),
+              ),
+            ],
+          ),
+        ),
         if (product.description != null && product.description!.isNotEmpty) ...[
-          const SizedBox(height: AppTokens.spacing24),
-          Text(
-            product.description!,
-            style: Theme.of(context).textTheme.bodyLarge,
+          const SizedBox(height: AppTokens.spacing12),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.spacing16,
+            ),
+            child: Text(
+              product.description!,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
         ],
-        const SizedBox(height: AppTokens.spacing16),
-        Semantics(
-          header: true,
-          child: Text(
-            'Personalizações',
-            style: Theme.of(context).textTheme.titleMedium,
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+          child: Semantics(
+            header: true,
+            child: Text(
+              'Personalize seu cupcake',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
         if (product.personalizations.isEmpty)
-          const Text('Nenhuma personalização disponível para este produto.'),
-        for (final option in product.personalizations)
-          Card(
-            color: AppTokens.surface,
-            margin: const EdgeInsets.only(bottom: AppTokens.spacing8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTokens.radius12),
-              side: const BorderSide(color: AppTokens.border),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppTokens.spacing16),
+            child: Text('Nenhuma personalização disponível para este produto.'),
+          ),
+        for (final option in personalizationOptions)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.spacing16,
             ),
-            child: CheckboxListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppTokens.spacing12,
+            child: Card(
+              color: _selected.contains(option.id)
+                  ? const Color(0xFFFFE9E2)
+                  : AppTokens.surface,
+              margin: const EdgeInsets.only(bottom: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFFF5DCD4)),
               ),
-              value: _selected.contains(option.id),
-              onChanged: option.available && !_adding
-                  ? (_) => _toggle(option)
-                  : null,
-              title: Text(option.name),
-              subtitle: Text(
-                [
-                  if (option.description != null &&
-                      option.description!.isNotEmpty)
-                    option.description!,
-                  option.available
-                      ? (_selected.contains(option.id)
-                            ? 'Selecionada'
-                            : 'Disponível')
-                      : 'Indisponível',
-                  'Ajuste: ${option.adjustment == null ? 'sem ajuste' : _formatSignedPrice(option.adjustment!)}',
-                ].join(' · '),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: option.available && !_adding
+                    ? () => _toggle(option)
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTokens.spacing8,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _selected.contains(option.id),
+                        onChanged: option.available && !_adding
+                            ? (_) => _toggle(option)
+                            : null,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: AppTokens.spacing4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              option.name,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: option.available
+                                        ? null
+                                        : TextDecoration.lineThrough,
+                                  ),
+                            ),
+                            if (option.description != null &&
+                                option.description!.isNotEmpty)
+                              Text(
+                                option.description!,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                              ),
+                            if (!option.available)
+                              Text(
+                                'Indisponível',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      fontSize: 9,
+                                      color: AppTokens.textMuted,
+                                    ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppTokens.spacing4),
+                      Text(
+                        _formatSignedPrice(option.adjustment ?? '0.00'),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          color: AppTokens.primaryStrong,
+                          decoration: option.available
+                              ? null
+                              : TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              controlAffinity: ListTileControlAffinity.leading,
             ),
           ),
         const SizedBox(height: AppTokens.spacing12),
@@ -573,14 +706,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             label: 'Calculando preço unitário…',
             liveRegion: true,
             child: LinearProgressIndicator(),
-          ),
-        if (!_priceLoading && _unitPrice != null)
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              'Preço unitário: ${_formatPrice(_unitPrice!)}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
           ),
         if (!_priceLoading &&
             _priceStatus != null &&

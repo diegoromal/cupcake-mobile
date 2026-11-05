@@ -98,6 +98,17 @@ Telas:
 Observações:
 ```
 
+### Cupcake Mobile — ícone de marca no cabeçalho
+
+Nome: Ícone iOS aprovado
+Arquivo runtime: `apps/mobile/assets/cupcake-brand.png`
+Origem: `docs/design/assets/ios-app-icon.png`
+Autor: identidade visual do projeto Cupcake Mobile
+Licença: asset próprio do projeto
+Uso: marca no cabeçalho da vitrine
+Telas: mobile.catalog.storefront
+Observações: reprodução do asset aprovado; não é screenshot de tela.
+
 ## Proibições
 
 Não adicionar:
