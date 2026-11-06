@@ -20,6 +20,7 @@ class CartPage extends StatefulWidget {
     this.addressApi,
     this.orderApi,
     this.initialFulfillmentMode = FulfillmentMode.delivery,
+    this.initialAddressId,
     this.modeSelection,
   });
 
@@ -29,6 +30,7 @@ class CartPage extends StatefulWidget {
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
   final FulfillmentMode initialFulfillmentMode;
+  final String? initialAddressId;
   final ValueNotifier<FulfillmentMode?>? modeSelection;
 
   @override
@@ -196,9 +198,11 @@ class _CartPageState extends State<CartPage> {
         builder: (_) => FulfillmentPage(
           session: widget.session,
           initialMode: widget.initialFulfillmentMode,
+          initialAddressId: widget.initialAddressId,
           modeSelection: widget.modeSelection,
           addressApi: widget.addressApi,
           orderApi: widget.orderApi,
+          catalogApi: widget.catalogApi,
         ),
       ),
     );

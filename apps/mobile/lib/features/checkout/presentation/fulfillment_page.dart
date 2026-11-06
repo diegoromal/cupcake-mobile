@@ -6,6 +6,7 @@ import '../../../core/design/app_tokens.dart';
 import '../../address/data/customer_address_api.dart';
 import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
+import '../../catalog/data/customer_catalog_api.dart';
 import '../data/customer_order_api.dart';
 import 'fulfillment_mode.dart';
 import 'order_review_page.dart';
@@ -18,13 +19,17 @@ class FulfillmentPage extends StatefulWidget {
     required this.session,
     this.addressApi,
     this.orderApi,
+    this.catalogApi,
     this.initialMode,
+    this.initialAddressId,
     this.modeSelection,
   });
   final CustomerSession session;
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
+  final CustomerCatalogApi? catalogApi;
   final FulfillmentMode? initialMode;
+  final String? initialAddressId;
   final ValueNotifier<FulfillmentMode?>? modeSelection;
 
   @override
@@ -49,6 +54,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
     super.initState();
     widget.session.addListener(_sessionChanged);
     _mode = widget.modeSelection?.value ?? widget.initialMode;
+    _selectedId = widget.initialAddressId;
     widget.modeSelection?.addListener(_modeSelectionChanged);
     if (_mode == FulfillmentMode.delivery) unawaited(_loadAddresses());
   }
@@ -390,6 +396,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
           mode: _mode == FulfillmentMode.delivery ? 'ENTREGA' : 'RETIRADA',
           addressId: _mode == FulfillmentMode.delivery ? _selectedId : null,
           orderApi: widget.orderApi,
+          catalogApi: widget.catalogApi,
         ),
       ),
     );

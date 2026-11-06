@@ -7,6 +7,10 @@ import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
 import 'package:cupcake_mobile/features/checkout/data/customer_order_api.dart';
 import 'package:cupcake_mobile/features/checkout/presentation/order_review_page.dart';
+import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
+import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
+import 'package:cupcake_mobile/features/catalog/presentation/product_detail_page.dart';
+import 'package:cupcake_mobile/features/catalog/presentation/storefront_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -104,6 +108,126 @@ class FakeOrderApi extends CustomerOrderApi {
   }
 }
 
+const suggestionId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const testCategory = CatalogCategory(
+  id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  name: 'Doces',
+);
+
+class FakeCatalogApi extends CustomerCatalogApi {
+  FakeCatalogApi({
+    this.configurable = false,
+    this.onlyCurrentProduct = false,
+    this.threeSuggestions = false,
+  });
+  final bool configurable;
+  final bool onlyCurrentProduct;
+  final bool threeSuggestions;
+  @override
+  Future<CatalogPageResult> fetchPage({
+    required String accessToken,
+    required int page,
+    int limit = 20,
+    String? categoryId,
+  }) async => CatalogPageResult(
+    CatalogRequestStatus.success,
+    page: CatalogPage(
+      items: onlyCurrentProduct
+          ? const [
+              CatalogProduct(
+                id: userId,
+                name: 'Cupcake atual',
+                price: '10.00',
+                category: testCategory,
+                imageAvailable: false,
+              ),
+            ]
+          : [
+              CatalogProduct(
+                id: userId,
+                name: 'Cupcake atual',
+                price: '10.00',
+                category: testCategory,
+                imageAvailable: false,
+              ),
+              CatalogProduct(
+                id: suggestionId,
+                name: 'Brownie',
+                price: '11.25',
+                category: testCategory,
+                imageAvailable: false,
+              ),
+              if (threeSuggestions)
+                const CatalogProduct(
+                  id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+                  name: 'Cupcake baunilha',
+                  price: '14.50',
+                  category: testCategory,
+                  imageAvailable: false,
+                ),
+              if (threeSuggestions)
+                const CatalogProduct(
+                  id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+                  name: 'Cupcake chocolate',
+                  price: '16.75',
+                  category: testCategory,
+                  imageAvailable: false,
+                ),
+            ],
+      page: page,
+      limit: limit,
+      hasMore: false,
+    ),
+  );
+
+  @override
+  Future<CatalogDetailResult> fetchDetail({
+    required String productId,
+    required String accessToken,
+  }) async => CatalogDetailResult(
+    CatalogRequestStatus.success,
+    product: CatalogProductDetail(
+      id: productId,
+      name: 'Brownie',
+      description: null,
+      price: '8.50',
+      category: testCategory,
+      imageAvailable: false,
+      personalizations: configurable
+          ? const [
+              CatalogPersonalization(
+                id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+                name: 'Cobertura',
+                description: null,
+                available: true,
+                adjustment: null,
+              ),
+            ]
+          : const [],
+    ),
+  );
+}
+
+class FakeCartApi extends CustomerCartApi {
+  FakeCartApi({List<String> existing = const []}) : items = [...existing];
+  final added = <String>[];
+  final List<String> items;
+  @override
+  Future<CartResult> fetchCart({required String accessToken}) async =>
+      const CartResult(CartRequestStatus.success);
+  @override
+  Future<CartResult> addItem({
+    required String accessToken,
+    required String productId,
+    required int quantity,
+    required List<String> personalizationIds,
+  }) async {
+    added.add(productId);
+    items.add(productId);
+    return const CartResult(CartRequestStatus.success);
+  }
+}
+
 Map<String, dynamic> preview({String mode = 'RETIRADA'}) => {
   'revisaoId': 'a' * 64,
   'modalidade': mode,
@@ -188,6 +312,170 @@ void main() {
     },
   );
 
+  testWidgets('sugestão elegível adiciona ao carrinho e atualiza a revisão', (
+    tester,
+  ) async {
+    final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
+    final catalog = FakeCatalogApi();
+    final cart = FakeCartApi(existing: const ['existing-cart-item']);
+    api.reviewResults.addAll([
+      OrderResult(OrderStatus.success, value: preview()),
+      OrderResult(OrderStatus.success, value: preview()),
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OrderReviewPage(
+          session: sessionValue,
+          mode: 'RETIRADA',
+          orderApi: api,
+          catalogApi: catalog,
+          cartApi: cart,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Quer adicionar mais alguma coisa?'), findsOneWidget);
+    expect(find.text('Brownie'), findsOneWidget);
+    expect(find.text('Cupcake'), findsOneWidget);
+    expect(find.text('Ver cardápio completo →'), findsOneWidget);
+    final addButton = find.byType(IconButton).first;
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+    expect(cart.added, [suggestionId]);
+    expect(cart.items, ['existing-cart-item', suggestionId]);
+    expect(api.reviewModes, ['RETIRADA', 'RETIRADA']);
+    expect(find.text('Confirmar pedido'), findsOneWidget);
+  });
+
+  testWidgets('sugestão personalizável abre o detalhe antes de adicionar', (
+    tester,
+  ) async {
+    final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
+    final cart = FakeCartApi();
+    api.reviewResults.add(OrderResult(OrderStatus.success, value: preview()));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OrderReviewPage(
+          session: sessionValue,
+          mode: 'RETIRADA',
+          orderApi: api,
+          catalogApi: FakeCatalogApi(configurable: true),
+          cartApi: cart,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final addButton = find.byType(IconButton).first;
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProductDetailPage), findsOneWidget);
+    expect(find.text('Cobertura'), findsOneWidget);
+    expect(cart.added, isEmpty);
+  });
+
+  testWidgets(
+    'sem sugestões, cardápio permanece acessível e revisão preservada',
+    (tester) async {
+      final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
+      final catalog = FakeCatalogApi(onlyCurrentProduct: true);
+      final cart = FakeCartApi();
+      api.reviewResults.add(OrderResult(OrderStatus.success, value: preview()));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: OrderReviewPage(
+            session: sessionValue,
+            mode: 'RETIRADA',
+            orderApi: api,
+            catalogApi: catalog,
+            cartApi: cart,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Quer adicionar mais alguma coisa?'), findsOneWidget);
+      expect(find.text('Brownie'), findsNothing);
+      expect(
+        find.text('Continue comprando pelo cardápio completo.'),
+        findsOneWidget,
+      );
+      final menuAction = find.text('Ver cardápio completo →');
+      expect(menuAction, findsOneWidget);
+      await tester.tap(menuAction);
+      await tester.pumpAndSettle();
+      expect(find.byType(StorefrontPage), findsOneWidget);
+      expect(find.text('Cupcake atual'), findsOneWidget);
+      await tester.tap(find.text('Cupcake atual'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProductDetailPage), findsOneWidget);
+      await tester.tap(find.textContaining('Adicionar ao carrinho'));
+      await tester.pumpAndSettle();
+      expect(cart.added, [userId]);
+      expect(find.byType(ProductDetailPage), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byType(StorefrontPage), findsOneWidget);
+      expect(find.text('Cupcake atual'), findsOneWidget);
+      Navigator.of(tester.element(find.byType(StorefrontPage))).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Cupcake'), findsOneWidget);
+      expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+      expect(find.text('Ver cardápio completo →'), findsOneWidget);
+      expect(cart.added, [userId]);
+    },
+  );
+
+  testWidgets('três recomendações formatam preços e cabem com fonte padrão', (
+    tester,
+  ) async {
+    final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
+    api.reviewResults.add(OrderResult(OrderStatus.success, value: preview()));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OrderReviewPage(
+          session: sessionValue,
+          mode: 'RETIRADA',
+          orderApi: api,
+          catalogApi: FakeCatalogApi(threeSuggestions: true),
+          cartApi: FakeCartApi(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('R\$ 11,25'), findsOneWidget);
+    expect(find.text('R\$ 14,50'), findsOneWidget);
+    expect(find.text('R\$ 16,75'), findsOneWidget);
+    expect(find.text('Total final: R\$ 20,00'), findsOneWidget);
+    expect(find.byTooltip('Adicionar Brownie ao pedido'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'recomendações mantêm legibilidade e sem overflow com fonte ampliada',
+    (tester) async {
+      final api = FakeOrderApi(), sessionValue = await session(FakeAuth());
+      api.reviewResults.add(OrderResult(OrderStatus.success, value: preview()));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.25)),
+            child: OrderReviewPage(
+              session: sessionValue,
+              mode: 'RETIRADA',
+              orderApi: api,
+              catalogApi: FakeCatalogApi(threeSuggestions: true),
+              cartApi: FakeCartApi(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Adicionar Brownie ao pedido'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final previousMode in ['ENTREGA', 'RETIRADA']) {
     for (final createdBeforeTimeout in [true, false]) {
       testWidgets(
@@ -246,7 +534,7 @@ void main() {
           );
           expect(
             find.text(
-              'Frete: R\$ ${currentMode == 'ENTREGA' ? '3.00' : '0.00'}',
+              'Frete: R\$ ${currentMode == 'ENTREGA' ? '3,00' : '0,00'}',
             ),
             findsOneWidget,
           );
@@ -319,7 +607,7 @@ void main() {
       ),
     );
     await open(tester, sessionValue, api);
-    expect(find.text('Frete: R\$ 0.00'), findsOneWidget);
+    expect(find.text('Frete: R\$ 0,00'), findsOneWidget);
     expect(api.confirmTokens, isEmpty);
     await tester.tap(find.text('Confirmar pedido'));
     await tester.pumpAndSettle();
@@ -351,7 +639,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('Rua A'), findsOneWidget);
-      expect(find.text('Frete: R\$ 3.00'), findsOneWidget);
+      expect(find.text('Frete: R\$ 3,00'), findsOneWidget);
       api.confirmPending = Completer<OrderResult>();
       await tester.tap(find.text('Confirmar pedido'));
       await tester.pump();
@@ -400,6 +688,7 @@ void main() {
     expect(sessionValue.pendingOrderConfirmation, isNull);
     expect(find.text('Cupcake'), findsOneWidget);
     expect(find.text('Atualizar revisão'), findsOneWidget);
+    await tester.ensureVisible(find.text('Atualizar revisão'));
     await tester.tap(find.text('Atualizar revisão'));
     await tester.pumpAndSettle();
     expect(api.reviewTokens, hasLength(2));
@@ -516,7 +805,7 @@ void main() {
           find.descendant(
             of: cta,
             matching: find.text(
-              width == 320 && scale == 2 ? 'R\$ 1234567,89' : 'R\$ 23,00',
+              width == 320 && scale == 2 ? 'R\$ 1.234.567,89' : 'R\$ 23,00',
             ),
           ),
           findsOneWidget,
@@ -524,7 +813,7 @@ void main() {
         final totalFinder = find.descendant(
           of: cta,
           matching: find.text(
-            width == 320 && scale == 2 ? 'R\$ 1234567,89' : 'R\$ 23,00',
+            width == 320 && scale == 2 ? 'R\$ 1.234.567,89' : 'R\$ 23,00',
           ),
         );
         final actionFinder = find.descendant(
