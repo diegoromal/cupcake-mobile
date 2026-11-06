@@ -27,6 +27,9 @@ test('allowlist explícita por método e rota',()=>{
  expect(allowed('PATCH',['pedidos',id,'iniciar-producao'])).toBe(true);
  expect(allowed('PATCH',['pedidos',id,'saiu-para-entrega'])).toBe(true);
  expect(allowed('GET',['entregadores'])).toBe(true);
+ expect(allowed('GET',['relatorios','vendas'])).toBe(true);
+ expect(allowed('POST',['relatorios','vendas'])).toBe(false);
+ expect(allowed('GET',['relatorios','vendas','extra'])).toBe(false);
  for(const action of ['pronto-para-retirada','confirmar-retirada']) {
   expect(allowed('PATCH',['pedidos',id,action])).toBe(true);
   for(const method of ['GET','POST','PUT','DELETE']) expect(allowed(method,['pedidos',id,action])).toBe(false);
@@ -65,6 +68,25 @@ test('proxy permite somente leitura do detalhe de pedido por UUID', async () => 
  expect((await proxyAdmin(req(`/api/admin/pedidos/${id}?status=PAGO`),['pedidos',id])).status).toBe(404);
  expect((await proxyAdmin(req(`/api/admin/pedidos/${id}`,'DELETE'),['pedidos',id])).status).toBe(404);
  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+test('relatório de vendas aceita e preserva query somente na rota autorizada', async () => {
+ const fetchMock=jest.spyOn(global,'fetch').mockResolvedValue(Response.json({totalVendido:'10.00',quantidadePedidos:1,pedidos:[]}));
+ const path='/api/admin/relatorios/vendas?inicio=2026-11-01&fim=2026-11-06';
+ const request=req(path);request.cookies.set('admin_access','token');
+ const result=await proxyAdmin(request,['relatorios','vendas']);
+ expect(result.status).toBe(200);
+ expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:3000/admin/relatorios/vendas?inicio=2026-11-01&fim=2026-11-06');
+
+ const invalid=req('/api/admin/relatorios/vendas?inicio=abc&fim=xyz');invalid.cookies.set('admin_access','token');
+ fetchMock.mockResolvedValueOnce(Response.json({message:'Validation failed'},{status:400}));
+ expect((await proxyAdmin(invalid,['relatorios','vendas'])).status).toBe(400);
+ expect(fetchMock.mock.calls[1][0]).toBe('http://localhost:3000/admin/relatorios/vendas?inicio=abc&fim=xyz');
+
+ const denied=await proxyAdmin(req('/api/admin/qualquer-rota?foo=bar'),['qualquer-rota']);
+ const existingButNotAllowed=await proxyAdmin(req('/api/admin/users?foo=bar'),['users']);
+ expect(denied.status).toBe(404);expect(await denied.json()).toEqual({message:'Rota não permitida.'});
+ expect(existingButNotAllowed.status).toBe(404);expect(await existingButNotAllowed.json()).toEqual({message:'Rota não permitida.'});
+ expect(fetchMock).toHaveBeenCalledTimes(2);
 });
 test('proxy encaminha somente PATCH de retirada com UUID e origem válida', async () => {
  const fetchMock=jest.spyOn(global,'fetch').mockImplementation(async () => Response.json({statusAtual:'RETIRADO'}));
