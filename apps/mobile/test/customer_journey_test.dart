@@ -252,7 +252,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(order.reviews, 1);
     expect(find.text('Revisar Pedido'), findsOneWidget);
-    expect(find.text('Total final: R\$ 12.50'), findsOneWidget);
+    expect(find.text('Total final: R\$ 12,50'), findsOneWidget);
 
     await tester.tap(find.text('Confirmar pedido'));
     await tester.pumpAndSettle();

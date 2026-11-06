@@ -7,7 +7,11 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
 import '../../catalog/data/customer_catalog_api.dart';
+import '../../catalog/presentation/product_detail_page.dart';
+import '../../catalog/presentation/storefront_page.dart';
+import '../../cart/data/customer_cart_api.dart';
 import '../data/customer_order_api.dart';
+import 'fulfillment_mode.dart';
 import 'payment_page.dart';
 
 class OrderReviewPage extends StatefulWidget {
@@ -18,12 +22,14 @@ class OrderReviewPage extends StatefulWidget {
     this.addressId,
     this.orderApi,
     this.catalogApi,
+    this.cartApi,
   });
   final CustomerSession session;
   final String mode;
   final String? addressId;
   final CustomerOrderApi? orderApi;
   final CustomerCatalogApi? catalogApi;
+  final CustomerCartApi? cartApi;
 
   @override
   State<OrderReviewPage> createState() => _OrderReviewPageState();
@@ -33,6 +39,10 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
   late final CustomerOrderApi _api = widget.orderApi ?? CustomerOrderApi();
   late final CustomerCatalogApi _catalogApi =
       widget.catalogApi ?? CustomerCatalogApi();
+  late final CustomerCartApi _cartApi = widget.cartApi ?? CustomerCartApi();
+  List<CatalogProduct> _suggestions = const [];
+  bool _suggestionsLoading = false;
+  bool _addingSuggestion = false;
   final Map<String, Future<Uint8List?>> _reviewImages = {};
   Map<String, dynamic>? _review;
   OrderStatus? _status;
@@ -96,6 +106,145 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
     } else {
       _attemptId = _newUuid();
       unawaited(_load());
+    }
+  }
+
+  Future<void> _loadSuggestions() async {
+    if (_suggestionsLoading) return;
+    _suggestionsLoading = true;
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    if (token == null) {
+      _suggestionsLoading = false;
+      return;
+    }
+    var currentToken = token;
+    final existing = ((_review?['itens'] as List?) ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map((item) => item['produtoId'])
+        .whereType<String>()
+        .toSet();
+    final eligible = <CatalogProduct>[];
+    var pageNumber = 1;
+    var hasMore = true;
+    while (hasMore && eligible.length < 3 && mounted) {
+      var result = await _catalogApi.fetchPage(
+        accessToken: currentToken,
+        page: pageNumber,
+      );
+      if (result.status == CatalogRequestStatus.unauthorized && mounted) {
+        final refreshedToken = await widget.session.refreshAfterUnauthorized(
+          currentToken,
+        );
+        if (refreshedToken == null) break;
+        currentToken = refreshedToken;
+        result = await _catalogApi.fetchPage(
+          accessToken: currentToken,
+          page: pageNumber,
+        );
+      }
+      final page = result.page;
+      if (result.status != CatalogRequestStatus.success || page == null) {
+        break;
+      }
+      for (final product in page.items) {
+        if (!existing.contains(product.id)) eligible.add(product);
+        if (eligible.length == 3) break;
+      }
+      hasMore = page.hasMore;
+      pageNumber++;
+    }
+    if (!mounted) return;
+    setState(() {
+      _suggestionsLoading = false;
+      _suggestions = eligible;
+    });
+  }
+
+  Future<void> _addSuggestion(CatalogProduct product) async {
+    if (_addingSuggestion || _confirming || !_canChangeSelection) return;
+    setState(() => _addingSuggestion = true);
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    if (token == null) {
+      if (mounted) setState(() => _addingSuggestion = false);
+      return;
+    }
+    var detail = await _catalogApi.fetchDetail(
+      productId: product.id,
+      accessToken: token,
+    );
+    if (detail.status == CatalogRequestStatus.unauthorized && mounted) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (token != null) {
+        detail = await _catalogApi.fetchDetail(
+          productId: product.id,
+          accessToken: token,
+        );
+      }
+    }
+    if (!mounted) return;
+    final item = detail.product;
+    if (detail.status != CatalogRequestStatus.success || item == null) {
+      setState(() => _addingSuggestion = false);
+      return;
+    }
+    if (item.personalizations.isNotEmpty) {
+      setState(() => _addingSuggestion = false);
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => ProductDetailPage(
+            productId: product.id,
+            session: widget.session,
+            api: _catalogApi,
+            cartApi: _cartApi,
+            onAddedToCart: () async {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ),
+      );
+      if (mounted) {
+        await _load();
+        await _loadSuggestions();
+      }
+      return;
+    }
+    final addToken = token;
+    if (addToken == null) {
+      setState(() => _addingSuggestion = false);
+      return;
+    }
+    var addResult = await _cartApi.addItem(
+      accessToken: addToken,
+      productId: product.id,
+      quantity: 1,
+      personalizationIds: const [],
+    );
+    if (addResult.status == CartRequestStatus.unauthorized && mounted) {
+      final refreshedToken = await widget.session.refreshAfterUnauthorized(
+        addToken,
+      );
+      if (refreshedToken != null) {
+        addResult = await _cartApi.addItem(
+          accessToken: refreshedToken,
+          productId: product.id,
+          quantity: 1,
+          personalizationIds: const [],
+        );
+      }
+    }
+    if (!mounted) return;
+    setState(() => _addingSuggestion = false);
+    if (addResult.status == CartRequestStatus.success) {
+      await _load();
+      await _loadSuggestions();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível adicionar o produto.')),
+      );
     }
   }
 
@@ -202,6 +351,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
       _review = result.status == OrderStatus.success ? result.value : null;
       if (_review != null) _attemptId = _newUuid();
     });
+    if (_review != null) unawaited(_loadSuggestions());
   }
 
   Future<void> _confirm() async {
@@ -435,7 +585,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                   ),
                   const SizedBox(height: AppTokens.spacing8),
                   Text(
-                    'Frete calculado: R\$ ${review['freteAplicado']}',
+                    'Frete calculado: ${_formatCurrency(review['freteAplicado'] as String)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppTokens.primaryStrong,
                     ),
@@ -500,7 +650,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             Text(
-                              '${item['quantidade']} × R\$ ${item['precoAplicado']}',
+                              '${item['quantidade']} × ${_formatCurrency(item['precoAplicado'] as String)}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             for (final rawOption
@@ -510,7 +660,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             Text(
-                              'Subtotal: R\$ ${item['subtotalAplicado']}',
+                              'Subtotal: ${_formatCurrency(item['subtotalAplicado'] as String)}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
@@ -536,15 +686,106 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: AppTokens.spacing8),
-                Text('Itens: R\$ ${review['valorItens']}'),
+                Text(
+                  'Itens: ${_formatCurrency(review['valorItens'] as String)}',
+                ),
                 const SizedBox(height: AppTokens.spacing8),
-                Text('Frete: R\$ ${review['freteAplicado']}'),
+                Text(
+                  'Frete: ${_formatCurrency(review['freteAplicado'] as String)}',
+                ),
                 const Divider(height: AppTokens.spacing24),
                 Text(
-                  'Total final: R\$ ${review['total']}',
+                  'Total final: ${_formatCurrency(review['total'] as String)}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppTokens.primaryStrong,
                     fontFamily: 'Georgia',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppTokens.spacing8),
+        Card(
+          color: AppTokens.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.spacing12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Quer adicionar mais alguma coisa?',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                if (_suggestions.isEmpty && !_suggestionsLoading)
+                  Text(
+                    'Continue comprando pelo cardápio completo.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                if (_suggestionsLoading && _suggestions.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: LinearProgressIndicator(),
+                  ),
+                if (_suggestions.isNotEmpty) ...[
+                  const SizedBox(height: AppTokens.spacing8),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final largeText =
+                          MediaQuery.textScalerOf(context).scale(16) > 18;
+                      if (constraints.maxWidth >= 320 && !largeText) {
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _suggestions.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: AppTokens.spacing8,
+                                mainAxisSpacing: AppTokens.spacing8,
+                                mainAxisExtent: 156,
+                              ),
+                          itemBuilder: (context, index) => _suggestionCard(
+                            _suggestions[index],
+                            compact: true,
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (final product in _suggestions)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppTokens.spacing8,
+                              ),
+                              child: _suggestionCard(product, compact: false),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton(
+                    onPressed: _addingSuggestion
+                        ? null
+                        : () {
+                            Navigator.of(context).push<void>(
+                              MaterialPageRoute<void>(
+                                builder: (_) => StorefrontPage(
+                                  session: widget.session,
+                                  api: _catalogApi,
+                                  cartApi: _cartApi,
+                                  initialFulfillmentMode: _mode == 'ENTREGA'
+                                      ? FulfillmentMode.delivery
+                                      : FulfillmentMode.pickup,
+                                  initialAddressId: _addressId,
+                                ),
+                              ),
+                            );
+                          },
+                    child: const Text('Ver cardápio completo →'),
                   ),
                 ),
               ],
@@ -575,10 +816,102 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
     final name = option['nomeAplicado'] as String;
     final adjustment = option['ajusteValorAplicado'];
     if (adjustment is! String) return name;
-    return '$name · R\$ $adjustment';
+    return '$name · ${_formatCurrency(adjustment)}';
   }
 
-  String _formatAmount(String value) => value.replaceFirst('.', ',');
+  String _formatAmount(String value) {
+    final parts = value.split('.');
+    final whole = parts.first.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => '.',
+    );
+    return parts.length > 1 ? '$whole,${parts[1]}' : whole;
+  }
+
+  String _formatCurrency(String value) => 'R\$ ${_formatAmount(value)}';
+
+  Widget _suggestionCard(CatalogProduct product, {required bool compact}) {
+    final image = ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: compact ? double.infinity : 56,
+        height: compact ? 48 : 56,
+        child: product.imageAvailable
+            ? FutureBuilder<Uint8List?>(
+                future: _reviewImages.putIfAbsent(
+                  'suggestion:${product.id}',
+                  () => _loadReviewImage(product.id),
+                ),
+                builder: (context, snapshot) => snapshot.data == null
+                    ? const ColoredBox(
+                        color: AppTokens.surfaceSoft,
+                        child: Icon(Icons.cake_outlined),
+                      )
+                    : Image.memory(
+                        snapshot.data!,
+                        fit: BoxFit.cover,
+                        semanticLabel: 'Imagem de ${product.name}',
+                      ),
+              )
+            : const ColoredBox(
+                color: AppTokens.surfaceSoft,
+                child: Icon(Icons.cake_outlined),
+              ),
+      ),
+    );
+    final details = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: compact
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: [
+        Text(
+          product.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: compact ? TextAlign.center : TextAlign.start,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        Text(
+          _formatCurrency(product.price),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppTokens.primaryStrong,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+    final add = IconButton.filledTonal(
+      tooltip: 'Adicionar ${product.name} ao pedido',
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      onPressed: _addingSuggestion
+          ? null
+          : () => unawaited(_addSuggestion(product)),
+      icon: const Icon(Icons.add),
+    );
+    return Card(
+      margin: EdgeInsets.zero,
+      color: AppTokens.surfaceSoft,
+      child: Padding(
+        padding: const EdgeInsets.all(AppTokens.spacing8),
+        child: compact
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [image, details, add],
+              )
+            : Row(
+                children: [
+                  image,
+                  const SizedBox(width: AppTokens.spacing8),
+                  Expanded(child: details),
+                  add,
+                ],
+              ),
+      ),
+    );
+  }
 
   Widget _confirmationButtonContent(String total) {
     final totalLabel = 'R\$ ${_formatAmount(total)}';

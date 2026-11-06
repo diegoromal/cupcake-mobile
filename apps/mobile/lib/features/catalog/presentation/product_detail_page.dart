@@ -18,6 +18,7 @@ class ProductDetailPage extends StatefulWidget {
     required this.api,
     this.cartApi,
     this.onOpenCart,
+    this.onAddedToCart,
     this.indeterminateCartAttempts,
   });
   final String productId;
@@ -25,6 +26,7 @@ class ProductDetailPage extends StatefulWidget {
   final CustomerCatalogApi api;
   final CustomerCartApi? cartApi;
   final Future<void> Function()? onOpenCart;
+  final Future<void> Function()? onAddedToCart;
   final Set<String>? indeterminateCartAttempts;
 
   @override
@@ -249,6 +251,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     });
     if (result.status == CartRequestStatus.success) {
       unawaited(_loadCartCount());
+      if (widget.onAddedToCart != null) {
+        await widget.onAddedToCart!();
+      }
     }
   }
 

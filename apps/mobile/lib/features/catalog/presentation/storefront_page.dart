@@ -22,10 +22,14 @@ class StorefrontPage extends StatefulWidget {
     required this.session,
     required this.api,
     this.cartApi,
+    this.initialFulfillmentMode,
+    this.initialAddressId,
   });
   final CustomerSession session;
   final CustomerCatalogApi api;
   final CustomerCartApi? cartApi;
+  final FulfillmentMode? initialFulfillmentMode;
+  final String? initialAddressId;
 
   @override
   State<StorefrontPage> createState() => _StorefrontPageState();
@@ -39,8 +43,8 @@ class _StorefrontPageState extends State<StorefrontPage> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
-  final _fulfillmentModeSelection = ValueNotifier<FulfillmentMode?>(
-    FulfillmentMode.delivery,
+  late final _fulfillmentModeSelection = ValueNotifier<FulfillmentMode?>(
+    widget.initialFulfillmentMode ?? FulfillmentMode.delivery,
   );
   final _searchAreaKey = GlobalKey();
   final _productsSectionKey = GlobalKey();
@@ -245,6 +249,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           catalogApi: widget.api,
           initialFulfillmentMode: _fulfillmentMode,
           modeSelection: _fulfillmentModeSelection,
+          initialAddressId: widget.initialAddressId,
         ),
       ),
     );
@@ -271,6 +276,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           catalogApi: widget.api,
           initialFulfillmentMode: _fulfillmentMode,
           modeSelection: _fulfillmentModeSelection,
+          initialAddressId: widget.initialAddressId,
         ),
       ),
     );
