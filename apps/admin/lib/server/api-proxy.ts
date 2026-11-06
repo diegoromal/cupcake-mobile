@@ -14,6 +14,7 @@ export function apiBase(): string {
   return url.origin;
 }
 export function allowed(method: string, parts: string[]): boolean {
+  if (parts.length === 2 && parts[0] === 'relatorios' && parts[1] === 'vendas') return method === 'GET';
   if (parts.length === 1 && parts[0] === 'entregadores') return method === 'GET';
   if (parts.length === 1 && parts[0] === 'pedidos') return method === 'GET';
   if (parts.length === 2 && parts[0] === 'pedidos') return method === 'GET' && uuid.test(parts[1]);
@@ -60,12 +61,13 @@ async function call(path: string, method: string, token: string, body?: ArrayBuf
 }
 export async function proxyAdmin(request: NextRequest, parts: string[]): Promise<NextResponse> {
   const method = request.method;
-  if (!allowed(method, parts) || request.nextUrl.search) return NextResponse.json({ message: 'Rota não permitida.' }, { status: 404 });
+  const acceptsQuery = method === 'GET' && parts.length === 2 && parts[0] === 'relatorios' && parts[1] === 'vendas';
+  if (!allowed(method, parts) || (request.nextUrl.search && !acceptsQuery)) return NextResponse.json({ message: 'Rota não permitida.' }, { status: 404 });
   if (method !== 'GET' && !sameOrigin(request)) return NextResponse.json({ message: 'Origem não permitida.' }, { status: 403 });
   const contentType = request.headers.get('content-type') ?? '';
   const isImage = parts.at(-1) === 'imagem' && method === 'POST';
   if (method !== 'GET' && method !== 'DELETE' && !(isImage ? /^multipart\/form-data;\s*boundary=.+/i.test(contentType) : /^application\/json(?:;|$)/i.test(contentType))) return NextResponse.json({ message: 'Content-Type inválido.' }, { status: 415 });
-  const path = `/admin/${parts.join('/')}`;
+  const path = `/admin/${parts.join('/')}${acceptsQuery ? request.nextUrl.search : ''}`;
   let access = request.cookies.get(ACCESS)?.value;
   const refresh = request.cookies.get(REFRESH)?.value;
   const expired = () => { const result = NextResponse.json({ message: 'Sessão expirada.' }, { status: 401 }); clearSession(result); return result; };
