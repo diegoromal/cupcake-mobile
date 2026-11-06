@@ -30,12 +30,12 @@ describe('NotificacoesService', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it.each([
-    [StatusPedido.PAGO, 'Pagamento do pedido PED-123 aprovado.'],
-    [StatusPedido.EM_PREPARO, 'Seu pedido PED-123 está em preparo.'],
-    [StatusPedido.SAIU_PARA_ENTREGA, 'Seu pedido PED-123 saiu para entrega.'],
-    [StatusPedido.ENTREGUE, 'Seu pedido PED-123 foi entregue.'],
-    [StatusPedido.PRONTO_PARA_RETIRADA, 'Seu pedido PED-123 está pronto para retirada.'],
-    [StatusPedido.RETIRADO, 'A retirada do pedido PED-123 foi confirmada.'],
+    [StatusPedido.PAGO, '🧁 Pagamento do pedido PED-123 aprovado.'],
+    [StatusPedido.EM_PREPARO, '🧁 Seu pedido PED-123 está em preparo.'],
+    [StatusPedido.SAIU_PARA_ENTREGA, '🧁 Seu pedido PED-123 saiu para entrega.'],
+    [StatusPedido.ENTREGUE, '🧁 Seu pedido PED-123 foi entregue.'],
+    [StatusPedido.PRONTO_PARA_RETIRADA, '🧁 Seu pedido PED-123 está pronto para retirada.'],
+    [StatusPedido.RETIRADO, '🧁 A retirada do pedido PED-123 foi confirmada.'],
   ])('renderiza e registra template de %s', async (status, texto) => {
     await service.notificarStatusPedido({ ...eventoBase, status });
 
