@@ -186,6 +186,7 @@ Widget app(
   bool cart = false,
   CustomerCart? contents,
   CustomerOrderApi? orderApi,
+  ValueNotifier<FulfillmentMode?>? modeSelection,
 }) => MaterialApp(
   theme: AppTheme.light,
   home: cart
@@ -196,7 +197,12 @@ Widget app(
           addressApi: api,
           orderApi: orderApi,
         )
-      : FulfillmentPage(session: session, addressApi: api, orderApi: orderApi),
+      : FulfillmentPage(
+          session: session,
+          addressApi: api,
+          orderApi: orderApi,
+          modeSelection: modeSelection,
+        ),
 );
 
 Future<void> choose(WidgetTester tester, String label) async {
@@ -206,6 +212,26 @@ Future<void> choose(WidgetTester tester, String label) async {
 }
 
 void main() {
+  testWidgets(
+    'modalidade escolhida na vitrine chega ao checkout e acompanha seleção',
+    (tester) async {
+      final userSession = await session(FakeAuth());
+      addTearDown(userSession.dispose);
+      final api = FakeAddressApi();
+      final selection = ValueNotifier<FulfillmentMode?>(FulfillmentMode.pickup);
+      addTearDown(selection.dispose);
+      await tester.pumpWidget(app(userSession, api, modeSelection: selection));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Retirada selecionada. Frete: R\$ 0,00'),
+        findsOneWidget,
+      );
+      await choose(tester, 'Delivery');
+      expect(selection.value, FulfillmentMode.delivery);
+      expect(api.listCalls, 1);
+    },
+  );
+
   testWidgets('carrinho elegível abre Fulfillment e volta à mesma instância', (
     tester,
   ) async {

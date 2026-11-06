@@ -39,6 +39,9 @@ class _StorefrontPageState extends State<StorefrontPage> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
+  final _fulfillmentModeSelection = ValueNotifier<FulfillmentMode?>(
+    FulfillmentMode.delivery,
+  );
   final _searchAreaKey = GlobalKey();
   final _productsSectionKey = GlobalKey();
   final _imageFutures = <String, Future<Uint8List?>>{};
@@ -51,7 +54,8 @@ class _StorefrontPageState extends State<StorefrontPage> {
   bool _loadingMore = false;
   bool _signOutBusy = false;
   int _selectedNavigationIndex = 0;
-  FulfillmentMode _fulfillmentMode = FulfillmentMode.delivery;
+  FulfillmentMode get _fulfillmentMode =>
+      _fulfillmentModeSelection.value ?? FulfillmentMode.delivery;
   String _searchQuery = '';
   bool _hasMore = false;
   int _nextPage = 1;
@@ -240,6 +244,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           cartApi: widget.cartApi ?? CustomerCartApi(),
           catalogApi: widget.api,
           initialFulfillmentMode: _fulfillmentMode,
+          modeSelection: _fulfillmentModeSelection,
         ),
       ),
     );
@@ -265,6 +270,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           cartApi: widget.cartApi ?? CustomerCartApi(),
           catalogApi: widget.api,
           initialFulfillmentMode: _fulfillmentMode,
+          modeSelection: _fulfillmentModeSelection,
         ),
       ),
     );
@@ -314,6 +320,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _fulfillmentModeSelection.dispose();
     super.dispose();
   }
 
@@ -555,7 +562,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
             else if (visibleProducts.isEmpty)
               _StatusState(
                 label: _searchQuery.isNotEmpty
-                    ? 'Nenhum produto encontrado para “${_searchController.text}”.'
+                    ? 'Nenhum produto carregado corresponde a “${_searchController.text.trim()}”.'
                     : _selectedCategory == null
                     ? 'Não há produtos disponíveis no momento.'
                     : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
@@ -669,7 +676,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _fulfillmentMode = mode),
+            onTap: () => setState(() => _fulfillmentModeSelection.value = mode),
             child: SizedBox(
               height: math.max(AppTokens.touchTarget, labelSize * 3 + 26),
               child: vertical

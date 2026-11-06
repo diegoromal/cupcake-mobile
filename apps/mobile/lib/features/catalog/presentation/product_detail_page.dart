@@ -449,6 +449,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     ),
     child: Row(
       children: [
+        if (widget.onOpenCart != null) ...[
+          IconButton(
+            tooltip: 'Abrir carrinho',
+            onPressed: widget.onOpenCart,
+            icon: const Icon(Icons.shopping_bag_outlined),
+          ),
+          const SizedBox(width: AppTokens.spacing4),
+        ],
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [

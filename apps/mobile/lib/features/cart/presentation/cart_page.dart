@@ -20,6 +20,7 @@ class CartPage extends StatefulWidget {
     this.addressApi,
     this.orderApi,
     this.initialFulfillmentMode = FulfillmentMode.delivery,
+    this.modeSelection,
   });
 
   final CustomerSession session;
@@ -28,6 +29,7 @@ class CartPage extends StatefulWidget {
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
   final FulfillmentMode initialFulfillmentMode;
+  final ValueNotifier<FulfillmentMode?>? modeSelection;
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -194,6 +196,7 @@ class _CartPageState extends State<CartPage> {
         builder: (_) => FulfillmentPage(
           session: widget.session,
           initialMode: widget.initialFulfillmentMode,
+          modeSelection: widget.modeSelection,
           addressApi: widget.addressApi,
           orderApi: widget.orderApi,
         ),

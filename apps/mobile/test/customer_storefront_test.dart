@@ -920,7 +920,7 @@ void main() {
         CatalogRequestStatus.success,
         page: _page(page, [
           _product(1, name: 'Chocolate'),
-          _product(2, name: 'Baunilha'),
+          _product(2, category: _category2, name: 'Baunilha'),
         ]),
       ),
     ]);
@@ -934,6 +934,10 @@ void main() {
       tester.widget<CartPage>(find.byType(CartPage)).initialFulfillmentMode,
       FulfillmentMode.pickup,
     );
+    expect(
+      tester.widget<CartPage>(find.byType(CartPage)).modeSelection?.value,
+      FulfillmentMode.pickup,
+    );
     await tester.pageBack();
     await tester.pumpAndSettle();
     await _activateInkWell(tester, 'Delivery');
@@ -941,6 +945,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.widget<CartPage>(find.byType(CartPage)).initialFulfillmentMode,
+      FulfillmentMode.delivery,
+    );
+    expect(
+      tester.widget<CartPage>(find.byType(CartPage)).modeSelection?.value,
       FulfillmentMode.delivery,
     );
     await tester.pageBack();
@@ -952,6 +960,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Chocolate', skipOffstage: false), findsWidgets);
     expect(find.text('Baunilha', skipOffstage: false), findsNothing);
+    tester
+        .widget<TextField>(find.byType(TextField, skipOffstage: false))
+        .onChanged!(_category2.name);
+    await tester.pumpAndSettle();
+    expect(find.text('Chocolate', skipOffstage: false), findsNothing);
+    expect(find.text('Baunilha', skipOffstage: false), findsWidgets);
     tester
         .widget<IconButton>(
           find
@@ -978,6 +992,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Chocolate', skipOffstage: false), findsNothing);
     expect(find.text('Baunilha', skipOffstage: false), findsNothing);
+    expect(
+      find.textContaining('Nenhum produto carregado corresponde'),
+      findsOneWidget,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
