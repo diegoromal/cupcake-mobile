@@ -18,11 +18,13 @@ class FulfillmentPage extends StatefulWidget {
     required this.session,
     this.addressApi,
     this.orderApi,
+    this.initialMode,
     this.modeSelection,
   });
   final CustomerSession session;
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
+  final FulfillmentMode? initialMode;
   final ValueNotifier<FulfillmentMode?>? modeSelection;
 
   @override
@@ -45,8 +47,9 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
   @override
   void initState() {
     super.initState();
-    _mode = widget.modeSelection?.value;
     widget.session.addListener(_sessionChanged);
+    _mode = widget.modeSelection?.value ?? widget.initialMode;
+    widget.modeSelection?.addListener(_modeSelectionChanged);
     if (_mode == FulfillmentMode.delivery) unawaited(_loadAddresses());
   }
 
@@ -54,7 +57,24 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
   void dispose() {
     _generation++;
     widget.session.removeListener(_sessionChanged);
+    widget.modeSelection?.removeListener(_modeSelectionChanged);
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant FulfillmentPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.modeSelection != widget.modeSelection) {
+      oldWidget.modeSelection?.removeListener(_modeSelectionChanged);
+      widget.modeSelection?.addListener(_modeSelectionChanged);
+      final mode = widget.modeSelection?.value;
+      if (mode != null && mode != _mode) _selectMode(mode);
+    }
+  }
+
+  void _modeSelectionChanged() {
+    final mode = widget.modeSelection?.value;
+    if (mode != null && mode != _mode && mounted) _selectMode(mode);
   }
 
   void _sessionChanged() {
@@ -93,7 +113,9 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
         _loadingAddresses = false;
       }
     });
-    widget.modeSelection?.value = mode;
+    if (widget.modeSelection?.value != mode) {
+      widget.modeSelection?.value = mode;
+    }
     if (mode == FulfillmentMode.delivery) unawaited(_loadAddresses());
   }
 

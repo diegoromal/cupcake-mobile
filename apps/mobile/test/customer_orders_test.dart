@@ -52,13 +52,13 @@ void main() {
           home: CustomerOrdersPage(session: session, api: api),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(api.calls, 1);
-      final card = tester.widget<Card>(find.byType(Card));
+      final card = tester.widget<Card>(find.byType(Card, skipOffstage: false));
       expect(card.color, AppTokens.surface);
-      expect(find.text('Pedido PED-42'), findsOneWidget);
-      expect(find.text('R\$ 42,50'), findsOneWidget);
-      expect(find.text('Pago'), findsOneWidget);
+      expect(find.text('Pedido PED-42', skipOffstage: false), findsOneWidget);
+      expect(find.text('R\$ 42,50', skipOffstage: false), findsOneWidget);
+      expect(find.text('Pago', skipOffstage: false), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 29));
       expect(api.calls, 1);
@@ -66,7 +66,11 @@ void main() {
       await tester.pump();
       expect(api.calls, 2);
 
-      await tester.drag(find.byType(ListView), const Offset(0, 400));
+      await tester
+          .widget<RefreshIndicator>(
+            find.byType(RefreshIndicator, skipOffstage: false),
+          )
+          .onRefresh();
       await tester.pumpAndSettle();
       expect(api.calls, 3);
 
@@ -129,12 +133,65 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Você ainda não tem pedidos.'), findsOneWidget);
+    expect(
+      find.text('Você ainda não tem pedidos.', skipOffstage: false),
+      findsOneWidget,
+    );
     expect(find.byType(Card), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     session.dispose();
   });
+
+  testWidgets('Ver pedido abre detalhe usando o identificador selecionado', (
+    tester,
+  ) async {
+    final session = await _signedInSession();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomerOrdersPage(session: session, api: _FakeOrdersApi()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final viewOrderButton = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Ver pedido', skipOffstage: false),
+    );
+    viewOrderButton.onPressed!();
+    await tester.pumpAndSettle();
+    expect(find.text('Detalhe do pedido', skipOffstage: false), findsOneWidget);
+    expect(find.text(_id, skipOffstage: false), findsOneWidget);
+    expect(find.text('Pedido PED-42', skipOffstage: false), findsWidgets);
+    await tester.pumpWidget(const SizedBox.shrink());
+    session.dispose();
+  });
+
+  for (final width in [320.0, 390.0]) {
+    testWidgets('Pedidos sem overflow em ${width.toInt()} dp com texto 2x', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = Size(width, 800);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final session = await _signedInSession();
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: CustomerOrdersPage(session: session, api: _FakeOrdersApi()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final exception = tester.takeException();
+      expect(exception, isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      session.dispose();
+    });
+  }
 }
 
 Future<CustomerSession> _signedInSession() async {

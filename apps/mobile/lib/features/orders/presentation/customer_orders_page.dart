@@ -6,6 +6,7 @@ import '../../../core/design/app_tokens.dart';
 import '../../catalog/presentation/customer_bottom_navigation.dart';
 import '../../auth/session/customer_session.dart';
 import '../data/customer_orders_api.dart';
+import 'customer_order_detail_page.dart';
 
 class CustomerOrdersPage extends StatefulWidget {
   const CustomerOrdersPage({
@@ -235,22 +236,26 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Tooltip(
-                        message:
-                            'Identificador completo: ${order.businessNumber}',
-                        child: Text(
-                          'Pedido ${_compactId(order.businessNumber)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
+                    Tooltip(
+                      message:
+                          'Identificador completo: ${order.businessNumber}',
+                      child: Text(
+                        'Pedido ${_compactId(order.businessNumber)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
-                    const SizedBox(width: AppTokens.spacing8),
-                    _OrderStatusBadge(label: _statusLabel(order.status)),
+                    const SizedBox(height: AppTokens.spacing8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _OrderStatusBadge(
+                        label: _statusLabel(order.status),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppTokens.spacing8),
@@ -262,81 +267,90 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       color: AppTokens.textMuted,
                     ),
                     const SizedBox(width: 5),
-                    Text(
-                      _dateLabel(order.date),
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Expanded(
+                      child: Text(
+                        _dateLabel(order.date),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
                   ],
                 ),
                 const Divider(height: 20),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Icon(
-                            order.fulfillment == 'ENTREGA'
-                                ? Icons.delivery_dining
-                                : Icons.storefront_outlined,
-                            size: 18,
-                            color: AppTokens.primary,
-                          ),
-                          const SizedBox(width: 7),
-                          Column(
+                    Row(
+                      children: [
+                        Icon(
+                          order.fulfillment == 'ENTREGA'
+                              ? Icons.delivery_dining
+                              : Icons.storefront_outlined,
+                          size: 22,
+                          color: AppTokens.primary,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Modalidade',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               Text(
                                 order.fulfillment == 'ENTREGA'
                                     ? 'Delivery'
                                     : 'Retirada',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Total', style: TextStyle(fontSize: 9)),
-                        Text(
-                          'R\$ ${order.total.replaceAll('.', ',')}',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontFamily: 'Georgia',
-                                fontWeight: FontWeight.bold,
-                                color: AppTokens.primaryStrong,
-                              ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: AppTokens.spacing8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Total',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            'R\$ ${order.total.replaceAll('.', ',')}',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontFamily: 'Georgia',
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTokens.primaryStrong,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
-                  height: 34,
+                  height: 48,
                   child: OutlinedButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.arrow_forward, size: 14),
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CustomerOrderDetailPage(order: order),
+                      ),
+                    ),
+                    icon: const Icon(Icons.arrow_forward),
                     label: const Text('Ver pedido'),
                     style: OutlinedButton.styleFrom(
                       backgroundColor: AppTokens.surfaceSoft,
                       disabledForegroundColor: AppTokens.primaryStrong,
                       side: BorderSide.none,
                       textStyle: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -368,24 +382,20 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
             ),
           ),
           const SizedBox(width: 8),
-          const Text(
-            'Meus Pedidos',
-            style: TextStyle(
-              fontFamily: 'Georgia',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          const Flexible(
+            child: Text(
+              'Meus Pedidos',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          tooltip: 'Perfil',
-          onPressed: () => widget.onNavigationSelected?.call(3),
-          icon: const Icon(Icons.account_circle),
-        ),
-        const SizedBox(width: 4),
-      ],
     ),
     body: SafeArea(
       child: Center(

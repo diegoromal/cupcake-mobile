@@ -94,6 +94,7 @@ void main() {
         home: const PaymentResultPage(
           outcome: PaymentOutcome.approved,
           orderNumber: 'PED-123',
+          orderId: orderId,
           total: '29.50',
           method: 'Pix',
         ),
@@ -105,8 +106,20 @@ void main() {
     expect(find.text('Pagamento aprovado'), findsNWidgets(2));
     expect(find.text('Total: R\$ 29,50'), findsOneWidget);
     expect(find.text('Forma de pagamento: Pix'), findsOneWidget);
-    expect(find.text('Ver pedido'), findsNothing);
-    expect(find.text('Voltar para o início'), findsOneWidget);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Ver meu pedido'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(find.text('Voltar ao cardápio'), findsOneWidget);
+    expect(tester.widget<AppBar>(find.byType(AppBar)).leading, isNull);
+    await tester.tap(find.text('Ver meu pedido'));
+    await tester.pumpAndSettle();
+    expect(find.text('Detalhe do pedido'), findsOneWidget);
+    expect(find.text(orderId), findsOneWidget);
   });
 
   testWidgets('resumo e opções usam a superfície branca do Design System', (
@@ -171,8 +184,120 @@ void main() {
     expect(find.byType(PaymentResultPage), findsOneWidget);
     expect(find.text('Pagamento aprovado'), findsNWidgets(2));
     expect(find.text('Forma de pagamento: Pix'), findsOneWidget);
-    expect(find.text('Ver pedido'), findsNothing);
+    expect(find.text('Voltar ao cardápio'), findsOneWidget);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Ver meu pedido'),
+          )
+          .onPressed,
+      isNotNull,
+    );
     expect(api.startAttempts, hasLength(1));
+    session.dispose();
+  });
+
+  testWidgets('cardápio remove checkout e permite iniciar nova compra', (
+    tester,
+  ) async {
+    var newPurchases = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Column(
+            children: [
+              const Text('Vitrine principal'),
+              const Text('A vitrine continua disponível'),
+              ElevatedButton(
+                onPressed: () => newPurchases++,
+                child: const Text('Iniciar nova compra'),
+              ),
+              ElevatedButton(
+                onPressed: () =>
+                    Navigator.of(
+                      tester.element(find.text('Vitrine principal')),
+                    ).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PaymentResultPage(
+                          outcome: PaymentOutcome.approved,
+                          orderNumber: 'PED-123',
+                          orderId: orderId,
+                          total: '20.00',
+                        ),
+                      ),
+                    ),
+                child: const Text('Abrir checkout'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir checkout'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Voltar ao cardápio'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vitrine principal'), findsOneWidget);
+    expect(find.byType(PaymentResultPage), findsNothing);
+    await tester.tap(find.text('Iniciar nova compra'));
+    await tester.pump();
+    expect(newPurchases, 1);
+  });
+
+  testWidgets('back não reabre checkout depois de pagamento aprovado', (
+    tester,
+  ) async {
+    final session = await _session();
+    final api = _PaymentApi()
+      ..startResults.add(
+        PaymentResult(PaymentStatus.success, value: _payment('APROVADO')),
+      );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Column(
+              children: [
+                const Text('Vitrine principal'),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => PaymentPage(
+                        session: session,
+                        orderId: orderId,
+                        orderNumber: 'PED-123',
+                        total: '20.00',
+                        paymentApi: api,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Iniciar checkout'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Iniciar checkout'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pix'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pagar agora'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PaymentPage), findsNothing);
+    expect(find.byType(PaymentResultPage), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Vitrine principal'), findsNothing);
+    expect(find.byType(PaymentResultPage), findsOneWidget);
+    expect(find.byType(PaymentPage), findsNothing);
+    await tester.tap(find.text('Voltar ao cardápio'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vitrine principal'), findsOneWidget);
+    expect(find.byType(PaymentResultPage), findsNothing);
     session.dispose();
   });
 
@@ -305,6 +430,7 @@ void main() {
             home: const PaymentResultPage(
               outcome: PaymentOutcome.approved,
               orderNumber: 'PED-123456789',
+              orderId: orderId,
               total: '1234.56',
               method: 'Cartão',
             ),
@@ -312,7 +438,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        await tester.ensureVisible(find.text('Voltar para o início'));
+        await tester.ensureVisible(find.text('Voltar ao cardápio'));
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
         session.dispose();

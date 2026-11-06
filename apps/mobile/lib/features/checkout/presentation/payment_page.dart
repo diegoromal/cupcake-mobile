@@ -195,16 +195,24 @@ class _PaymentPageState extends State<PaymentPage> {
       'CARTAO' => 'Cartão',
       _ => null,
     };
-    final action = await Navigator.of(context).push<PaymentResultAction>(
-      MaterialPageRoute<PaymentResultAction>(
-        builder: (_) => PaymentResultPage(
-          outcome: outcome,
-          orderNumber: widget.orderNumber,
-          total: response.value?['valorAplicavel'] as String? ?? widget.total,
-          method: outcome == PaymentOutcome.unknown ? null : confirmedMethod,
-        ),
+    final navigator = Navigator.of(context);
+    final resultRoute = MaterialPageRoute<PaymentResultAction>(
+      builder: (_) => PaymentResultPage(
+        outcome: outcome,
+        orderNumber: widget.orderNumber,
+        orderId: widget.orderId,
+        total: response.value?['valorAplicavel'] as String? ?? widget.total,
+        method: outcome == PaymentOutcome.unknown ? null : confirmedMethod,
       ),
     );
+    // Once approved, remove every checkout route. Back from the result then
+    // returns to the existing authenticated storefront root.
+    final action = outcome == PaymentOutcome.approved
+        ? await navigator.pushAndRemoveUntil<PaymentResultAction>(
+            resultRoute,
+            (route) => route.isFirst,
+          )
+        : await navigator.push<PaymentResultAction>(resultRoute);
     if (!mounted) return;
     if (action == PaymentResultAction.retry) {
       setState(() {

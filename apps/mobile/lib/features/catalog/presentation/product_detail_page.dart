@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../auth/session/customer_session.dart';
 import '../../cart/data/customer_cart_api.dart';
+import '../../cart/presentation/cart_page.dart';
 import '../data/customer_catalog_api.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class ProductDetailPage extends StatefulWidget {
   final CustomerSession session;
   final CustomerCatalogApi api;
   final CustomerCartApi? cartApi;
-  final VoidCallback? onOpenCart;
+  final Future<void> Function()? onOpenCart;
   final Set<String>? indeterminateCartAttempts;
 
   @override
@@ -32,6 +33,7 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   int _generation = 0;
+  int _cartCountGeneration = 0;
   CatalogProductDetail? _product;
   CatalogRequestStatus? _status;
   Future<Uint8List?>? _image;
@@ -44,6 +46,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   late final CustomerCartApi _cartApi = widget.cartApi ?? CustomerCartApi();
   int _quantity = 1;
   bool _adding = false;
+  int _cartItemCount = 0;
   CartRequestStatus? _addStatus;
   String? _addMessage;
   final _localIndeterminateAttempts = <String>{};
@@ -62,6 +65,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     super.initState();
     widget.session.addListener(_sessionChanged);
     _load();
+    unawaited(_loadCartCount());
   }
 
   @override
@@ -81,6 +85,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   void _sessionChanged() {
     if (!widget.session.isAuthenticated) {
       _generation++;
+      _cartCountGeneration++;
       _priceGeneration++;
       if (mounted) {
         setState(() {
@@ -103,6 +108,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void dispose() {
     _generation++;
+    _cartCountGeneration++;
     _priceGeneration++;
     widget.session.removeListener(_sessionChanged);
     final provider = _imageProvider;
@@ -241,6 +247,55 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         _indeterminateAttempts.add(attemptKey);
       }
     });
+    if (result.status == CartRequestStatus.success) {
+      unawaited(_loadCartCount());
+    }
+  }
+
+  Future<void> _loadCartCount() async {
+    final generation = ++_cartCountGeneration;
+    await widget.session.refreshIfNeeded();
+    var token = widget.session.accessToken;
+    if (token == null) return;
+    var result = await _cartApi.fetchCart(accessToken: token);
+    if (result.status == CartRequestStatus.unauthorized &&
+        mounted &&
+        widget.session.isAuthenticated) {
+      token = await widget.session.refreshAfterUnauthorized(token);
+      if (token == null) return;
+      result = await _cartApi.fetchCart(accessToken: token);
+    }
+    if (!mounted ||
+        generation != _cartCountGeneration ||
+        !widget.session.isAuthenticated ||
+        result.status != CartRequestStatus.success ||
+        result.cart == null) {
+      return;
+    }
+    final cart = result.cart!;
+    setState(() {
+      _cartItemCount = cart.items.fold<int>(
+        0,
+        (total, item) => total + item.quantity,
+      );
+    });
+  }
+
+  Future<void> _openCart() async {
+    if (widget.onOpenCart != null) {
+      await widget.onOpenCart!();
+    } else {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => CartPage(
+            session: widget.session,
+            cartApi: _cartApi,
+            catalogApi: widget.api,
+          ),
+        ),
+      );
+    }
+    if (mounted) await _loadCartCount();
   }
 
   Future<void> _preview() async {
@@ -316,7 +371,59 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Detalhes do Produto')),
+    appBar: AppBar(
+      title: const Text('Detalhes do Produto'),
+      actions: [
+        IconButton(
+          tooltip: _cartItemCount == 0
+              ? 'Abrir carrinho'
+              : 'Abrir carrinho com $_cartItemCount itens',
+          onPressed: () => unawaited(_openCart()),
+          icon: SizedBox(
+            width: 40,
+            height: 40,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.shopping_bag_outlined),
+                if (_cartItemCount > 0)
+                  Positioned(
+                    right: -5,
+                    top: -3,
+                    child: ExcludeSemantics(
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 19,
+                          minHeight: 19,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: const BoxDecoration(
+                          color: AppTokens.primaryStrong,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '$_cartItemCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+      ],
+    ),
     body: SafeArea(child: _content(context)),
     bottomNavigationBar: _product == null
         ? null
@@ -521,7 +628,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           Text(
                             'Disponível em estoque',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -586,7 +693,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   color: AppTokens.surfaceSoft,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('Preço Base', style: TextStyle(fontSize: 10)),
+                child: Text(
+                  'Preço Base',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ],
           ),
@@ -675,16 +785,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 option.description!.isNotEmpty)
                               Text(
                                 option.description!,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                                style: Theme.of(context).textTheme.labelSmall,
                               ),
                             if (!option.available)
                               Text(
                                 'Indisponível',
                                 style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
-                                      fontSize: 9,
+                                      fontSize: 12,
                                       color: AppTokens.textMuted,
                                     ),
                               ),
@@ -695,7 +803,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       Text(
                         _formatSignedPrice(option.adjustment ?? '0.00'),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppTokens.primaryStrong,
                           decoration: option.available
                               ? null
@@ -770,7 +878,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           if (status == CartRequestStatus.unavailable &&
               widget.onOpenCart != null)
             OutlinedButton(
-              onPressed: widget.onOpenCart,
+              onPressed: () => unawaited(_openCart()),
               child: const Text('Abrir carrinho'),
             ),
         ],
