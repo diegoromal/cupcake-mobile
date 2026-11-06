@@ -13,15 +13,15 @@ class CustomerBottomNavigation extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   static const _items = <(IconData, String)>[
-    (Icons.home_outlined, 'Início'),
     (Icons.local_cafe_outlined, 'Cardápio'),
+    (Icons.shopping_bag_outlined, 'Carrinho'),
     (Icons.receipt_long_outlined, 'Pedidos'),
     (Icons.person_outline, 'Perfil'),
   ];
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 58,
+    height: 72,
     decoration: const BoxDecoration(
       color: Color(0xFFFFFAF8),
       border: Border(top: BorderSide(color: AppTokens.border, width: 0.6)),
@@ -38,28 +38,36 @@ class CustomerBottomNavigation extends StatelessWidget {
     final selected = selectedIndex == index;
     final color = selected ? AppTokens.primaryStrong : AppTokens.text;
     return Expanded(
-      child: Semantics(
-        button: true,
-        selected: selected,
-        label: label,
-        child: InkWell(
-          onTap: () => onSelected(index),
-          child: SizedBox.expand(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 19, color: color),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      child: Tooltip(
+        message: label,
+        child: Semantics(
+          button: true,
+          selected: selected,
+          label: label,
+          child: InkWell(
+            onTap: () => onSelected(index),
+            child: SizedBox.expand(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 22, color: color),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

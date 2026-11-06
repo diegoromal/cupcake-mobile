@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
 import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
+import 'package:cupcake_mobile/features/cart/presentation/cart_page.dart';
 import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
 import 'package:cupcake_mobile/features/catalog/presentation/product_detail_page.dart';
 import 'package:cupcake_mobile/features/catalog/presentation/storefront_page.dart';
@@ -131,6 +132,25 @@ class CartApi extends CustomerCartApi {
   final responses = <Future<CartResult>>[];
   final additions = <(String, int, List<String>, String)>[];
   int cartReads = 0;
+  CustomerCart? cartValue = const CustomerCart(
+    id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    items: [
+      CartItem(
+        id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+        productId: id,
+        name: 'Cupcake atual',
+        imageAvailable: false,
+        quantity: 2,
+        personalizations: [],
+        unitPrice: '12.30',
+        subtotal: '24.60',
+        available: true,
+        reason: null,
+      ),
+    ],
+    subtotal: '24.60',
+    total: '24.60',
+  );
 
   @override
   Future<CartResult> addItem({
@@ -146,28 +166,47 @@ class CartApi extends CustomerCartApi {
   @override
   Future<CartResult> fetchCart({required String accessToken}) async {
     cartReads++;
-    return const CartResult(
-      CartRequestStatus.success,
-      cart: CustomerCart(
-        id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-        items: [
-          CartItem(
-            id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-            productId: id,
-            name: 'Cupcake atual',
-            imageAvailable: false,
-            quantity: 2,
-            personalizations: [],
-            unitPrice: '12.30',
-            subtotal: '24.60',
-            available: true,
-            reason: null,
-          ),
-        ],
-        subtotal: '24.60',
-        total: '24.60',
-      ),
+    return CartResult(CartRequestStatus.success, cart: cartValue);
+  }
+
+  @override
+  Future<CartResult> updateQuantity({
+    required String accessToken,
+    required String itemId,
+    required int quantity,
+  }) async {
+    final oldCart = cartValue;
+    if (oldCart == null) return const CartResult(CartRequestStatus.notFound);
+    final items = oldCart.items
+        .map(
+          (item) => item.id == itemId
+              ? CartItem(
+                  id: item.id,
+                  productId: item.productId,
+                  name: item.name,
+                  imageAvailable: item.imageAvailable,
+                  quantity: quantity,
+                  personalizations: item.personalizations,
+                  unitPrice: item.unitPrice,
+                  subtotal: (double.parse(item.unitPrice!) * quantity)
+                      .toStringAsFixed(2),
+                  available: item.available,
+                  reason: item.reason,
+                )
+              : item,
+        )
+        .toList();
+    final total = items.fold<double>(
+      0,
+      (sum, item) => sum + double.parse(item.subtotal!),
     );
+    cartValue = CustomerCart(
+      id: oldCart.id,
+      items: items,
+      subtotal: total.toStringAsFixed(2),
+      total: total.toStringAsFixed(2),
+    );
+    return CartResult(CartRequestStatus.success, cart: cartValue);
   }
 }
 
@@ -227,6 +266,17 @@ Future<void> _openStorefrontProduct(WidgetTester tester) async {
   await tester.tap(productCard);
 }
 
+Finder _cartBadge(String value) => find.byWidgetPredicate(
+  (widget) =>
+      widget is Text && widget.data == value && widget.style?.fontSize == 11,
+);
+
+Finder get _cartButton => find.byWidgetPredicate(
+  (widget) =>
+      widget is IconButton &&
+      widget.tooltip?.startsWith('Abrir carrinho') == true,
+);
+
 void main() {
   testWidgets(
     'detalhe envia seleção e quantidade uma vez, confirma e carrinho lê linha',
@@ -285,7 +335,7 @@ void main() {
       await tester.ensureVisible(find.byTooltip('Aumentar quantidade'));
       await tester.tap(find.byTooltip('Aumentar quantidade'));
       await tester.pumpAndSettle();
-      expect(find.text('2'), findsOneWidget);
+      expect(find.text('2').last, findsOneWidget);
       expect(find.text('R\$ 26,60'), findsOneWidget);
       await tester.pump(); // CTA permanece fixo no rodapé.
       await tester.tap(find.text('Adicionar ao carrinho'));
@@ -312,7 +362,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Carrinho'));
       await tester.pumpAndSettle();
-      expect(cart.cartReads, 1);
+      expect(
+        cart.cartReads,
+        3,
+      ); // carga inicial, inclusão e página do carrinho.
       expect(find.text('Cupcake atual'), findsOneWidget);
       expect(find.text('Subtotal: R\$ 24,60'), findsOneWidget);
     },
@@ -371,7 +424,7 @@ void main() {
     await tester.tap(find.text('Abrir carrinho'));
     await tester.pumpAndSettle();
     expect(find.text('Carrinho'), findsOneWidget);
-    expect(cart.cartReads, 1);
+    expect(cart.cartReads, 2);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('Detalhes do Produto'), findsOneWidget);
@@ -388,7 +441,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Aumentar quantidade'));
     await tester.pumpAndSettle();
-    expect(find.text('2'), findsOneWidget);
+    expect(find.text('2').last, findsOneWidget);
     await tester.pump(); // CTA permanece fixo no rodapé.
     expect(
       tester
@@ -422,6 +475,101 @@ void main() {
     );
     expect(cart.additions, hasLength(2));
   });
+
+  testWidgets(
+    'ícone do carrinho mostra soma das unidades e atualiza após adicionar',
+    (tester) async {
+      final active = await session(AuthApi());
+      addTearDown(active.dispose);
+      final catalog = Api([
+        Future.value(
+          const CatalogDetailResult(
+            CatalogRequestStatus.success,
+            product: detail,
+          ),
+        ),
+      ]);
+      final cart = CartApi()..cartValue = null;
+      await tester.pumpWidget(app(active, catalog, cartApi: cart));
+      await tester.pumpAndSettle();
+      expect(_cartButton, findsOneWidget);
+      expect(find.text('0'), findsNothing);
+
+      cart.cartValue = const CustomerCart(
+        id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        items: [
+          CartItem(
+            id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            productId: id,
+            name: 'Cupcake A',
+            imageAvailable: false,
+            quantity: 1,
+            personalizations: [],
+            unitPrice: '12.30',
+            subtotal: '12.30',
+            available: true,
+            reason: null,
+          ),
+        ],
+        subtotal: '12.30',
+        total: '12.30',
+      );
+      await tester.tap(_cartButton);
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(_cartBadge('1'), findsOneWidget);
+
+      cart.cartValue = const CustomerCart(
+        id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        items: [
+          CartItem(
+            id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            productId: id,
+            name: 'Cupcake A',
+            imageAvailable: false,
+            quantity: 2,
+            personalizations: [],
+            unitPrice: '12.30',
+            subtotal: '24.60',
+            available: true,
+            reason: null,
+          ),
+          CartItem(
+            id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+            productId: id,
+            name: 'Cupcake B',
+            imageAvailable: false,
+            quantity: 3,
+            personalizations: [],
+            unitPrice: '10.00',
+            subtotal: '30.00',
+            available: true,
+            reason: null,
+          ),
+        ],
+        subtotal: '54.60',
+        total: '54.60',
+      );
+      cart.responses.add(
+        Future.value(const CartResult(CartRequestStatus.success)),
+      );
+      await tester.tap(find.text('Adicionar ao carrinho'));
+      await tester.pumpAndSettle();
+      expect(_cartBadge('5'), findsOneWidget);
+
+      await tester.tap(_cartButton);
+      await tester.pumpAndSettle();
+      expect(find.byType(CartPage), findsOneWidget);
+      expect(find.text('Cupcake A'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Aumentar quantidade').first);
+      await tester.pumpAndSettle();
+      expect(cart.cartValue!.items.first.quantity, 3);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(_cartBadge('6'), findsOneWidget);
+    },
+  );
 
   testWidgets('reabrir mesmo payload indeterminado não reenviará POST', (
     tester,

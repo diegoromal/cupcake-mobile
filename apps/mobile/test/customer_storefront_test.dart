@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
 import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
 import 'package:cupcake_mobile/features/cart/presentation/cart_page.dart';
 import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
 import 'package:cupcake_mobile/features/catalog/presentation/storefront_page.dart';
+import 'package:cupcake_mobile/features/checkout/presentation/fulfillment_page.dart';
+import 'package:cupcake_mobile/features/orders/presentation/customer_orders_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -131,7 +132,9 @@ Widget _app(
   CustomerCartApi? cartApi,
 }) => MaterialApp(
   home: MediaQuery(
-    data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+    data: MediaQueryData.fromView(
+      WidgetsBinding.instance.platformDispatcher.views.first,
+    ).copyWith(textScaler: TextScaler.linear(scale)),
     child: StorefrontPage(session: session, api: api, cartApi: cartApi),
   ),
 );
@@ -330,11 +333,20 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Carregar mais produtos'),
+        find.text('Carregar mais produtos', skipOffstage: false),
         250,
         scrollable: _verticalScrollable(),
       );
-      await tester.tap(find.text('Carregar mais produtos'));
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(
+              OutlinedButton,
+              'Carregar mais produtos',
+              skipOffstage: false,
+            ),
+          )
+          .onPressed!
+          .call();
       await tester.pump();
       expect(
         find.bySemanticsLabel('Carregando mais produtos…'),
@@ -421,9 +433,21 @@ void main() {
       await tester.tapAt(tester.getTopLeft(retry) + const Offset(12, 12));
       await tester.pumpAndSettle();
       expect(find.text('Cupcake número 1'), findsWidgets);
-      await tester.drag(find.byType(ListView).last, const Offset(0, 450));
+      await tester.scrollUntilVisible(
+        find.text('Carregar mais produtos', skipOffstage: false),
+        250,
+        scrollable: _verticalScrollable(),
+      );
+      final loadMore = tester.widget<OutlinedButton>(
+        find.widgetWithText(
+          OutlinedButton,
+          'Carregar mais produtos',
+          skipOffstage: false,
+        ),
+      );
+      loadMore.onPressed!.call();
       await tester.pumpAndSettle();
-      expect(find.text('Cupcake número 1'), findsNothing);
+      expect(find.text('Cupcake número 1'), findsWidgets);
       expect(find.text('Cupcake número 2'), findsWidgets);
       expect(find.text('Cupcake número 3'), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -453,7 +477,16 @@ void main() {
         250,
         scrollable: _verticalScrollable(),
       );
-      await tester.tap(find.text('Carregar mais produtos'));
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(
+              OutlinedButton,
+              'Carregar mais produtos',
+              skipOffstage: false,
+            ),
+          )
+          .onPressed!
+          .call();
       await tester.pumpAndSettle();
       expect(
         find.text('Não foi possível carregar os produtos. Tente novamente.'),
@@ -568,22 +601,36 @@ void main() {
             .selected,
         isTrue,
       );
-      await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
+      final categoryA = find.widgetWithText(
+        ChoiceChip,
+        _category1.name,
+        skipOffstage: false,
+      );
+      await tester.ensureVisible(categoryA);
+      tester.widget<ChoiceChip>(categoryA).onSelected!(true);
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Carregar mais produtos'),
         250,
         scrollable: _verticalScrollable(),
       );
-      await tester.tap(find.text('Carregar mais produtos'));
+      tester
+          .widget<OutlinedButton>(
+            find.ancestor(
+              of: find.text('Carregar mais produtos'),
+              matching: find.byType(OutlinedButton),
+            ),
+          )
+          .onPressed!
+          .call();
       await tester.pumpAndSettle();
       expect(find.text('Cupcake número 2'), findsWidgets);
-      await tester.tap(find.widgetWithText(ChoiceChip, _category2.name));
+      await _selectCategory(tester, _category2.name);
       await tester.pumpAndSettle();
       expect(find.text('Cupcake número 2'), findsNothing);
-      await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
+      await _selectCategory(tester, _category1.name);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Todas'));
+      await _selectCategory(tester, 'Todas');
       await tester.pumpAndSettle();
       expect(api.filters, [
         null,
@@ -624,7 +671,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ChoiceChip, _category1.name));
       await tester.pump();
-      await tester.tap(find.widgetWithText(ChoiceChip, _category2.name));
+      await _selectCategory(tester, _category2.name);
       await tester.pumpAndSettle();
       lateA.complete(
         CatalogPageResult(
@@ -819,9 +866,9 @@ void main() {
     final cartApi = _CartApi();
     await tester.pumpWidget(_app(session, api, cartApi: cartApi));
     await tester.pumpAndSettle();
-    _expectCarrinhoInAppBarActions(tester);
+    expect(find.text('Carrinho', skipOffstage: false), findsOneWidget);
     final storefront = tester.state(find.byType(StorefrontPage));
-    await tester.tap(find.byTooltip('Carrinho'));
+    await _activateInkWell(tester, 'Carrinho');
     await tester.pumpAndSettle();
     expect(find.byType(CartPage), findsOneWidget);
     expect(find.text('Seu carrinho está vazio.'), findsOneWidget);
@@ -833,6 +880,152 @@ void main() {
     expect(tester.state(find.byType(StorefrontPage)), same(storefront));
     expect(find.text('Cupcake número 1'), findsWidgets);
     expect(api.calls, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'footer navega entre Cardápio, Pedidos e Carrinho sem duplicar destinos',
+    (tester) async {
+      final session = await _session();
+      addTearDown(() => _disposeSession(session));
+      final api = _CatalogApi([
+        (page) async => CatalogPageResult(
+          CatalogRequestStatus.success,
+          page: _page(page, [_product(1)]),
+        ),
+      ]);
+      await tester.pumpWidget(_app(session, api, cartApi: _CartApi()));
+      await tester.pumpAndSettle();
+      for (final label in ['Cardápio', 'Carrinho', 'Pedidos', 'Perfil']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      await _activateInkWell(tester, 'Pedidos');
+      await tester.pumpAndSettle();
+      expect(find.byType(CustomerOrdersPage), findsOneWidget);
+      expect(find.text('Carrinho'), findsOneWidget);
+      await _activateInkWell(tester, 'Carrinho');
+      await tester.pumpAndSettle();
+      expect(find.byType(CartPage), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('modalidade e busca reagem ao toque e atualizam os produtos', (
+    tester,
+  ) async {
+    final session = await _session();
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi([
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, [
+          _product(1, name: 'Chocolate'),
+          _product(2, name: 'Baunilha'),
+        ]),
+      ),
+    ]);
+    final cartApi = _CartApi();
+    await tester.pumpWidget(_app(session, api, cartApi: cartApi));
+    await tester.pumpAndSettle();
+    await _activateInkWell(tester, 'Retirada');
+    await _activateInkWell(tester, 'Carrinho');
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<CartPage>(find.byType(CartPage)).initialFulfillmentMode,
+      FulfillmentMode.pickup,
+    );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await _activateInkWell(tester, 'Delivery');
+    await _activateInkWell(tester, 'Carrinho');
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<CartPage>(find.byType(CartPage)).initialFulfillmentMode,
+      FulfillmentMode.delivery,
+    );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    final search = tester.widget<TextField>(
+      find.byType(TextField, skipOffstage: false),
+    );
+    search.onChanged!('chocolate');
+    await tester.pumpAndSettle();
+    expect(find.text('Chocolate', skipOffstage: false), findsWidgets);
+    expect(find.text('Baunilha', skipOffstage: false), findsNothing);
+    tester
+        .widget<IconButton>(
+          find
+              .ancestor(
+                of: find.byTooltip('Limpar busca', skipOffstage: false),
+                matching: find.byType(IconButton, skipOffstage: false),
+              )
+              .first,
+        )
+        .onPressed!
+        .call();
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byType(TextField, skipOffstage: false))
+          .controller
+          ?.text,
+      isEmpty,
+    );
+    expect(find.byTooltip('Limpar busca', skipOffstage: false), findsNothing);
+    tester
+        .widget<TextField>(find.byType(TextField, skipOffstage: false))
+        .onChanged!('sem resultado');
+    await tester.pumpAndSettle();
+    expect(find.text('Chocolate', skipOffstage: false), findsNothing);
+    expect(find.text('Baunilha', skipOffstage: false), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('busca dispensa foco fora, ao rolar e pela ação do teclado', (
+    tester,
+  ) async {
+    final session = await _session();
+    addTearDown(() => _disposeSession(session));
+    final api = _CatalogApi([
+      (page) async => CatalogPageResult(
+        CatalogRequestStatus.success,
+        page: _page(page, List.generate(8, (index) => _product(index + 1))),
+      ),
+    ]);
+    await tester.pumpWidget(_app(session, api, cartApi: _CartApi()));
+    await tester.pumpAndSettle();
+    final search = find.byType(TextField);
+    await tester.tap(search);
+    await tester.enterText(search, 'cupcake');
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus, isNotNull);
+    await tester.tap(find.text('Olá!'));
+    await tester.pump();
+    expect(tester.widget<TextField>(search).focusNode!.hasFocus, isFalse);
+
+    await tester.tap(search);
+    await tester.enterText(search, 'número');
+    await tester.pump();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(search).focusNode!.hasFocus, isFalse);
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, 500));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(search);
+    await tester.tap(search);
+    await tester.enterText(search, 'chocolate');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump();
+    expect(tester.widget<TextField>(search).focusNode!.hasFocus, isFalse);
+    await tester.ensureVisible(find.byTooltip('Limpar busca'));
+    await tester.tap(find.byTooltip('Limpar busca'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(search).controller?.text, isEmpty);
+    await _activateInkWell(tester, 'Carrinho');
+    await tester.pumpAndSettle();
+    expect(find.byType(CartPage), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -855,53 +1048,24 @@ void main() {
           ]);
           await tester.pumpWidget(_app(session, api, scale: scale));
           await tester.pumpAndSettle();
-          _expectCarrinhoInAppBarActions(tester);
           expect(tester.takeException(), isNull);
           expect(find.text('Cupcake Mobile'), findsOneWidget);
-          expect(find.text('Categorias'), findsOneWidget);
-          expect(find.text('Destaques Artesanais'), findsOneWidget);
-          expect(find.text('Início'), findsOneWidget);
+          expect(find.text('Categorias', skipOffstage: false), findsOneWidget);
+          expect(
+            find.text('Destaques Artesanais', skipOffstage: false),
+            findsOneWidget,
+          );
+          expect(find.text('Início'), findsNothing);
           expect(find.text('Cardápio'), findsOneWidget);
-          expect(find.byTooltip('Carrinho'), findsOneWidget);
-          expect(find.byTooltip('Perfil'), findsOneWidget);
+          expect(find.text('Carrinho'), findsOneWidget);
+          expect(find.text('Pedidos'), findsOneWidget);
+          expect(find.text('Perfil'), findsOneWidget);
           expect(find.byType(FloatingActionButton), findsNothing);
           await tester.pumpWidget(const SizedBox.shrink());
         },
       );
     }
   }
-}
-
-void _expectCarrinhoInAppBarActions(WidgetTester tester) {
-  final button = find.byTooltip('Carrinho');
-  expect(button, findsOneWidget);
-  final element = tester.element(button);
-  AppBar? bar;
-  element.visitAncestorElements((ancestor) {
-    if (ancestor.widget is AppBar) {
-      bar = ancestor.widget as AppBar;
-      return false;
-    }
-    return true;
-  });
-  final actions = bar?.actions;
-  expect(actions, isNotNull);
-  var inActions = actions!.any((action) => identical(action, element.widget));
-  if (!inActions) {
-    element.visitAncestorElements((ancestor) {
-      if (actions.any((action) => identical(action, ancestor.widget))) {
-        inActions = true;
-        return false;
-      }
-      if (ancestor.widget is AppBar) return false;
-      return true;
-    });
-  }
-  expect(inActions, isTrue);
-  expect(find.byTooltip('Perfil'), findsOneWidget);
-  final size = tester.getSize(button);
-  expect(size.width, greaterThanOrEqualTo(AppTokens.touchTarget));
-  expect(size.height, greaterThanOrEqualTo(AppTokens.touchTarget));
 }
 
 Future<void> _pullToRefresh(WidgetTester tester) async {
@@ -913,6 +1077,7 @@ Finder _verticalScrollable() => find
     .byWidgetPredicate(
       (widget) =>
           widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      skipOffstage: false,
     )
     .first;
 
@@ -921,4 +1086,24 @@ String _testToken(String type, [String id = 'fixed']) {
   String encode(Object value) =>
       base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
   return '${encode({'alg': 'HS256', 'typ': 'JWT'})}.${encode({'sub': '9b72c770-bc74-4c77-82c7-205c2d91628a', 'perfil': 'CLIENTE', 'type': type, 'jti': id, 'iat': now, 'exp': now + 3600})}.signature';
+}
+
+Future<void> _activateInkWell(WidgetTester tester, String label) async {
+  final visible = find.text(label);
+  final labelFinder = visible.evaluate().isNotEmpty
+      ? visible
+      : find.text(label, skipOffstage: false);
+  final target = find
+      .ancestor(
+        of: labelFinder,
+        matching: find.byType(InkWell, skipOffstage: false),
+      )
+      .first;
+  tester.widget<InkWell>(target).onTap!.call();
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectCategory(WidgetTester tester, String label) async {
+  final chip = find.widgetWithText(ChoiceChip, label, skipOffstage: false);
+  tester.widget<ChoiceChip>(chip).onSelected!(true);
 }

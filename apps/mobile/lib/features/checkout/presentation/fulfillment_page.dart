@@ -17,10 +17,12 @@ class FulfillmentPage extends StatefulWidget {
     required this.session,
     this.addressApi,
     this.orderApi,
+    this.initialMode,
   });
   final CustomerSession session;
   final CustomerAddressApi? addressApi;
   final CustomerOrderApi? orderApi;
+  final FulfillmentMode? initialMode;
 
   @override
   State<FulfillmentPage> createState() => _FulfillmentPageState();
@@ -43,6 +45,8 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
   void initState() {
     super.initState();
     widget.session.addListener(_sessionChanged);
+    _mode = widget.initialMode;
+    if (_mode == FulfillmentMode.delivery) unawaited(_loadAddresses());
   }
 
   @override

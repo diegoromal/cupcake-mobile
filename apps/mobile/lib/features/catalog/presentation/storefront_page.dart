@@ -10,6 +10,7 @@ import '../../address/presentation/customer_address_page.dart';
 import '../../auth/session/customer_session.dart';
 import '../../cart/data/customer_cart_api.dart';
 import '../../cart/presentation/cart_page.dart';
+import '../../checkout/presentation/fulfillment_page.dart';
 import '../../orders/presentation/customer_orders_page.dart';
 import '../data/customer_catalog_api.dart';
 import 'product_detail_page.dart';
@@ -36,6 +37,9 @@ class _StorefrontPageState extends State<StorefrontPage> {
   final _seenIds = <String>{};
   final _indeterminateCartAttempts = <String>{};
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  final _searchAreaKey = GlobalKey();
   final _productsSectionKey = GlobalKey();
   final _imageFutures = <String, Future<Uint8List?>>{};
   List<CatalogCategory> _categories = const [];
@@ -47,6 +51,8 @@ class _StorefrontPageState extends State<StorefrontPage> {
   bool _loadingMore = false;
   bool _signOutBusy = false;
   int _selectedNavigationIndex = 0;
+  FulfillmentMode _fulfillmentMode = FulfillmentMode.delivery;
+  String _searchQuery = '';
   bool _hasMore = false;
   int _nextPage = 1;
   String? _error;
@@ -233,6 +239,32 @@ class _StorefrontPageState extends State<StorefrontPage> {
           session: widget.session,
           cartApi: widget.cartApi ?? CustomerCartApi(),
           catalogApi: widget.api,
+          initialFulfillmentMode: _fulfillmentMode,
+        ),
+      ),
+    );
+  }
+
+  void _unfocusSearchOutside(PointerDownEvent event) {
+    if (!_searchFocusNode.hasFocus) return;
+    final renderObject = _searchAreaKey.currentContext?.findRenderObject();
+    if (renderObject is RenderBox) {
+      final searchRect =
+          renderObject.localToGlobal(Offset.zero) & renderObject.size;
+      if (searchRect.contains(event.position)) return;
+    }
+    _searchFocusNode.unfocus();
+  }
+
+  Future<void> _openCartFromDetail() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => CartPage(
+          session: widget.session,
+          cartApi: widget.cartApi ?? CustomerCartApi(),
+          catalogApi: widget.api,
+          initialFulfillmentMode: _fulfillmentMode,
         ),
       ),
     );
@@ -257,6 +289,8 @@ class _StorefrontPageState extends State<StorefrontPage> {
             Navigator.pop(context);
             if (index == 3) {
               _showProfileMenu();
+            } else if (index == 1) {
+              _openCart();
             } else {
               _navigateTo(index);
             }
@@ -278,10 +312,16 @@ class _StorefrontPageState extends State<StorefrontPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   void _navigateTo(int index) {
+    if (index == 1) {
+      _openCart();
+      return;
+    }
     if (index == 2) {
       _openOrders();
       return;
@@ -297,16 +337,6 @@ class _StorefrontPageState extends State<StorefrontPage> {
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOut,
       );
-    } else {
-      final target = _productsSectionKey.currentContext;
-      if (target != null) {
-        Scrollable.ensureVisible(
-          target,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-          alignment: 0.04,
-        );
-      }
     }
   }
 
@@ -345,6 +375,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         toolbarHeight: 52,
@@ -384,47 +415,40 @@ class _StorefrontPageState extends State<StorefrontPage> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Carrinho',
-            onPressed: _openCart,
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            icon: const Icon(Icons.shopping_bag_outlined),
-          ),
-          IconButton(
-            tooltip: 'Perfil',
-            onPressed: _showProfileMenu,
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            if (widget.session.refreshUnavailable)
-              MaterialBanner(
-                content: const Text(
-                  'Não foi possível atualizar sua sessão agora.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: widget.session.retryRefresh,
-                    child: const Text('Tentar novamente'),
+      body: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: _unfocusSearchOutside,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              if (widget.session.refreshUnavailable)
+                MaterialBanner(
+                  content: const Text(
+                    'Não foi possível atualizar sua sessão agora.',
                   ),
-                ],
-              ),
-            Expanded(child: _storefrontContent()),
-          ],
+                  actions: [
+                    TextButton(
+                      onPressed: widget.session.retryRefresh,
+                      child: const Text('Tentar novamente'),
+                    ),
+                  ],
+                ),
+              Expanded(child: _storefrontContent()),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: CustomerBottomNavigation(
-          selectedIndex: _selectedNavigationIndex,
-          onSelected: _navigateTo,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _unfocusSearchOutside,
+          child: CustomerBottomNavigation(
+            selectedIndex: _selectedNavigationIndex,
+            onSelected: _navigateTo,
+          ),
         ),
       ),
     );
@@ -433,10 +457,17 @@ class _StorefrontPageState extends State<StorefrontPage> {
   Widget _storefrontContent() => LayoutBuilder(
     builder: (context, constraints) {
       final columns = constraints.maxWidth >= 360 ? 2 : 1;
+      final visibleProducts = _products.where((product) {
+        if (_searchQuery.isEmpty) return true;
+        final searchable = '${product.name} ${product.category.name}'
+            .toLowerCase();
+        return searchable.contains(_searchQuery);
+      }).toList();
       return RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
           controller: _scrollController,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: AppTokens.spacing16),
           children: [
@@ -476,10 +507,10 @@ class _StorefrontPageState extends State<StorefrontPage> {
             ),
             _fulfillmentDecoration(),
             _searchDecoration(),
-            if (_products.isNotEmpty)
+            if (visibleProducts.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                child: _featuredProduct(_products.first),
+                child: _featuredProduct(visibleProducts.first),
               ),
             _categorySelector(),
             Padding(
@@ -504,7 +535,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
                 ],
               ),
             ),
-            if (_loading && _products.isEmpty)
+            if (_loading && visibleProducts.isEmpty && _searchQuery.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(32),
                 child: _StatusState(
@@ -512,16 +543,20 @@ class _StorefrontPageState extends State<StorefrontPage> {
                   loading: true,
                 ),
               )
-            else if (_error != null && _products.isEmpty)
+            else if (_error != null &&
+                visibleProducts.isEmpty &&
+                _searchQuery.isEmpty)
               _StatusState(
                 label: _error!,
                 actionLabel: 'Tentar carregar novamente',
                 onAction: () => _load(reset: true),
                 error: true,
               )
-            else if (_products.isEmpty)
+            else if (visibleProducts.isEmpty)
               _StatusState(
-                label: _selectedCategory == null
+                label: _searchQuery.isNotEmpty
+                    ? 'Nenhum produto encontrado para “${_searchController.text}”.'
+                    : _selectedCategory == null
                     ? 'Não há produtos disponíveis no momento.'
                     : 'Não há produtos disponíveis em ${_selectedCategory!.name}.',
                 actionLabel: 'Atualizar',
@@ -530,7 +565,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
             else
               for (
                 var rowStart = 0;
-                rowStart < _products.length;
+                rowStart < visibleProducts.length;
                 rowStart += columns
               )
                 Padding(
@@ -538,20 +573,26 @@ class _StorefrontPageState extends State<StorefrontPage> {
                     16,
                     0,
                     16,
-                    rowStart + columns < _products.length ? 8 : 0,
+                    rowStart + columns < visibleProducts.length ? 8 : 0,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       for (
                         var index = rowStart;
-                        index < math.min(rowStart + columns, _products.length);
+                        index <
+                            math.min(
+                              rowStart + columns,
+                              visibleProducts.length,
+                            );
                         index++
                       ) ...[
                         if (index > rowStart) const SizedBox(width: 8),
-                        Expanded(child: _buildProductCard(_products[index])),
+                        Expanded(
+                          child: _buildProductCard(visibleProducts[index]),
+                        ),
                       ],
-                      if (math.min(rowStart + columns, _products.length) -
+                      if (math.min(rowStart + columns, visibleProducts.length) -
                               rowStart <
                           columns)
                         const Expanded(child: SizedBox.shrink()),
@@ -587,93 +628,123 @@ class _StorefrontPageState extends State<StorefrontPage> {
     },
   );
 
-  Widget _fulfillmentDecoration() => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-    child: Container(
-      height: 40,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFE8E0),
-        borderRadius: BorderRadius.circular(12),
+  Widget _fulfillmentDecoration() {
+    final labelSize = MediaQuery.textScalerOf(context).scale(14);
+    final controlHeight = math.max(52.0, labelSize * 3 + 26);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: SizedBox(
+        height: controlHeight,
+        child: Row(
+          children: [
+            _fulfillmentOption(
+              FulfillmentMode.delivery,
+              'Delivery',
+              Icons.delivery_dining,
+            ),
+            const SizedBox(width: 8),
+            _fulfillmentOption(
+              FulfillmentMode.pickup,
+              'Retirada',
+              Icons.storefront_outlined,
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTokens.surface,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              alignment: Alignment.center,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.delivery_dining,
-                      size: 16,
-                      color: AppTokens.primary,
+    );
+  }
+
+  Widget _fulfillmentOption(FulfillmentMode mode, String label, IconData icon) {
+    final selected = _fulfillmentMode == mode;
+    final color = selected ? AppTokens.primaryStrong : AppTokens.text;
+    final labelSize = MediaQuery.textScalerOf(context).scale(14);
+    final vertical = labelSize >= 14;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: Material(
+          color: selected ? AppTokens.primaryStrong : AppTokens.surfaceSoft,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => _fulfillmentMode = mode),
+            child: SizedBox(
+              height: math.max(AppTokens.touchTarget, labelSize * 3 + 26),
+              child: vertical
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 20,
+                          color: selected ? Colors.white : color,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: selected ? Colors.white : color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 20,
+                          color: selected ? Colors.white : color,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: selected ? Colors.white : color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      'Delivery',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.storefront_outlined,
-                    size: 15,
-                    color: AppTokens.textMuted,
-                  ),
-                  const SizedBox(width: 5),
-                  const Text(
-                    'Retirada',
-                    style: TextStyle(color: AppTokens.textMuted),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _searchDecoration() => Padding(
     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-    child: Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppTokens.surfaceSoft,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 18, color: AppTokens.textMuted),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Buscar cupcakes, sabores ou coleções',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: AppTokens.text),
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Icon(Icons.tune, size: 18, color: AppTokens.primary),
-        ],
+    child: SizedBox(
+      key: _searchAreaKey,
+      height: 52,
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => _searchFocusNode.unfocus(),
+        onChanged: (value) =>
+            setState(() => _searchQuery = value.trim().toLowerCase()),
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.search),
+          hintText: 'Buscar produtos',
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Limpar busca',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                    FocusScope.of(context).unfocus();
+                  },
+                  icon: const Icon(Icons.close),
+                ),
+        ),
       ),
     ),
   );
@@ -685,7 +756,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
       child: InkWell(
         onTap: () => _openProduct(product),
         child: SizedBox(
-          height: 164,
+          height: 220,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -726,7 +797,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFFFFD6C2),
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -755,41 +826,6 @@ class _StorefrontPageState extends State<StorefrontPage> {
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppTokens.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 8,
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.visibility_outlined,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'Ver produto',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
                   ],
@@ -828,13 +864,13 @@ class _StorefrontPageState extends State<StorefrontPage> {
                 child: TextButton(
                   onPressed: () => _selectCategory(null),
                   style: TextButton.styleFrom(
-                    minimumSize: const Size(44, 36),
+                    minimumSize: const Size(48, 48),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
                   child: const Text(
                     'Ver todas',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       color: AppTokens.primaryStrong,
                     ),
                   ),
@@ -863,7 +899,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           ),
         ),
       SizedBox(
-        height: 40,
+        height: 52,
         child: ListView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -883,7 +919,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
   Widget _categoryChip(CatalogCategory? category, String label) => Padding(
     padding: const EdgeInsets.only(right: AppTokens.spacing12),
     child: ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 36, minWidth: 44),
+      constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
       child: ChoiceChip(
         label: Text(label),
         selected: _selectedCategory?.id == category?.id,
@@ -893,7 +929,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
           color: _selectedCategory?.id == category?.id
               ? Colors.white
               : AppTokens.text,
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
         side: BorderSide.none,
@@ -921,7 +957,7 @@ class _StorefrontPageState extends State<StorefrontPage> {
         session: widget.session,
         api: widget.api,
         cartApi: widget.cartApi,
-        onOpenCart: _openCart,
+        onOpenCart: _openCartFromDetail,
         indeterminateCartAttempts: _indeterminateCartAttempts,
       ),
     ),
@@ -1020,7 +1056,7 @@ class _ProductCardState extends State<_ProductCard> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppTokens.primary,
-                    fontSize: 8,
+                    fontSize: 12,
                     letterSpacing: 0.25,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1033,7 +1069,7 @@ class _ProductCardState extends State<_ProductCard> {
                   style: const TextStyle(
                     color: AppTokens.text,
                     fontFamily: 'Georgia',
-                    fontSize: 13,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     height: 1.1,
                   ),
@@ -1049,7 +1085,7 @@ class _ProductCardState extends State<_ProductCard> {
                         style: const TextStyle(
                           color: AppTokens.primaryStrong,
                           fontFamily: 'Georgia',
-                          fontSize: 13,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
