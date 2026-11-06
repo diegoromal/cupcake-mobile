@@ -94,6 +94,8 @@ describe('D39–D41 HTTP', () => {
     const found = await http.get('/enderecos/cep/80000-000').set('Authorization', bearer).expect(200);
     expect(found.body).toEqual({ cep: '80000000', rua: 'Rua X', bairro: 'B', cidade: 'Curitiba', uf: 'PR' });
     expect(rows).toHaveLength(0);
+    fetchMock.mockResolvedValueOnce(new Response('{"erro":"true"}', { status: 200 }));
+    await http.get('/enderecos/cep/80000-000').set('Authorization', bearer).expect(404);
     fetchMock.mockResolvedValueOnce(new Response('{"erro":true}', { status: 200 }));
     await http.get('/enderecos/cep/80000-000').set('Authorization', bearer).expect(404);
     fetchMock.mockRejectedValueOnce(new Error('offline'));
@@ -138,12 +140,31 @@ describe('D39–D41 HTTP', () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{ lat: '-25.1234567', lon: '-49.1234567' }, { lat: '-25', lon: '-49' }]), { status: 200 }));
     await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(409);
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{ lat: '-25.1234567', lon: '-49.1234567' }]), { status: 200 }));
+    const timeout = jest.spyOn(AbortSignal, 'timeout');
     const result = await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(200);
     expect(result.body).toEqual({ latitude: '-25.123457', longitude: '-49.123457' });
+    const [geocodeUrl, geocodeOptions] = fetchMock.mock.calls.at(-1)!;
+    const requestUrl = new URL(String(geocodeUrl));
+    expect(requestUrl.searchParams.get('api_key')).toBe('test-secret');
+    expect(requestUrl.searchParams.get('street')).toBe('12 Rua A');
+    expect(requestUrl.searchParams.get('city')).toBe('Curitiba');
+    expect(requestUrl.searchParams.get('postalcode')).toBe('80000000');
+    expect(requestUrl.searchParams.get('country')).toBe('Brazil');
+    expect(requestUrl.searchParams.get('countrycodes')).toBe('br');
+    expect(requestUrl.searchParams.get('limit')).toBe('2');
+    expect(requestUrl.searchParams.get('format')).toBe('json');
+    expect(requestUrl.searchParams.get('addressdetails')).toBe('0');
+    expect(requestUrl.searchParams.get('extratags')).toBe('0');
+    expect(requestUrl.searchParams.get('namedetails')).toBe('0');
+    expect(timeout).toHaveBeenCalledWith(2200);
+    timeout.mockRestore();
+    expect(geocodeOptions?.headers).not.toHaveProperty('authorization');
+    expect(geocodeOptions?.signal).toBeDefined();
     const calls = fetchMock.mock.calls.length;
     await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(200);
     expect(fetchMock).toHaveBeenCalledTimes(calls);
     expect(JSON.stringify(result.body)).not.toContain('test-secret');
+    expect(rows[0]).toMatchObject({ latitude: new Prisma.Decimal('-25.123457'), longitude: new Prisma.Decimal('-49.123457') });
   });
 
   it('trata falhas do geocodificador sem gravar coordenada parcial ou expor chave', async () => {
@@ -167,8 +188,9 @@ describe('D39–D41 HTTP', () => {
     fetchMock.mockRejectedValueOnce(new Error('timeout'));
     await http.post(path).set('Authorization', bearer).expect(503);
     expect(rows[0]).toMatchObject({ latitude: null, longitude: null });
-    expect(fetchMock.mock.calls[0][0].toString()).not.toContain('test-secret');
-    expect(fetchMock.mock.calls[0][1].headers.authorization).toBe('Bearer test-secret');
+    expect(fetchMock.mock.calls[0][0].toString()).toContain('api_key=test-secret');
+    expect(fetchMock.mock.calls[0][1].headers.authorization).toBeUndefined();
+    expect(fetchMock.mock.calls[0][1].signal).toBeDefined();
   });
 });
 

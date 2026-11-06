@@ -15,7 +15,7 @@ export class CepService {
       const data: unknown = await response.json();
       if (!data || typeof data !== 'object') throw new Error('Resposta inválida');
       const item = data as Record<string, unknown>;
-      if (item.erro === true) throw new NotFoundException('CEP não encontrado.');
+      if (item.erro === true || item.erro === 'true') throw new NotFoundException('CEP não encontrado.');
       if (typeof item.logradouro !== 'string' || typeof item.bairro !== 'string' ||
           typeof item.localidade !== 'string' || typeof item.uf !== 'string' ||
           !/^[A-Z]{2}$/.test(item.uf)) throw new Error('Resposta inválida');
