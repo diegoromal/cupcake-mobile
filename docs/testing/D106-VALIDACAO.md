@@ -535,3 +535,68 @@ backup nos quatro casos; stack local encerrada (container removido, portas 3106/
 
 **Estado**: **PASS** — EXEC #4 não alterou produto; guard de SHA comprovado; evidências/docs
 consistentes. Staging permanece intocado (`028c605`) e **BLOCKED** para sessões humanas.
+
+## 11. REVIEW e QUALITY GATE — fechamento formal na candidata
+
+### 11.1 Candidata e proveniência
+
+Revisão independente realizada sobre a candidata `origin/main` em
+`b8a79b1490fd5f136d696f92d64100d90b56c02a`, após o merge da PR #132. A revisão não
+reexecutou testes nem alterou arquivos de produto. Os resultados técnicos desta D106
+continuam sendo evidência reportada dos EXEC/TEST anteriores; esta revisão comparou os
+achados, documentos e hashes disponíveis com a árvore candidata.
+
+### 11.2 Classificação independente dos findings TEST-F01..F05
+
+| Finding | Classificação | Fundamentação da revisão |
+|---|---|---|
+| TEST-F01 | **aceito como risco não bloqueante** | O timeout sob carga não foi reproduzido na suíte isolada e a execução documentada foi 360/360. O tempo isolado (3,3 s) não prova ausência de flake sob carga; não há evidência de falha funcional nem alteração de assertion. |
+| TEST-F02 | **corrigido** | O schema `diffSha256` passou a declarar algoritmo, escopo e arquivos, restrito ao conjunto do fix. |
+| TEST-F03 | **corrigido** | Os artefatos definitivos de concorrência têm `runId`, `runLabel`, condição e proveniência; as execuções antigas estão rotuladas como históricas/superadas. |
+| TEST-F04 | **corrigido** | A evidência D103 de segurança (108/108) foi preservada separadamente e o arquivo incidental foi declarado restaurado. A restauração é evidência reportada pela validação, não uma ação observada nesta revisão. |
+| TEST-F05 | **obsoleto para a candidata** | O screenshot/ambiente antigo `028c605` precede as correções e não demonstra defeito no SHA candidato. O staging ainda não comprova a candidata atual; isso permanece uma limitação de ambiente, não regressão da D106. |
+
+Nenhum desses cinco findings é, por si, um bloqueador de produto. A revisão não
+identificou finding ALTA/BLOCKER pendente nas evidências D106. O risco de TEST-F01 fica
+retido como não bloqueante, sem alegação de que o teste jamais falhará sob carga.
+
+### 11.3 Integridade do manifesto e mudanças posteriores
+
+A revisão encontrou três hashes do `D106-evidencias.json` diferentes dos arquivos na
+candidata atual. A comparação reproduzível confirmou que as 50 entradas e seus hashes
+correspondem ao checkpoint `db463d554c39770a0ff2af49448129974fef5a4a`, que contém o
+estado de execução D106 coberto pelo manifesto. Portanto, o manifesto é histórico e
+válido para aquele checkpoint; ele não é uma declaração de hash da candidata atual.
+
+As diferenças posteriores identificadas na história Git são:
+
+| Arquivo | Hash no manifesto D106 | Hash em `b8a79b1` | Mudança posterior identificada |
+|---|---|---|---|
+| `apps/api/src/pagamentos/pagamentos.service.spec.ts` | `ffa144576b9aa232c034b33d4df6da85313d70da3eeacfae43070fb451b3f931` | `b92db626aaa1a7364c0ae81092fcb63d28aa7ce1562b222aacf0ee66a9b11658` | `1ae63cd` — limpeza do carrinho após aprovação |
+| `apps/api/src/pagamentos/pagamentos.service.ts` | `5eb4cf0e5b274a1bbec8b3f4ebfb7e01c5805d680dc59c3c738936b57909c17e` | `e4c30d1595cd61a352975ccfc1cf58f7d1e3bebbe744f673310527769c5f4707` | `1ae63cd` — limpeza do carrinho após aprovação |
+| `scripts/d106-staging-fixtures.sh` | `e5908c7fb2e45ab2242901e62a4738c630aac6227a87e5a2e6c32f61fc7e6dcb` | `f5170e54f672c41a5e1805fde8dfb4d17e11866d45ed1feeb09617585776acbd` | follow-up `1dab156` — evolução do wrapper D106 |
+
+Os hashes do manifesto não foram substituídos pelos hashes atuais, pois isso apagaria a
+proveniência da evidência executada. A regressão da candidata atual é responsabilidade
+da D107.
+
+### 11.4 Resultado do REVIEW
+
+- **REVIEW: concluído.** O finding de rastreabilidade do manifesto foi explicado pelo
+  checkpoint e pelas alterações posteriores identificadas acima; não representa
+  corrupção das evidências daquele checkpoint.
+- **D105: separada e INCONCLUSIVA/BLOQUEADA.** A revisão não encontrou registro de
+  sessão humana ou participantes; dry-run e testes técnicos não são validação humana.
+- **Staging:** estado reportado na D106 continua `ADMIN=PARTIAL`, Cliente/Entregador e
+  sessões humanas `BLOCKED` no build `028c605`. Isso não foi convertido em PASS nem
+  afirmado como estado do SHA candidato.
+- **Findings bloqueantes D106:** nenhum ALTA/BLOCKER pendente após a classificação; risco
+  residual não bloqueante TEST-F01 documentado acima.
+
+### 11.5 QUALITY GATE
+
+EXEC, TEST e REVIEW estão concluídos conforme as evidências referenciadas neste
+relatório. O Quality Gate da D106 é **PASS / CONCLUÍDA**: os findings de produto
+confirmados foram tratados e a proveniência histórica do manifesto foi explicada sem
+fabricar nem reescrever evidência. Este gate encerra somente a D106. Não declara D105
+PASS, não aprova o Marco 13 e não substitui a regressão da candidata exigida na D107.

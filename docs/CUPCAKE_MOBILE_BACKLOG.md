@@ -244,7 +244,7 @@ produtos.
 - [x] **D103 --- Testes de segurança/autorização**
 - [ ] **D104 --- Testes de concorrência/estoque**
 - [ ] **D105 --- Testes com usuários/colegas**
-- [ ] **D106 --- Corrigir problemas encontrados**
+- [x] **D106 --- Corrigir problemas encontrados**
 - [ ] **D107 --- Regressão final**
 
 **Marco 13:** versão candidata à entrega aprovada.
