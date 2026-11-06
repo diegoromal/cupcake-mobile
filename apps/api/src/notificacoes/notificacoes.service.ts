@@ -11,12 +11,12 @@ export interface EventoStatusPedido {
 }
 
 const templates: Partial<Record<StatusPedido, (pedido: string) => string>> = {
-  [StatusPedido.PAGO]: (pedido) => `Pagamento do pedido ${pedido} aprovado.`,
-  [StatusPedido.EM_PREPARO]: (pedido) => `Seu pedido ${pedido} está em preparo.`,
-  [StatusPedido.SAIU_PARA_ENTREGA]: (pedido) => `Seu pedido ${pedido} saiu para entrega.`,
-  [StatusPedido.ENTREGUE]: (pedido) => `Seu pedido ${pedido} foi entregue.`,
-  [StatusPedido.PRONTO_PARA_RETIRADA]: (pedido) => `Seu pedido ${pedido} está pronto para retirada.`,
-  [StatusPedido.RETIRADO]: (pedido) => `A retirada do pedido ${pedido} foi confirmada.`,
+  [StatusPedido.PAGO]: (pedido) => `🧁 Pagamento do pedido ${pedido} aprovado.`,
+  [StatusPedido.EM_PREPARO]: (pedido) => `🧁 Seu pedido ${pedido} está em preparo.`,
+  [StatusPedido.SAIU_PARA_ENTREGA]: (pedido) => `🧁 Seu pedido ${pedido} saiu para entrega.`,
+  [StatusPedido.ENTREGUE]: (pedido) => `🧁 Seu pedido ${pedido} foi entregue.`,
+  [StatusPedido.PRONTO_PARA_RETIRADA]: (pedido) => `🧁 Seu pedido ${pedido} está pronto para retirada.`,
+  [StatusPedido.RETIRADO]: (pedido) => `🧁 A retirada do pedido ${pedido} foi confirmada.`,
 };
 
 @Injectable()
