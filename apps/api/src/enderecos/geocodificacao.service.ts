@@ -45,11 +45,14 @@ export class GeocodificacaoService {
     url.searchParams.set('addressdetails', '0');
     url.searchParams.set('extratags', '0');
     url.searchParams.set('namedetails', '0');
+    // Geocode.Maps.co supports the api_key query parameter. Keep the key out of
+    // headers and logs; URL is only passed directly to fetch.
+    url.searchParams.set('api_key', key);
     let data: unknown;
     try {
       const response = await fetch(url, {
         signal: AbortSignal.timeout(2200),
-        headers: { authorization: `Bearer ${key}`, accept: 'application/json' },
+        headers: { accept: 'application/json' },
       });
       if (!response.ok) throw new Error('Provider status');
       data = await response.json();
