@@ -115,7 +115,10 @@ class FakeCartApi extends CustomerCartApi {
 class FakeCatalogApi extends CustomerCatalogApi {}
 
 class FakeOrderApi extends CustomerOrderApi {
+  FakeOrderApi({this.cart});
+  final CustomerCart? cart;
   int reviews = 0, confirmations = 0;
+  int reservations = 0;
   bool timeoutFirst = false;
   final attemptIds = <String>[];
   String? selectedMode, selectedAddress;
@@ -128,6 +131,11 @@ class FakeOrderApi extends CustomerOrderApi {
     reviews++;
     selectedMode = mode;
     selectedAddress = addressId;
+    final items = cart?.items;
+    final subtotal = cart?.subtotal ?? '10.00';
+    final freight = mode == 'ENTREGA' ? '12.34' : '0.00';
+    final total = (double.parse(subtotal) + double.parse(freight))
+        .toStringAsFixed(2);
     return OrderResult(
       OrderStatus.success,
       value: {
@@ -144,18 +152,31 @@ class FakeOrderApi extends CustomerOrderApi {
               }
             : null,
         'itens': [
-          {
-            'produtoId': id2,
-            'nome': 'Cupcake',
-            'quantidade': 1,
-            'precoAplicado': '10.00',
-            'subtotalAplicado': '10.00',
-            'personalizacoes': [],
-          },
+          for (final item in items ?? const <CartItem>[])
+            {
+              'produtoId': item.productId,
+              'nome': item.name,
+              'quantidade': item.quantity,
+              'precoAplicado': item.unitPrice,
+              'subtotalAplicado': item.subtotal,
+              'personalizacoes': [
+                for (final option in item.personalizations)
+                  {'nomeAplicado': option.name},
+              ],
+            },
+          if (items == null)
+            {
+              'produtoId': id2,
+              'nome': 'Cupcake',
+              'quantidade': 1,
+              'precoAplicado': '10.00',
+              'subtotalAplicado': '10.00',
+              'personalizacoes': [],
+            },
         ],
-        'valorItens': '10.00',
-        'freteAplicado': mode == 'ENTREGA' ? '12.34' : '0.00',
-        'total': mode == 'ENTREGA' ? '22.34' : '10.00',
+        'valorItens': subtotal,
+        'freteAplicado': freight,
+        'total': total,
       },
     );
   }
@@ -169,6 +190,7 @@ class FakeOrderApi extends CustomerOrderApi {
     String reviewId,
   ) async {
     confirmations++;
+    reservations++;
     attemptIds.add(attemptId);
     if (timeoutFirst && confirmations == 1) {
       return const OrderResult(OrderStatus.timeout);
@@ -273,12 +295,11 @@ void main() {
   });
 
   testWidgets(
-    'Alterar na revisão retorna à mesma Fulfillment e preserva carrinho e seleção',
+    'Alterar usa seleção de retorno nos dois sentidos sem trocar revisão ou carrinho',
     (tester) async {
       final userSession = await session(FakeAuth());
       addTearDown(userSession.dispose);
       final addressApi = FakeAddressApi();
-      final orderApi = FakeOrderApi();
       final cart = CustomerCart(
         id: id,
         items: [
@@ -287,17 +308,20 @@ void main() {
             productId: id2,
             name: 'Cupcake',
             imageAvailable: false,
-            quantity: 1,
-            personalizations: const [],
+            quantity: 2,
+            personalizations: const [
+              CartPersonalization(id: id2, name: 'Cobertura'),
+            ],
             unitPrice: '10.00',
-            subtotal: '10.00',
+            subtotal: '20.00',
             available: true,
             reason: null,
           ),
         ],
-        subtotal: '10.00',
-        total: '10.00',
+        subtotal: '20.00',
+        total: '20.00',
       );
+      final orderApi = FakeOrderApi(cart: cart);
       await tester.pumpWidget(
         app(
           userSession,
@@ -315,41 +339,124 @@ void main() {
       await choose(tester, 'Rua das Flores, 123');
       await choose(tester, 'Continuar');
 
+      final reviewState = tester.state(find.byType(OrderReviewPage));
       expect(find.text('Revisar Pedido'), findsOneWidget);
       expect(find.text('Alterar'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Alterar'))
+            .onPressed,
+        isNotNull,
+      );
+      expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+      expect(find.text('Cobertura'), findsOneWidget);
+      expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
+      expect(find.text('Frete: R\$ 12,34'), findsOneWidget);
       expect(orderApi.reviews, 1);
       expect(orderApi.confirmations, 0);
+      expect(orderApi.reservations, 0);
 
       await choose(tester, 'Alterar');
-
       expect(find.byType(FulfillmentPage), findsOneWidget);
+      final selectionPage = tester.widget<FulfillmentPage>(
+        find.byType(FulfillmentPage),
+      );
+      expect(selectionPage.returnSelection, isTrue);
+      expect(selectionPage.initialMode, FulfillmentMode.delivery);
+      expect(selectionPage.initialAddressId, id);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(OrderReviewPage)), same(reviewState));
+      expect(orderApi.reviews, 1);
+
+      await choose(tester, 'Alterar');
+      await choose(tester, 'Retirada');
+      await choose(tester, 'Continuar');
+      expect(tester.state(find.byType(OrderReviewPage)), same(reviewState));
+      expect(orderApi.reviews, 2);
+      expect(orderApi.selectedMode, 'RETIRADA');
+      expect(orderApi.selectedAddress, isNull);
+      expect(find.text('Frete: R\$ 0,00'), findsOneWidget);
+      expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+      expect(find.text('Cobertura'), findsOneWidget);
+      expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
+
+      await choose(tester, 'Alterar');
+      final pickupSelection = tester.widget<FulfillmentPage>(
+        find.byType(FulfillmentPage),
+      );
+      expect(pickupSelection.initialMode, FulfillmentMode.pickup);
+      expect(pickupSelection.initialAddressId, id);
+      final listCallsBeforeDelivery = addressApi.listCalls;
+      final coverageCallsBeforeDelivery = addressApi.calls.length;
+      await choose(tester, 'Delivery');
+      expect(addressApi.listCalls, listCallsBeforeDelivery + 1);
+      expect(addressApi.calls.length, coverageCallsBeforeDelivery + 1);
+      expect(addressApi.calls.last, id);
+      expect(find.text('Entrega disponível. Frete: R\$ 12,34'), findsOneWidget);
+      await choose(tester, 'Continuar');
+
+      expect(tester.state(find.byType(OrderReviewPage)), same(reviewState));
+      expect(orderApi.reviews, 3);
+      expect(orderApi.selectedMode, 'ENTREGA');
+      expect(orderApi.selectedAddress, id);
+      expect(find.text('Frete: R\$ 12,34'), findsOneWidget);
+      expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+      expect(find.text('Cobertura'), findsOneWidget);
+      expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
       expect(
-        tester.state(find.byType(FulfillmentPage)),
+        tester.state(find.byType(FulfillmentPage, skipOffstage: false)),
         same(fulfillmentState),
       );
-      expect(
-        tester
-            .widget<RadioGroup<FulfillmentMode>>(
-              find.byType(RadioGroup<FulfillmentMode>),
-            )
-            .groupValue,
-        FulfillmentMode.delivery,
-      );
-      expect(
-        tester
-            .widget<RadioGroup<String>>(find.byType(RadioGroup<String>))
-            .groupValue,
-        id,
-      );
-      expect(find.text('Entrega disponível. Frete: R\$ 12,34'), findsOneWidget);
+      expect(find.byType(OrderReviewPage, skipOffstage: false), findsOneWidget);
       expect(
         tester.state(find.byType(CartPage, skipOffstage: false)),
         same(cartState),
       );
-      expect(orderApi.reviews, 1);
+      expect(cart.items.single.productId, id2);
+      expect(cart.items.single.quantity, 2);
+      expect(cart.items.single.personalizations.single.name, 'Cobertura');
+      expect(cart.subtotal, '20.00');
       expect(orderApi.confirmations, 0);
+      expect(orderApi.reservations, 0);
+      expect(userSession.pendingOrderConfirmation, isNull);
     },
   );
+
+  testWidgets('Retirada inicial leva último endereço válido ao Alterar', (
+    tester,
+  ) async {
+    final userSession = await session(FakeAuth());
+    addTearDown(userSession.dispose);
+    final addressApi = FakeAddressApi();
+    final orderApi = FakeOrderApi();
+    await tester.pumpWidget(app(userSession, addressApi, orderApi: orderApi));
+    await choose(tester, 'Delivery');
+    await choose(tester, 'Rua das Flores, 123');
+    await choose(tester, 'Retirada');
+    await choose(tester, 'Continuar');
+    expect(orderApi.selectedMode, 'RETIRADA');
+    expect(orderApi.selectedAddress, isNull);
+
+    await choose(tester, 'Alterar');
+    final selection = tester.widget<FulfillmentPage>(
+      find.byType(FulfillmentPage),
+    );
+    expect(selection.initialMode, FulfillmentMode.pickup);
+    expect(selection.initialAddressId, id);
+    final listsBeforeDelivery = addressApi.listCalls;
+    final coverageBeforeDelivery = addressApi.calls.length;
+    await choose(tester, 'Delivery');
+    expect(addressApi.listCalls, listsBeforeDelivery + 1);
+    expect(addressApi.calls.length, coverageBeforeDelivery + 1);
+    expect(addressApi.calls.last, id);
+    await choose(tester, 'Continuar');
+    expect(orderApi.reviews, 2);
+    expect(orderApi.selectedMode, 'ENTREGA');
+    expect(orderApi.selectedAddress, id);
+    expect(orderApi.confirmations, 0);
+    expect(orderApi.reservations, 0);
+  });
 
   testWidgets('carrinho vazio bloqueia Continuar', (tester) async {
     final userSession = await session(FakeAuth());

@@ -13,6 +13,13 @@ import 'order_review_page.dart';
 
 export 'fulfillment_mode.dart';
 
+class FulfillmentSelection {
+  const FulfillmentSelection(this.mode, this.addressId);
+
+  final FulfillmentMode mode;
+  final String? addressId;
+}
+
 class FulfillmentPage extends StatefulWidget {
   const FulfillmentPage({
     super.key,
@@ -23,6 +30,7 @@ class FulfillmentPage extends StatefulWidget {
     this.initialMode,
     this.initialAddressId,
     this.modeSelection,
+    this.returnSelection = false,
   });
   final CustomerSession session;
   final CustomerAddressApi? addressApi;
@@ -31,6 +39,7 @@ class FulfillmentPage extends StatefulWidget {
   final FulfillmentMode? initialMode;
   final String? initialAddressId;
   final ValueNotifier<FulfillmentMode?>? modeSelection;
+  final bool returnSelection;
 
   @override
   State<FulfillmentPage> createState() => _FulfillmentPageState();
@@ -389,14 +398,25 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
 
   void _continue() {
     if (!_canContinue) return;
+    if (widget.returnSelection) {
+      Navigator.of(context).pop(
+        FulfillmentSelection(
+          _mode!,
+          _mode == FulfillmentMode.delivery ? _selectedId : null,
+        ),
+      );
+      return;
+    }
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => OrderReviewPage(
           session: widget.session,
           mode: _mode == FulfillmentMode.delivery ? 'ENTREGA' : 'RETIRADA',
           addressId: _mode == FulfillmentMode.delivery ? _selectedId : null,
+          lastDeliveryAddressId: _selectedId,
           orderApi: widget.orderApi,
           catalogApi: widget.catalogApi,
+          addressApi: _api,
         ),
       ),
     );
