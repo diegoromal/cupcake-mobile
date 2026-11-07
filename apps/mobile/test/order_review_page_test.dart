@@ -3,9 +3,11 @@ import 'dart:convert';
 
 import 'package:cupcake_mobile/core/design/app_tokens.dart';
 import 'package:cupcake_mobile/core/design/app_theme.dart';
+import 'package:cupcake_mobile/features/address/data/customer_address_api.dart';
 import 'package:cupcake_mobile/features/auth/data/customer_auth_api.dart';
 import 'package:cupcake_mobile/features/auth/session/customer_session.dart';
 import 'package:cupcake_mobile/features/checkout/data/customer_order_api.dart';
+import 'package:cupcake_mobile/features/checkout/presentation/fulfillment_page.dart';
 import 'package:cupcake_mobile/features/checkout/presentation/order_review_page.dart';
 import 'package:cupcake_mobile/features/cart/data/customer_cart_api.dart';
 import 'package:cupcake_mobile/features/catalog/data/customer_catalog_api.dart';
@@ -58,6 +60,7 @@ class FakeOrderApi extends CustomerOrderApi {
   final attemptIds = <String>[];
   final reviewIds = <String>[];
   final reviewModes = <String>[];
+  final reviewAddresses = <String?>[];
   final confirmModes = <String>[];
   final confirmAddresses = <String?>[];
   bool timeoutAfterCreation = false;
@@ -68,6 +71,7 @@ class FakeOrderApi extends CustomerOrderApi {
   Future<OrderResult> review(String token, String mode, String? addressId) {
     reviewTokens.add(token);
     reviewModes.add(mode);
+    reviewAddresses.add(addressId);
     if (reviewPending != null) return reviewPending!.future;
     return Future.value(reviewResults.removeAt(0));
   }
@@ -105,6 +109,44 @@ class FakeOrderApi extends CustomerOrderApi {
     }
     if (confirmPending != null) return confirmPending!.future;
     return Future.value(confirmResults.removeAt(0));
+  }
+}
+
+class FakeAddressApi extends CustomerAddressApi {
+  int listCalls = 0;
+  final coverageCalls = <String>[];
+
+  @override
+  Future<AddressResult<List<CustomerAddress>>> list(String token) async {
+    listCalls++;
+    return const AddressResult(
+      AddressStatus.success,
+      value: [
+        CustomerAddress(
+          id: userId,
+          street: 'Rua A',
+          number: '1',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          cep: '01001000',
+          complement: null,
+          reference: null,
+          located: true,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<AddressResult<CoverageFreight>> coverageFreight(
+    String token,
+    String addressId,
+  ) async {
+    coverageCalls.add(addressId);
+    return const AddressResult(
+      AddressStatus.success,
+      value: CoverageFreight(CoverageSituation.attended, '3.00'),
+    );
   }
 }
 
@@ -274,6 +316,8 @@ Future<void> open(
   CustomerSession session,
   FakeOrderApi api, {
   String mode = 'RETIRADA',
+  CustomerAddressApi? addressApi,
+  CustomerCartApi? cartApi,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -283,6 +327,8 @@ Future<void> open(
         mode: mode,
         addressId: mode == 'ENTREGA' ? userId : null,
         orderApi: api,
+        addressApi: addressApi,
+        cartApi: cartApi,
       ),
     ),
   );
@@ -290,6 +336,101 @@ Future<void> open(
 }
 
 void main() {
+  testWidgets('Alterar recalcula na mesma revisão nos dois sentidos', (
+    tester,
+  ) async {
+    final auth = FakeAuth();
+    final sessionValue = await session(auth);
+    addTearDown(sessionValue.dispose);
+    final orderApi = FakeOrderApi();
+    final addressApi = FakeAddressApi();
+    final cartApi = FakeCartApi(existing: const ['produto-do-carrinho']);
+    orderApi.reviewResults.addAll([
+      OrderResult(OrderStatus.success, value: preview(mode: 'ENTREGA')),
+      OrderResult(OrderStatus.success, value: preview()),
+      OrderResult(OrderStatus.success, value: preview(mode: 'ENTREGA')),
+    ]);
+    await open(
+      tester,
+      sessionValue,
+      orderApi,
+      mode: 'ENTREGA',
+      addressApi: addressApi,
+      cartApi: cartApi,
+    );
+    final reviewState = tester.state(find.byType(OrderReviewPage));
+    expect(
+      tester
+          .widget<TextButton>(find.widgetWithText(TextButton, 'Alterar'))
+          .onPressed,
+      isNotNull,
+    );
+    expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+    expect(find.text('Cobertura'), findsOneWidget);
+    expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
+    expect(find.text('Frete: R\$ 3,00'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Alterar'));
+    await tester.tap(find.text('Alterar'));
+    await tester.pumpAndSettle();
+    final initialSelection = tester.widget<FulfillmentPage>(
+      find.byType(FulfillmentPage),
+    );
+    expect(initialSelection.returnSelection, isTrue);
+    expect(initialSelection.initialMode, FulfillmentMode.delivery);
+    expect(initialSelection.initialAddressId, userId);
+    expect(addressApi.listCalls, 1);
+    expect(addressApi.coverageCalls, [userId]);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(tester.state(find.byType(OrderReviewPage)), same(reviewState));
+    expect(orderApi.reviewModes, ['ENTREGA']);
+
+    await tester.tap(find.text('Alterar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retirada'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    expect(tester.state(find.byType(OrderReviewPage)), same(reviewState));
+    expect(orderApi.reviewModes, ['ENTREGA', 'RETIRADA']);
+    expect(orderApi.reviewAddresses, [userId, null]);
+    expect(find.text('Frete: R\$ 0,00'), findsOneWidget);
+    expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+    expect(find.text('Cobertura'), findsOneWidget);
+    expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
+
+    await tester.tap(find.text('Alterar'));
+    await tester.pumpAndSettle();
+    final pickupSelection = tester.widget<FulfillmentPage>(
+      find.byType(FulfillmentPage),
+    );
+    expect(pickupSelection.initialMode, FulfillmentMode.pickup);
+    expect(pickupSelection.initialAddressId, userId);
+    final listsBeforeDelivery = addressApi.listCalls;
+    final coverageBeforeDelivery = addressApi.coverageCalls.length;
+    await tester.tap(find.text('Delivery'));
+    await tester.pumpAndSettle();
+    expect(addressApi.listCalls, listsBeforeDelivery + 1);
+    expect(addressApi.coverageCalls.length, coverageBeforeDelivery + 1);
+    expect(addressApi.coverageCalls.last, userId);
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    expect(tester.state(find.byType(OrderReviewPage)), same(reviewState));
+    expect(orderApi.reviewModes, ['ENTREGA', 'RETIRADA', 'ENTREGA']);
+    expect(orderApi.reviewAddresses, [userId, null, userId]);
+    expect(find.text('Frete: R\$ 3,00'), findsOneWidget);
+    expect(find.text('2 × R\$ 10,00'), findsOneWidget);
+    expect(find.text('Cobertura'), findsOneWidget);
+    expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
+    expect(cartApi.added, isEmpty);
+    expect(cartApi.items, ['produto-do-carrinho']);
+    expect(orderApi.confirmTokens, isEmpty);
+    expect(orderApi.reservations, 0);
+    expect(sessionValue.pendingOrderConfirmation, isNull);
+  });
+
   testWidgets(
     'CTA mostra o total calculado pela revisão em formato monetário',
     (tester) async {

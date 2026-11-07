@@ -5,13 +5,14 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_tokens.dart';
+import '../../address/data/customer_address_api.dart';
 import '../../auth/session/customer_session.dart';
 import '../../catalog/data/customer_catalog_api.dart';
 import '../../catalog/presentation/product_detail_page.dart';
 import '../../catalog/presentation/storefront_page.dart';
 import '../../cart/data/customer_cart_api.dart';
 import '../data/customer_order_api.dart';
-import 'fulfillment_mode.dart';
+import 'fulfillment_page.dart';
 import 'payment_page.dart';
 
 class OrderReviewPage extends StatefulWidget {
@@ -20,16 +21,20 @@ class OrderReviewPage extends StatefulWidget {
     required this.session,
     required this.mode,
     this.addressId,
+    this.lastDeliveryAddressId,
     this.orderApi,
     this.catalogApi,
     this.cartApi,
+    this.addressApi,
   });
   final CustomerSession session;
   final String mode;
   final String? addressId;
+  final String? lastDeliveryAddressId;
   final CustomerOrderApi? orderApi;
   final CustomerCatalogApi? catalogApi;
   final CustomerCartApi? cartApi;
+  final CustomerAddressApi? addressApi;
 
   @override
   State<OrderReviewPage> createState() => _OrderReviewPageState();
@@ -55,16 +60,18 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
   int _selfRefreshDepth = 0;
   late String? _sessionToken = widget.session.accessToken;
   late String _attemptId;
-  String get _mode => widget.mode;
-  String? get _addressId => widget.addressId;
+  late String _mode = widget.mode;
+  late String? _addressId = widget.addressId;
+  late String? _lastDeliveryAddressId =
+      widget.addressId ?? widget.lastDeliveryAddressId;
   bool get _canChangeSelection =>
       !_confirming &&
       _orderId == null &&
       widget.session.pendingOrderConfirmation == null;
 
   bool _matchesSelection(PendingOrderConfirmation pending) =>
-      pending.mode == widget.mode &&
-      pending.addressId == widget.addressId &&
+      pending.mode == _mode &&
+      pending.addressId == _addressId &&
       pending.review['modalidade'] == pending.mode &&
       pending.review['enderecoId'] == pending.addressId &&
       pending.review['revisaoId'] is String &&
@@ -354,6 +361,36 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
     if (_review != null) unawaited(_loadSuggestions());
   }
 
+  Future<void> _changeSelection() async {
+    if (!_canChangeSelection) return;
+    final selection = await Navigator.of(context).push<FulfillmentSelection>(
+      MaterialPageRoute<FulfillmentSelection>(
+        builder: (_) => FulfillmentPage(
+          session: widget.session,
+          addressApi: widget.addressApi,
+          initialMode: _mode == 'ENTREGA'
+              ? FulfillmentMode.delivery
+              : FulfillmentMode.pickup,
+          initialAddressId: _lastDeliveryAddressId,
+          returnSelection: true,
+        ),
+      ),
+    );
+    if (!mounted || selection == null) return;
+    setState(() {
+      _mode = selection.mode == FulfillmentMode.delivery
+          ? 'ENTREGA'
+          : 'RETIRADA';
+      _addressId = selection.addressId;
+      if (selection.mode == FulfillmentMode.delivery) {
+        _lastDeliveryAddressId = selection.addressId;
+      }
+      _review = null;
+      _status = null;
+    });
+    await _load();
+  }
+
   Future<void> _confirm() async {
     final pending = widget.session.pendingOrderConfirmation;
     final review = _resolvingPreviousIntent ? pending?.review : _review;
@@ -542,7 +579,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                         ),
                         TextButton(
                           onPressed: _canChangeSelection
-                              ? () => Navigator.of(context).pop()
+                              ? () => unawaited(_changeSelection())
                               : null,
                           child: const Text('Alterar'),
                         ),
