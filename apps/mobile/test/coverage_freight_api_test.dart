@@ -68,8 +68,11 @@ void main() {
     expect(results.map((r) => r.status).toList(), expected);
     expect(results[0].value!.situation, CoverageSituation.attended);
     expect(results[0].value!.freight, '12.34');
+    expect(results[0].value!.distanceKm, '1.234');
+    expect(results[0].value!.radiusKm, '5.000');
     expect(results[1].value!.situation, CoverageSituation.outsideCoverage);
     expect(results[1].value!.freight, isNull);
+    expect(results[1].value!.radiusKm, '5.000');
     expect(results[2].value!.situation, CoverageSituation.locationUnavailable);
     expect(results[2].value!.freight, isNull);
     expect(
@@ -114,6 +117,10 @@ void main() {
       expect(CoverageFreight.parse({...valid, 'frete': null}), isNull);
       expect(CoverageFreight.parse({...valid, 'extra': 1}), isNull);
       expect(CoverageFreight.parse({...valid, 'distanciaKm': 1.234}), isNull);
+      expect(
+        CoverageFreight.parse({...valid, 'distanciaKm': '5.000'})?.situation,
+        CoverageSituation.attended,
+      );
       expect(
         CoverageFreight.parse({...valid, 'situacao': 'DESCONHECIDO'}),
         isNull,

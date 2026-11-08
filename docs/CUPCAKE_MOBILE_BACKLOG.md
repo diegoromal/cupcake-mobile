@@ -268,6 +268,7 @@ produtos.
 - [x] **D118 — Consolidar UX/UI e referências visuais do produto**
 - [x] **D119 — Corrigir e consolidar referências Admin após auditoria D118**
 - [x] **D120 — Implementar UX/UI do Admin conforme referências D118/D119**
+- [x] **D121 - Implementar melhorias na confirmação do pedido e mensagem mais clara na cobertura de entrega**
 
 ## Regras de trabalho
 

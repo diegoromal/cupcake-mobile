@@ -170,12 +170,67 @@ bool _validReview(Map<String, dynamic> data) {
   return true;
 }
 
-bool _validOrder(Map<String, dynamic> data) =>
-    data['id'] is String &&
-    RegExp(
-      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-      caseSensitive: false,
-    ).hasMatch(data['id'] as String) &&
-    data['identificadorNegocio'] is String &&
-    data['total'] is String &&
-    RegExp(r'^\d+\.\d{2}$').hasMatch(data['total'] as String);
+bool _validOrder(Map<String, dynamic> data) {
+  if (data['id'] is! String ||
+      !RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        caseSensitive: false,
+      ).hasMatch(data['id'] as String) ||
+      data['numeroPublico'] is! int ||
+      (data['numeroPublico'] as int) < 1 ||
+      data['identificadorNegocio'] is! String ||
+      (data['modalidade'] != 'RETIRADA' && data['modalidade'] != 'ENTREGA') ||
+      data['itens'] is! List ||
+      (data['itens'] as List).isEmpty) {
+    return false;
+  }
+  final money = RegExp(r'^\d+\.\d{2}$');
+  if (['valorItens', 'freteAplicado', 'total'].any(
+    (key) => data[key] is! String || !money.hasMatch(data[key] as String),
+  )) {
+    return false;
+  }
+  if (data['modalidade'] == 'RETIRADA' &&
+      (data['enderecoEntregaSnapshot'] != null ||
+          data['freteAplicado'] != '0.00')) {
+    return false;
+  }
+  final address = data['enderecoEntregaSnapshot'];
+  if (data['modalidade'] == 'ENTREGA' && address is! Map<String, dynamic>) {
+    return false;
+  }
+  if (address is Map<String, dynamic> &&
+      [
+        'rua',
+        'numero',
+        'bairro',
+        'cidade',
+        'cep',
+      ].any((key) => address[key] is! String)) {
+    return false;
+  }
+  for (final item in data['itens'] as List) {
+    if (item is! Map<String, dynamic> ||
+        item['nome'] is! String ||
+        (item['nome'] as String).isEmpty ||
+        item['quantidade'] is! int ||
+        (item['quantidade'] as int) < 1 ||
+        item['precoAplicado'] is! String ||
+        !money.hasMatch(item['precoAplicado'] as String) ||
+        item['subtotalAplicado'] is! String ||
+        !money.hasMatch(item['subtotalAplicado'] as String) ||
+        item['personalizacoes'] is! List) {
+      return false;
+    }
+    for (final option in item['personalizacoes'] as List) {
+      if (option is! Map<String, dynamic> ||
+          option['nomeAplicado'] is! String ||
+          (option['ajusteValorAplicado'] != null &&
+              (option['ajusteValorAplicado'] is! String ||
+                  !money.hasMatch(option['ajusteValorAplicado'] as String)))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}

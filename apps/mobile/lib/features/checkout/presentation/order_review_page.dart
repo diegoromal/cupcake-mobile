@@ -459,6 +459,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
                 orderId: order['id'] as String,
                 orderNumber: order['identificadorNegocio'] as String,
                 total: order['total'] as String,
+                receipt: order,
               ),
             ),
           ),

@@ -525,7 +525,8 @@ describe('PedidosService', () => {
     };
     findConfig.mockResolvedValue(config);
     createOrder.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
-      id: 'order', data: new Date('2026-10-22T12:00:00.000Z'), identificadorNegocio: data.identificadorNegocio,
+      id: 'order', numeroPublico: 123, data: new Date('2026-10-22T12:00:00.000Z'),
+      identificadorNegocio: data.identificadorNegocio,
       clienteUsuarioId: data.clienteUsuarioId,
       modalidade: data.modalidade, statusAtual: 'PENDENTE_PAGAMENTO',
       valorItens: data.valorItens, freteAplicado: data.freteAplicado, total: data.total,
@@ -533,6 +534,7 @@ describe('PedidosService', () => {
         (data.enderecoEntregaSnapshot as { create: object }).create : null,
       itens: (data.itens as { create: Array<Record<string, unknown>> }).create.map((item) => ({
         ...item,
+        produto: { nome: 'Cupcake' },
         personalizacoes: (item.personalizacoes as { create: object[] }).create,
       })),
     }));
@@ -578,11 +580,14 @@ describe('PedidosService', () => {
     const result = await service.criar(usuarioId, { modalidade: ModalidadeRecebimento.RETIRADA });
     expect(findCart).toHaveBeenCalledWith(expect.objectContaining({ where: { usuarioId } }));
     expect(result).toMatchObject({ valorItens: '20.91', freteAplicado: '0.00', total: '20.91',
-      enderecoEntregaSnapshot: null });
+      enderecoEntregaSnapshot: null, numeroPublico: 123 });
     expect(result.itens).toEqual(expect.arrayContaining([
-      expect.objectContaining({ quantidade: 2, precoAplicado: '10.30', subtotalAplicado: '20.60',
+      expect.objectContaining({ nome: 'Cupcake', quantidade: 2, precoAplicado: '10.30', subtotalAplicado: '20.60',
         personalizacoes: [expect.objectContaining({ nomeAplicado: 'Cobertura', ajusteValorAplicado: '0.20' })] }),
     ]));
+    expect(createOrder.mock.calls[0][0].data).not.toHaveProperty('numeroPublico');
+    expect(createOrder.mock.calls[0][0].data.itens.create[0])
+      .toHaveProperty('nomeProdutoAplicado', 'Cupcake');
     expect(findConfig).not.toHaveBeenCalled();
     expect(stockWrite).toHaveBeenCalledTimes(2);
     expect(createHistory).toHaveBeenCalledWith({ data: {
@@ -610,6 +615,18 @@ describe('PedidosService', () => {
       pedidoId: 'order', produtoId, quantidade: 2, estado: 'ATIVA',
       momentoExpiracaoValidade: new Date('2026-10-22T12:15:00.000Z'),
     }) });
+  });
+
+  it('aceita entrega exatamente no limite do raio', async () => {
+    findConfig.mockResolvedValue({
+      latitudeLoja: dinheiro('0'), longitudeLoja: dinheiro('0'),
+      raioMaximoAtendimento: dinheiro('0'), taxaBase: dinheiro('2.05'),
+      valorPorQuilometro: dinheiro('1.00'),
+    });
+    const result = await service.criar(usuarioId,
+      { modalidade: ModalidadeRecebimento.ENTREGA, enderecoId });
+    expect(result).toMatchObject({ numeroPublico: 123, freteAplicado: '2.05', total: '22.65' });
+    expect(createOrder).toHaveBeenCalledTimes(1);
   });
 
   it('preserva duas linhas do mesmo produto com quantidades e personalizações independentes', async () => {
@@ -834,7 +851,7 @@ describe('PedidosService', () => {
     expect(reservationWrite).not.toHaveBeenCalled();
   });
 
-  it('repete a mesma tentativa sem reservar novamente e bloqueia outro cliente', async () => {
+  it('repete a mesma tentativa com nome congelado após renomear produto, sem reservar novamente', async () => {
     const tentativaId = '11111111-1111-4111-8111-111111111111';
     const preview = await service.revisar(usuarioId, { modalidade: ModalidadeRecebimento.RETIRADA });
     if (!('revisaoId' in preview)) throw new Error('Revisão sem ID.');
@@ -842,14 +859,66 @@ describe('PedidosService', () => {
       revisaoId: preview.revisaoId };
     const primeiro = await service.criar(usuarioId, input);
     const persisted = await createOrder.mock.results[0].value;
+    persisted.itens[0].produto.nome = 'Cupcake Renomeado';
     findOrder.mockResolvedValue(persisted);
     const repetido = await service.criar(usuarioId, input);
     expect(repetido).toEqual(primeiro);
+    expect(repetido.itens[0].nome).toBe('Cupcake');
+    expect(repetido).toHaveProperty('numeroPublico', 123);
     expect(createOrder).toHaveBeenCalledTimes(1);
     expect(stockWrite).toHaveBeenCalledTimes(1);
     await expect(service.criar('ffffffff-ffff-4fff-8fff-ffffffffffff', input))
       .rejects.toBeInstanceOf(ConflictException);
     expect(createOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa nome vigente do produto apenas no replay de item legado sem snapshot', async () => {
+    const tentativaId = '11111111-1111-4111-8111-111111111111';
+    const preview = await service.revisar(usuarioId, { modalidade: ModalidadeRecebimento.RETIRADA });
+    if (!('revisaoId' in preview)) throw new Error('Revisão sem ID.');
+    const input = { modalidade: ModalidadeRecebimento.RETIRADA, tentativaId,
+      revisaoId: preview.revisaoId };
+    await service.criar(usuarioId, input);
+    const persisted = await createOrder.mock.results[0].value;
+    persisted.itens[0].nomeProdutoAplicado = null;
+    persisted.itens[0].produto.nome = 'Nome Legado Atual';
+    findOrder.mockResolvedValue(persisted);
+    const repetido = await service.criar(usuarioId, input);
+    expect(repetido.itens[0].nome).toBe('Nome Legado Atual');
+    expect(createOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa snapshot também no replay após advisory lock', async () => {
+    const tentativaId = '11111111-1111-4111-8111-111111111111';
+    const preview = await service.revisar(usuarioId, { modalidade: ModalidadeRecebimento.RETIRADA });
+    if (!('revisaoId' in preview)) throw new Error('Revisão sem ID.');
+    const input = { modalidade: ModalidadeRecebimento.RETIRADA, tentativaId,
+      revisaoId: preview.revisaoId };
+    await service.criar(usuarioId, input);
+    const persisted = await createOrder.mock.results[0].value;
+    persisted.itens[0].produto.nome = 'Cupcake Renomeado';
+    findOrder.mockResolvedValueOnce(null).mockResolvedValueOnce(persisted);
+    const repetido = await service.criar(usuarioId, input);
+    expect(repetido.itens[0].nome).toBe('Cupcake');
+    expect(createOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa snapshot também no replay de conflito P2002', async () => {
+    const tentativaId = '11111111-1111-4111-8111-111111111111';
+    const preview = await service.revisar(usuarioId, { modalidade: ModalidadeRecebimento.RETIRADA });
+    if (!('revisaoId' in preview)) throw new Error('Revisão sem ID.');
+    const input = { modalidade: ModalidadeRecebimento.RETIRADA, tentativaId,
+      revisaoId: preview.revisaoId };
+    await service.criar(usuarioId, input);
+    const persisted = await createOrder.mock.results[0].value;
+    persisted.itens[0].produto.nome = 'Cupcake Renomeado';
+    findOrder.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(persisted);
+    createOrder.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError(
+      'Unique constraint', { code: 'P2002', clientVersion: '7.10.0' },
+    ));
+    const repetido = await service.criar(usuarioId, input);
+    expect(repetido.itens[0].nome).toBe('Cupcake');
+    expect(createOrder).toHaveBeenCalledTimes(2);
   });
 
   it('vincula tentativa ao endereço, modalidade e revisão imutáveis', async () => {

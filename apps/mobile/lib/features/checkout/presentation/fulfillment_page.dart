@@ -50,9 +50,10 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       widget.addressApi ?? CustomerAddressApi();
   FulfillmentMode? _mode;
   List<CustomerAddress> _addresses = const [];
+  final Set<String> _geocodedIds = {};
   String? _selectedId;
   CoverageFreight? _coverage;
-  AddressStatus? _listStatus, _coverageStatus;
+  AddressStatus? _listStatus, _coverageStatus, _geocodeStatus;
   bool _loadingAddresses = false, _loadingCoverage = false;
   int _selfRefreshDepth = 0;
   int _generation = 0;
@@ -98,11 +99,13 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       if (mounted) {
         setState(() {
           _addresses = const [];
+          _geocodedIds.clear();
           _selectedId = null;
           _listStatus = AddressStatus.unauthorized;
           _loadingAddresses = false;
           _coverage = null;
           _coverageStatus = AddressStatus.unauthorized;
+          _geocodeStatus = null;
           _loadingCoverage = false;
         });
       }
@@ -123,6 +126,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       _mode = mode;
       _coverage = null;
       _coverageStatus = null;
+      _geocodeStatus = null;
       _loadingCoverage = false;
       if (mode == FulfillmentMode.pickup) {
         _loadingAddresses = false;
@@ -181,7 +185,9 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       _loadingCoverage = false;
       _coverage = null;
       _coverageStatus = null;
+      _geocodeStatus = null;
       _listStatus = null;
+      _geocodedIds.clear();
     });
     final result = await _request(_api.list, generation);
     if (!mounted ||
@@ -213,6 +219,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       _selectedId = id;
       _coverage = null;
       _coverageStatus = null;
+      _geocodeStatus = null;
       _loadingCoverage = false;
     });
     unawaited(_checkCoverage());
@@ -226,7 +233,39 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       _loadingCoverage = true;
       _coverage = null;
       _coverageStatus = null;
+      _geocodeStatus = null;
     });
+    final needsGeocoding =
+        _addresses.any((address) => address.id == id && !address.located) &&
+        !_geocodedIds.contains(id);
+    if (needsGeocoding) {
+      final geocode = await _request(
+        (token) => _api.geocode(token, id),
+        generation,
+      );
+      if (!mounted ||
+          generation != _generation ||
+          _mode != FulfillmentMode.delivery ||
+          _selectedId != id) {
+        return;
+      }
+      if (geocode.status != AddressStatus.success) {
+        if (geocode.status == AddressStatus.notFound) {
+          setState(() {
+            _selectedId = null;
+            _loadingCoverage = false;
+          });
+          unawaited(_loadAddresses());
+        } else {
+          setState(() {
+            _loadingCoverage = false;
+            _geocodeStatus = geocode.status;
+          });
+        }
+        return;
+      }
+      _geocodedIds.add(id);
+    }
     final result = await _request(
       (token) => _api.coverageFreight(token, id),
       generation,
@@ -250,6 +289,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
     setState(() {
       _loadingCoverage = false;
       _coverageStatus = result.status;
+      _geocodeStatus = null;
       _coverage = result.status == AddressStatus.success ? result.value : null;
     });
   }
@@ -259,6 +299,7 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
     setState(() {
       _coverage = null;
       _coverageStatus = null;
+      _geocodeStatus = null;
       _loadingCoverage = false;
     });
     await Navigator.of(context).push<void>(
@@ -273,12 +314,23 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
     AddressStatus.unauthorized => 'Sessão expirada. Entre novamente.',
     AddressStatus.forbidden => 'Sua conta não tem acesso à entrega.',
     AddressStatus.configurationUnavailable =>
-      'Entrega indisponível no momento. Tente novamente mais tarde.',
+      'Não foi possível consultar a entrega agora. Tente novamente.',
     AddressStatus.networkError =>
       'Sem conexão para consultar a entrega. Tente novamente.',
     AddressStatus.invalidResponse =>
       'Não foi possível confirmar a entrega. Tente novamente.',
     _ => 'Não foi possível consultar a entrega. Tente novamente.',
+  };
+
+  String _geocodeMessage(AddressStatus status) => switch (status) {
+    AddressStatus.notLocated =>
+      'Endereço não localizado. Confira os dados em Meus endereços e tente novamente.',
+    AddressStatus.ambiguous =>
+      'Localização ambígua. Confira os dados em Meus endereços e tente novamente.',
+    AddressStatus.invalid =>
+      'Dados do endereço inválidos. Confira em Meus endereços.',
+    AddressStatus.unauthorized || AddressStatus.forbidden => _message(status),
+    _ => 'Falha temporária ao localizar o endereço. Tente novamente.',
   };
 
   Widget _notice(String message, {VoidCallback? retry}) => Column(
@@ -356,6 +408,15 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
           const SizedBox(height: AppTokens.spacing16),
           if (_loadingCoverage)
             _notice('Consultando entrega…')
+          else if (_geocodeStatus != null)
+            _notice(
+              _geocodeMessage(_geocodeStatus!),
+              retry:
+                  _geocodeStatus == AddressStatus.unauthorized ||
+                      _geocodeStatus == AddressStatus.forbidden
+                  ? null
+                  : () => unawaited(_checkCoverage()),
+            )
           else if (_coverageStatus != AddressStatus.success)
             _notice(
               _message(_coverageStatus ?? AddressStatus.unavailable),
@@ -370,7 +431,9 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
               'Entrega disponível. Frete: ${_formatFreight(_coverage!.freight!)}',
             )
           else if (_coverage?.situation == CoverageSituation.outsideCoverage)
-            _notice('Endereço fora da área de entrega.')
+            _notice(
+              'Endereço fora do raio de ${_coverage!.radiusKm!.replaceAll('.', ',')} km.',
+            )
           else
             _notice(
               'Localização indisponível para este endereço. Confira em Meus endereços.',

@@ -84,7 +84,103 @@ Map<String, dynamic> _payment(String result, {String method = 'PIX'}) => {
   'dataTransacao': '2026-10-23T12:00:00.000Z',
 };
 
+Map<String, dynamic> _receipt({bool delivery = false}) => {
+  'numeroPublico': 42,
+  'modalidade': delivery ? 'ENTREGA' : 'RETIRADA',
+  'enderecoEntregaSnapshot': delivery
+      ? {
+          'rua': 'Rua A',
+          'numero': '7',
+          'bairro': 'Centro',
+          'cidade': 'Curitiba',
+          'cep': '80000000',
+        }
+      : null,
+  'itens': [
+    {
+      'nome': 'Cupcake',
+      'quantidade': 2,
+      'precoAplicado': '10.00',
+      'subtotalAplicado': '20.00',
+      'personalizacoes': [
+        {'nomeAplicado': 'Cobertura', 'ajusteValorAplicado': '0.20'},
+      ],
+    },
+  ],
+  'valorItens': '20.00',
+  'freteAplicado': delivery ? '3.00' : '0.00',
+  'total': delivery ? '23.00' : '20.00',
+};
+
 void main() {
+  testWidgets('aprovação mostra recibo de retirada vindo da criação', (
+    tester,
+  ) async {
+    final session = await _session();
+    final api = _PaymentApi()
+      ..startResults.add(
+        PaymentResult(PaymentStatus.success, value: _payment('APROVADO')),
+      );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: PaymentPage(
+          session: session,
+          orderId: orderId,
+          orderNumber: 'PED-identificador-interno',
+          total: '20.00',
+          receipt: _receipt(),
+          paymentApi: api,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Pix'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pagar agora'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pedido #42'), findsOneWidget);
+    expect(find.text('Recebimento: Retirada'), findsOneWidget);
+    expect(find.text('2 × Cupcake'), findsOneWidget);
+    expect(find.textContaining('Cobertura'), findsOneWidget);
+    expect(find.text('Unitário: R\$ 10,00'), findsOneWidget);
+    expect(find.text('  Cobertura · R\$ 0,20'), findsOneWidget);
+    expect(find.text('Subtotal: R\$ 20,00'), findsOneWidget);
+    expect(find.text('Itens: R\$ 20,00'), findsOneWidget);
+    expect(find.text('Frete: R\$ 0,00'), findsOneWidget);
+    expect(find.text('Total: R\$ 20,00'), findsOneWidget);
+    expect(find.textContaining('PED-identificador-interno'), findsNothing);
+    expect(find.text('Ver meu pedido'), findsOneWidget);
+    expect(find.text('Voltar ao cardápio'), findsOneWidget);
+    session.dispose();
+  });
+
+  testWidgets('recibo de entrega mostra snapshot e frete sem nova consulta', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: PaymentResultPage(
+          outcome: PaymentOutcome.approved,
+          orderNumber: 'PED-interno',
+          orderId: orderId,
+          total: '23.00',
+          method: 'Cartão',
+          receipt: _receipt(delivery: true),
+        ),
+      ),
+    );
+    expect(find.text('Pedido #42'), findsOneWidget);
+    expect(find.text('Recebimento: Delivery'), findsOneWidget);
+    expect(find.text('Entregar em: Rua A, 7'), findsOneWidget);
+    expect(find.text('Centro · Curitiba · 80000000'), findsOneWidget);
+    expect(find.text('Frete: R\$ 3,00'), findsOneWidget);
+    expect(find.text('Total: R\$ 23,00'), findsOneWidget);
+    expect(find.text('Forma de pagamento: Cartão'), findsOneWidget);
+    expect(find.text('Ver meu pedido'), findsOneWidget);
+    expect(find.text('Voltar ao cardápio'), findsOneWidget);
+  });
+
   testWidgets('resultado aprovado usa superfície branca e preserva o estado', (
     tester,
   ) async {

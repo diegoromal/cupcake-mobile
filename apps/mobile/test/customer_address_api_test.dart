@@ -114,4 +114,40 @@ void main() {
       expect((await api.list('x')).status, AddressStatus.unavailable);
     },
   );
+
+  test('geocodificação separa 422, 503, timeout e rede', () async {
+    var code = 422;
+    var delay = false;
+    final local = await server((request) async {
+      if (delay) await Future<void>.delayed(const Duration(milliseconds: 200));
+      try {
+        request.response.statusCode = code;
+        await request.response.close();
+      } on HttpException {
+        // O cliente pode encerrar a conexão após o timeout.
+      }
+    });
+    final api = CustomerAddressApi(
+      config: ApiConfig(
+        baseUrl: 'http://${local.address.address}:${local.port}',
+      ),
+      timeout: const Duration(milliseconds: 50),
+    );
+    expect((await api.geocode('token', id)).status, AddressStatus.notLocated);
+    code = 503;
+    expect(
+      (await api.geocode('token', id)).status,
+      AddressStatus.configurationUnavailable,
+    );
+    delay = true;
+    expect(
+      (await api.geocode('token', id)).status,
+      AddressStatus.indeterminate,
+    );
+    await local.close(force: true);
+    expect(
+      (await api.geocode('token', id)).status,
+      AddressStatus.indeterminate,
+    );
+  });
 }
