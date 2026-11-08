@@ -60,18 +60,21 @@ Future<CustomerSession> session(FakeAuth auth) async {
   return result;
 }
 
-CustomerAddress address(String addressId, {String street = 'Rua das Flores'}) =>
-    CustomerAddress(
-      id: addressId,
-      street: street,
-      number: '123',
-      neighborhood: 'Centro',
-      city: 'São Paulo',
-      cep: '01001000',
-      complement: null,
-      reference: null,
-      located: true,
-    );
+CustomerAddress address(
+  String addressId, {
+  String street = 'Rua das Flores',
+  bool located = true,
+}) => CustomerAddress(
+  id: addressId,
+  street: street,
+  number: '123',
+  neighborhood: 'Centro',
+  city: 'São Paulo',
+  cep: '01001000',
+  complement: null,
+  reference: null,
+  located: located,
+);
 
 class FakeAddressApi extends CustomerAddressApi {
   List<CustomerAddress> addresses = [
@@ -79,8 +82,19 @@ class FakeAddressApi extends CustomerAddressApi {
     address(id2, street: 'Rua Dois'),
   ];
   final calls = <String>[];
+  final geocodeCalls = <String>[];
+  final geocodeResponses = <AddressStatus>[];
   final responses = <Future<AddressResult<CoverageFreight>>>[];
   int listCalls = 0;
+  @override
+  Future<AddressResult<void>> geocode(String token, String id) async {
+    geocodeCalls.add(id);
+    final status = geocodeResponses.isEmpty
+        ? AddressStatus.success
+        : geocodeResponses.removeAt(0);
+    return AddressResult(status);
+  }
+
   @override
   Future<AddressResult<List<CustomerAddress>>> list(String token) async {
     listCalls++;
@@ -548,7 +562,12 @@ void main() {
     old.complete(
       const AddressResult(
         AddressStatus.success,
-        value: CoverageFreight(CoverageSituation.outsideCoverage, null),
+        value: CoverageFreight(
+          CoverageSituation.outsideCoverage,
+          null,
+          distanceKm: '6.000',
+          radiusKm: '5.000',
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -567,6 +586,93 @@ void main() {
     expect(find.textContaining('99,99'), findsNothing);
   });
 
+  testWidgets('geocodifica endereço pendente antes da cobertura inclusiva', (
+    tester,
+  ) async {
+    final userSession = await session(FakeAuth());
+    addTearDown(userSession.dispose);
+    final api = FakeAddressApi()..addresses = [address(id, located: false)];
+    api.responses.add(
+      Future.value(
+        const AddressResult(
+          AddressStatus.success,
+          value: CoverageFreight(
+            CoverageSituation.attended,
+            '12.34',
+            distanceKm: '5.000',
+            radiusKm: '5.000',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(app(userSession, api));
+    await choose(tester, 'Delivery');
+    await choose(tester, 'Rua das Flores, 123');
+    expect(api.geocodeCalls, [id]);
+    expect(api.calls, [id]);
+    expect(find.text('Entrega disponível. Frete: R\$ 12,34'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Continuar'))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('422 mostra endereço não localizado sem consultar cobertura', (
+    tester,
+  ) async {
+    final userSession = await session(FakeAuth());
+    addTearDown(userSession.dispose);
+    final api = FakeAddressApi()
+      ..addresses = [address(id, located: false)]
+      ..geocodeResponses.add(AddressStatus.notLocated);
+    await tester.pumpWidget(app(userSession, api));
+    await choose(tester, 'Delivery');
+    await choose(tester, 'Rua das Flores, 123');
+    expect(find.textContaining('Endereço não localizado.'), findsOneWidget);
+    expect(find.textContaining('fora do raio'), findsNothing);
+    expect(api.calls, isEmpty);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Continuar'))
+          .onPressed,
+      isNull,
+    );
+    await choose(tester, 'Tentar novamente');
+    expect(api.geocodeCalls, [id, id]);
+    expect(api.calls, [id]);
+  });
+
+  for (final failure in [
+    AddressStatus.configurationUnavailable,
+    AddressStatus.networkError,
+    AddressStatus.indeterminate,
+  ]) {
+    testWidgets('geocodificação $failure é temporária e permite retry', (
+      tester,
+    ) async {
+      final userSession = await session(FakeAuth());
+      addTearDown(userSession.dispose);
+      final api = FakeAddressApi()
+        ..addresses = [address(id, located: false)]
+        ..geocodeResponses.add(failure);
+      await tester.pumpWidget(app(userSession, api));
+      await choose(tester, 'Delivery');
+      await choose(tester, 'Rua das Flores, 123');
+      expect(
+        find.textContaining('Falha temporária ao localizar'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('fora do raio'), findsNothing);
+      expect(api.calls, isEmpty);
+      await choose(tester, 'Tentar novamente');
+      expect(api.geocodeCalls, [id, id]);
+      expect(api.calls, [id]);
+      expect(find.text('Entrega disponível. Frete: R\$ 12,34'), findsOneWidget);
+    });
+  }
+
   testWidgets('estados de cobertura, erro e retry manual', (tester) async {
     final userSession = await session(FakeAuth());
     addTearDown(userSession.dispose);
@@ -575,7 +681,12 @@ void main() {
       Future.value(
         const AddressResult(
           AddressStatus.success,
-          value: CoverageFreight(CoverageSituation.outsideCoverage, null),
+          value: CoverageFreight(
+            CoverageSituation.outsideCoverage,
+            null,
+            distanceKm: '6.000',
+            radiusKm: '5.000',
+          ),
         ),
       ),
       Future.value(
@@ -596,11 +707,11 @@ void main() {
     await tester.pumpWidget(app(userSession, api));
     await choose(tester, 'Delivery');
     await choose(tester, 'Rua das Flores, 123');
-    expect(find.text('Endereço fora da área de entrega.'), findsOneWidget);
+    expect(find.text('Endereço fora do raio de 5,000 km.'), findsOneWidget);
     await choose(tester, 'Rua Dois, 123');
     expect(find.textContaining('Localização indisponível'), findsOneWidget);
     await choose(tester, 'Rua das Flores, 123');
-    expect(find.textContaining('Entrega indisponível'), findsOneWidget);
+    expect(find.textContaining('Não foi possível consultar a entrega agora'), findsOneWidget);
     await choose(tester, 'Tentar novamente');
     expect(find.textContaining('Sem conexão'), findsOneWidget);
     await choose(tester, 'Tentar novamente');

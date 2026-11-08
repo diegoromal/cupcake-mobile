@@ -15,6 +15,7 @@ class PaymentPage extends StatefulWidget {
     required this.orderId,
     required this.orderNumber,
     required this.total,
+    this.receipt,
     this.paymentApi,
   });
 
@@ -22,6 +23,7 @@ class PaymentPage extends StatefulWidget {
   final String orderId;
   final String orderNumber;
   final String total;
+  final Map<String, dynamic>? receipt;
   final CustomerPaymentApi? paymentApi;
 
   @override
@@ -203,6 +205,7 @@ class _PaymentPageState extends State<PaymentPage> {
         orderId: widget.orderId,
         total: response.value?['valorAplicavel'] as String? ?? widget.total,
         method: outcome == PaymentOutcome.unknown ? null : confirmedMethod,
+        receipt: widget.receipt,
       ),
     );
     // Once approved, remove every checkout route. Back from the result then

@@ -15,6 +15,7 @@ class PaymentResultPage extends StatelessWidget {
     this.orderId = '',
     required this.total,
     this.method,
+    this.receipt,
   });
 
   final PaymentOutcome outcome;
@@ -22,6 +23,45 @@ class PaymentResultPage extends StatelessWidget {
   final String orderId;
   final String total;
   final String? method;
+  final Map<String, dynamic>? receipt;
+
+  String get _displayNumber => receipt?['numeroPublico'] is int
+      ? '#${receipt!['numeroPublico']}'
+      : _orderNumberLabel(orderNumber);
+
+  List<Widget> _receiptDetails() {
+    final order = receipt;
+    if (outcome != PaymentOutcome.approved || order == null) {
+      return [Text('Total: R\$ ${_formatAmount(total)}')];
+    }
+    final address = order['enderecoEntregaSnapshot'] as Map<String, dynamic>?;
+    final items = order['itens'] as List;
+    return [
+      Text(
+        'Recebimento: ${order['modalidade'] == 'ENTREGA' ? 'Delivery' : 'Retirada'}',
+      ),
+      if (address != null) ...[
+        const SizedBox(height: 8),
+        Text('Entregar em: ${address['rua']}, ${address['numero']}'),
+        Text('${address['bairro']} · ${address['cidade']} · ${address['cep']}'),
+      ],
+      const Divider(height: AppTokens.spacing32),
+      for (final raw in items) ...[
+        Text('${raw['quantidade']} × ${raw['nome']}'),
+        for (final option in raw['personalizacoes'] as List)
+          Text(_personalizationLabel(option as Map<String, dynamic>)),
+        Text('Unitário: R\$ ${_formatAmount(raw['precoAplicado'] as String)}'),
+        Text(
+          'Subtotal: R\$ ${_formatAmount(raw['subtotalAplicado'] as String)}',
+        ),
+        const SizedBox(height: 8),
+      ],
+      const Divider(height: AppTokens.spacing32),
+      Text('Itens: R\$ ${_formatAmount(order['valorItens'] as String)}'),
+      Text('Frete: R\$ ${_formatAmount(order['freteAplicado'] as String)}'),
+      Text('Total: R\$ ${_formatAmount(order['total'] as String)}'),
+    ];
+  }
 
   String get _title => switch (outcome) {
     PaymentOutcome.approved => 'Pagamento aprovado',
@@ -105,7 +145,7 @@ class PaymentResultPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Pedido ${_orderNumberLabel(orderNumber)}',
+                            'Pedido $_displayNumber',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           if (outcome == PaymentOutcome.approved) ...[
@@ -113,7 +153,7 @@ class PaymentResultPage extends StatelessWidget {
                             const Text('Pagamento aprovado'),
                           ],
                           const Divider(height: AppTokens.spacing32),
-                          Text('Total: R\$ ${_formatAmount(total)}'),
+                          ..._receiptDetails(),
                           if (method case final value?) ...[
                             const SizedBox(height: 8),
                             Text('Forma de pagamento: $value'),
@@ -166,3 +206,8 @@ String _orderNumberLabel(String value) =>
     value.startsWith('#') ? value : '#$value';
 
 String _formatAmount(String value) => value.replaceFirst('.', ',');
+
+String _personalizationLabel(Map<String, dynamic> option) {
+  final adjustment = option['ajusteValorAplicado'];
+  return '  ${option['nomeAplicado']}${adjustment is String ? ' · R\$ ${_formatAmount(adjustment)}' : ''}';
+}

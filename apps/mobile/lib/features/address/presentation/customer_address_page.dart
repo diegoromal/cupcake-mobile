@@ -223,6 +223,8 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
 
   String _failure(AddressStatus status) => switch (status) {
     AddressStatus.invalid => 'Dados inválidos. Confira o endereço.',
+    AddressStatus.notLocated =>
+      'Endereço não localizado. Confira os dados e tente novamente.',
     AddressStatus.notFound => 'Endereço não encontrado.',
     AddressStatus.ambiguous =>
       'Localização ambígua. Confira os dados e tente novamente.',

@@ -66,14 +66,47 @@ void main() {
   });
 
   test('interpreta confirmação e estados HTTP esperados', () async {
-    final valid = jsonEncode({
+    final order = {
       'id': id,
+      'numeroPublico': 42,
       'identificadorNegocio': 'PED-$id',
+      'modalidade': 'RETIRADA',
+      'enderecoEntregaSnapshot': null,
+      'valorItens': '20.00',
+      'freteAplicado': '0.00',
       'total': '20.00',
-    });
+      'itens': [
+        {
+          'nome': 'Cupcake',
+          'quantidade': 2,
+          'precoAplicado': '10.00',
+          'subtotalAplicado': '20.00',
+          'personalizacoes': [
+            {'nomeAplicado': 'Cobertura', 'ajusteValorAplicado': '0.20'},
+          ],
+        },
+      ],
+    };
+    final valid = jsonEncode(order);
     expect(
-      (await respond(201, valid, confirm: true)).status,
-      OrderStatus.success,
+      (await respond(201, valid, confirm: true)).value,
+      containsPair('numeroPublico', 42),
+    );
+    expect(
+      (await respond(
+        201,
+        jsonEncode({...order, 'numeroPublico': null}),
+        confirm: true,
+      )).status,
+      OrderStatus.invalidResponse,
+    );
+    expect(
+      (await respond(
+        201,
+        jsonEncode({...order, 'numeroPublico': 0}),
+        confirm: true,
+      )).status,
+      OrderStatus.invalidResponse,
     );
     expect(
       (await respond(201, '{}', confirm: true)).status,

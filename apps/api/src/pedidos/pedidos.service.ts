@@ -425,7 +425,9 @@ export class PedidosService {
     if (input.tentativaId) {
       const anterior = await this.prisma.pedido.findFirst({
         where: { identificadorNegocio: { startsWith: prefixo! } },
-        include: { enderecoEntregaSnapshot: true, itens: { include: { personalizacoes: true } } },
+        include: { enderecoEntregaSnapshot: true, itens: { include: {
+          personalizacoes: true, produto: { select: { nome: true } },
+        } } },
       });
       if (anterior) return this.repeticao(anterior, usuarioId, identificador);
     }
@@ -435,7 +437,9 @@ export class PedidosService {
       if (input.tentativaId && error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const anterior = await this.prisma.pedido.findFirst({
           where: { identificadorNegocio: { startsWith: prefixo! } },
-          include: { enderecoEntregaSnapshot: true, itens: { include: { personalizacoes: true } } },
+          include: { enderecoEntregaSnapshot: true, itens: { include: {
+            personalizacoes: true, produto: { select: { nome: true } },
+          } } },
         });
         if (anterior) return this.repeticao(anterior, usuarioId, identificador);
       }
@@ -464,7 +468,9 @@ export class PedidosService {
         await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`PED-${input.tentativaId}`}, 0))::text AS locked`;
         const anterior = await db.pedido.findFirst({
           where: { identificadorNegocio: { startsWith: `PED-${input.tentativaId}` } },
-          include: { enderecoEntregaSnapshot: true, itens: { include: { personalizacoes: true } } },
+          include: { enderecoEntregaSnapshot: true, itens: { include: {
+            personalizacoes: true, produto: { select: { nome: true } },
+          } } },
         });
         if (anterior) return this.repeticao(anterior, usuarioId, identificador!);
       }
@@ -624,6 +630,7 @@ export class PedidosService {
           } } }),
           itens: { create: linhas.map(({ persistido, calculado }) => ({
             produtoId: persistido.produtoId,
+            nomeProdutoAplicado: persistido.produto.nome,
             quantidade: persistido.quantidade,
             precoAplicado: new Prisma.Decimal(calculado.item.precoUnitario!),
             subtotalAplicado: calculado.valor!,
@@ -636,7 +643,7 @@ export class PedidosService {
         },
         include: {
           enderecoEntregaSnapshot: true,
-          itens: { include: { personalizacoes: true } },
+          itens: { include: { personalizacoes: true, produto: { select: { nome: true } } } },
         },
       });
       await db.historicoStatusPedido.create({ data: {
@@ -667,7 +674,7 @@ export class PedidosService {
   }
 
   private apresentar(pedido: {
-    id: string; identificadorNegocio: string; clienteUsuarioId: string;
+    id: string; numeroPublico: number; identificadorNegocio: string; clienteUsuarioId: string;
     modalidade: ModalidadeRecebimento; statusAtual: string;
     valorItens: Prisma.Decimal; freteAplicado: Prisma.Decimal; total: Prisma.Decimal;
     enderecoEntregaSnapshot: {
@@ -675,7 +682,8 @@ export class PedidosService {
       complemento: string | null; referencia: string | null;
     } | null;
     itens: Array<{
-      produtoId: string; quantidade: number; precoAplicado: Prisma.Decimal;
+      produtoId: string; nomeProdutoAplicado: string | null; produto: { nome: string };
+      quantidade: number; precoAplicado: Prisma.Decimal;
       subtotalAplicado: Prisma.Decimal;
       personalizacoes: Array<{
         identificacaoPersonalizacaoAplicada: string; nomeAplicado: string;
@@ -685,6 +693,7 @@ export class PedidosService {
   }) {
     return {
         id: pedido.id,
+        numeroPublico: pedido.numeroPublico,
         identificadorNegocio: pedido.identificadorNegocio,
         modalidade: pedido.modalidade,
         statusAtual: pedido.statusAtual,
@@ -702,6 +711,7 @@ export class PedidosService {
         },
         itens: pedido.itens.map((item) => ({
           produtoId: item.produtoId,
+          nome: item.nomeProdutoAplicado ?? item.produto.nome,
           quantidade: item.quantidade,
           precoAplicado: item.precoAplicado.toFixed(2),
           subtotalAplicado: item.subtotalAplicado.toFixed(2),

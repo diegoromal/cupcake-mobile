@@ -7,6 +7,7 @@ import '../../../core/config/api_config.dart';
 enum AddressStatus {
   success,
   invalid,
+  notLocated,
   notFound,
   ambiguous,
   unauthorized,
@@ -22,9 +23,16 @@ enum AddressStatus {
 enum CoverageSituation { attended, outsideCoverage, locationUnavailable }
 
 class CoverageFreight {
-  const CoverageFreight(this.situation, this.freight);
+  const CoverageFreight(
+    this.situation,
+    this.freight, {
+    this.distanceKm,
+    this.radiusKm,
+  });
   final CoverageSituation situation;
   final String? freight;
+  final String? distanceKm;
+  final String? radiusKm;
 
   static CoverageFreight? parse(Object? data) {
     if (data is! Map<String, dynamic> ||
@@ -50,7 +58,12 @@ class CoverageFreight {
         threeDecimals.hasMatch(radius) &&
         freight is String &&
         twoDecimals.hasMatch(freight)) {
-      return CoverageFreight(CoverageSituation.attended, freight);
+      return CoverageFreight(
+        CoverageSituation.attended,
+        freight,
+        distanceKm: distance,
+        radiusKm: radius,
+      );
     }
     if (situation == 'FORA_DA_COBERTURA' &&
         distance is String &&
@@ -58,7 +71,12 @@ class CoverageFreight {
         radius is String &&
         threeDecimals.hasMatch(radius) &&
         freight == null) {
-      return const CoverageFreight(CoverageSituation.outsideCoverage, null);
+      return CoverageFreight(
+        CoverageSituation.outsideCoverage,
+        null,
+        distanceKm: distance,
+        radiusKm: radius,
+      );
     }
     if (situation == 'LOCALIZACAO_INDISPONIVEL' &&
         distance == null &&
@@ -208,7 +226,13 @@ class CustomerAddressApi {
   }
 
   Future<AddressResult<void>> geocode(String token, String id) async {
-    final response = await _call(_config.geocodingUri(id), token, 'POST');
+    final response = await _call(
+      _config.geocodingUri(id),
+      token,
+      'POST',
+      unprocessableStatus: AddressStatus.notLocated,
+      serverUnavailableStatus: AddressStatus.configurationUnavailable,
+    );
     if (response.status != AddressStatus.success) {
       return AddressResult(response.status);
     }
@@ -251,6 +275,7 @@ class CustomerAddressApi {
     AddressStatus networkStatus = AddressStatus.unavailable,
     AddressStatus invalidResponseStatus = AddressStatus.unavailable,
     AddressStatus serverUnavailableStatus = AddressStatus.unavailable,
+    AddressStatus unprocessableStatus = AddressStatus.invalid,
   }) async {
     if (uri == null) return const AddressResult(AddressStatus.notConfigured);
     final client = _clientFactory();
@@ -269,9 +294,8 @@ class CustomerAddressApi {
       code = response.statusCode;
       if (code == 401) return const AddressResult(AddressStatus.unauthorized);
       if (code == 403) return const AddressResult(AddressStatus.forbidden);
-      if (code == 400 || code == 422) {
-        return const AddressResult(AddressStatus.invalid);
-      }
+      if (code == 400) return const AddressResult(AddressStatus.invalid);
+      if (code == 422) return AddressResult(unprocessableStatus);
       if (code == 404) return const AddressResult(AddressStatus.notFound);
       if (code == 409) return const AddressResult(AddressStatus.ambiguous);
       if (code == 503) return AddressResult(serverUnavailableStatus);
