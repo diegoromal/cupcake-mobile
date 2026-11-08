@@ -711,7 +711,10 @@ void main() {
     await choose(tester, 'Rua Dois, 123');
     expect(find.textContaining('Localização indisponível'), findsOneWidget);
     await choose(tester, 'Rua das Flores, 123');
-    expect(find.textContaining('Não foi possível consultar a entrega agora'), findsOneWidget);
+    expect(
+      find.textContaining('Não foi possível consultar a entrega agora'),
+      findsOneWidget,
+    );
     await choose(tester, 'Tentar novamente');
     expect(find.textContaining('Sem conexão'), findsOneWidget);
     await choose(tester, 'Tentar novamente');
