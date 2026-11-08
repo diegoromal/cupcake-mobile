@@ -449,7 +449,7 @@ describe('PedidosService', () => {
         'PRONTO_PARA_RETIRADA', 'RETIRADO', 'CANCELADO',
       ] } },
       select: {
-        id: true, identificadorNegocio: true, confirmacaoPagamento: true,
+        id: true, numeroPublico: true, identificadorNegocio: true, confirmacaoPagamento: true,
         cliente: { select: { nome: true } }, modalidade: true, statusAtual: true, total: true,
       },
       orderBy: [{ confirmacaoPagamento: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
@@ -458,7 +458,7 @@ describe('PedidosService', () => {
 
   it('detalha apenas dados persistidos da tela sem recalcular valores', async () => {
     const findUnique = jest.fn().mockResolvedValue({
-      id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
+      id: usuarioId, numeroPublico: 35, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
         cliente: { nome: 'Ana' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
       valorItens: dinheiro('10.10'), freteAplicado: dinheiro('2.05'), total: dinheiro('99.99'),
       enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
@@ -472,7 +472,7 @@ describe('PedidosService', () => {
     });
     const adminService = new PedidosService({ pedido: { findUnique } } as never, criarNotificacoesFalsas());
     await expect(adminService.detalharParaAdministracao(usuarioId)).resolves.toEqual({
-      id: usuarioId, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
+      id: usuarioId, numeroPublico: 35, identificadorNegocio: 'PED-123', confirmacaoPagamento: new Date('2026-10-24T12:00:00Z'),
       cliente: { nome: 'Ana' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
       valorItens: '10.10', freteAplicado: '2.05', total: '99.99', formaPagamento: 'PIX',
       enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
@@ -487,7 +487,7 @@ describe('PedidosService', () => {
     expect(Object.keys(query.select).sort()).toEqual([
       'cliente', 'confirmacaoPagamento', 'enderecoEntregaSnapshot', 'entregador',
       'freteAplicado', 'historicosStatus',
-      'id', 'identificadorNegocio', 'itens', 'modalidade', 'pagamentos', 'statusAtual', 'total', 'valorItens',
+      'id', 'identificadorNegocio', 'itens', 'modalidade', 'numeroPublico', 'pagamentos', 'statusAtual', 'total', 'valorItens',
     ]);
     expect(query.select.pagamentos).toMatchObject({ where: { resultado: 'APROVADO' }, take: 1,
       select: { forma: true } });

@@ -57,13 +57,13 @@ export default function OrderList() {
       <div className="card table-wrap order-table-wrap" ref={tableWrap}><table className="order-table">
         <thead><tr><th scope="col">Pedido</th><th scope="col">Data / Hora</th><th scope="col">Cliente</th><th scope="col">Modalidade</th><th scope="col">Status</th><th scope="col">Total</th><th scope="col">Ação</th></tr></thead>
         <tbody>{visible.map(order => <tr key={order.id}>
-          <td className="order-id"><strong>{order.identificadorNegocio}</strong></td>
+          <td className="order-id"><strong>#{order.numeroPublico}</strong></td>
           <td>{formatDate(order.confirmacaoPagamento)}</td>
           <td>{order.cliente.nome}</td>
           <td>{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</td>
           <td><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span></td>
           <td>{formatCurrency(order.total)}</td>
-          <td><Link href={`/pedidos/${order.id}`} aria-label={`Ver detalhes do pedido ${order.identificadorNegocio}`}>Ver detalhes</Link></td>
+          <td><Link href={`/pedidos/${order.id}`} aria-label={`Ver detalhes do pedido #${order.numeroPublico}`}>Ver detalhes</Link></td>
         </tr>)}</tbody>
       </table></div>
       {scrollable && <p className="table-scroll-hint" role="note">↔ Role para ver toda a tabela</p>}

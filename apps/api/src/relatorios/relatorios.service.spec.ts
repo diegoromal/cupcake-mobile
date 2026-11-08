@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RelatoriosService } from './relatorios.service';
 
 const pedido = (overrides: Partial<Record<string, unknown>> = {}) => ({
-  id: 'id-1', identificadorNegocio: 'PED-1', data: new Date('2026-10-02T12:30:00.000Z'),
+  id: 'id-1', numeroPublico: 35, identificadorNegocio: 'PED-1', data: new Date('2026-10-02T12:30:00.000Z'),
   modalidade: 'ENTREGA', statusAtual: StatusPedido.ENTREGUE, total: new Prisma.Decimal('12.34'),
   cliente: { nome: 'Ana' }, ...overrides,
 });
@@ -19,7 +19,7 @@ describe('RelatoriosService', () => {
   it('filtra os dois estados finalizados no período e calcula total exato e quantidade da mesma lista', async () => {
     findMany.mockResolvedValue([
       pedido(),
-      pedido({ id: 'id-2', identificadorNegocio: 'PED-2', modalidade: 'RETIRADA', statusAtual: StatusPedido.RETIRADO, total: new Prisma.Decimal('0.01') }),
+      pedido({ id: 'id-2', numeroPublico: 36, identificadorNegocio: 'PED-2', modalidade: 'RETIRADA', statusAtual: StatusPedido.RETIRADO, total: new Prisma.Decimal('0.01') }),
     ]);
 
     const result = await service.vendas({ inicio: '2026-10-01', fim: '2026-10-03' });
@@ -32,6 +32,7 @@ describe('RelatoriosService', () => {
       orderBy: [{ data: 'asc' }, { id: 'asc' }],
       select: {
         id: true,
+        numeroPublico: true,
         identificadorNegocio: true,
         data: true,
         modalidade: true,
@@ -42,6 +43,7 @@ describe('RelatoriosService', () => {
     }));
     expect(result.totalVendido).toBe('12.35');
     expect(result.quantidadePedidos).toBe(2);
+    expect(result.pedidos.map(({ numeroPublico }) => numeroPublico)).toEqual([35, 36]);
     expect(result.pedidos.map(({ statusAtual }) => statusAtual)).toEqual([StatusPedido.ENTREGUE, StatusPedido.RETIRADO]);
   });
 

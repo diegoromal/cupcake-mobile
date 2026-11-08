@@ -88,6 +88,7 @@ export class PedidosService {
       },
       select: {
         id: true,
+        numeroPublico: true,
         identificadorNegocio: true,
         confirmacaoPagamento: true,
         cliente: { select: { nome: true } },
@@ -103,7 +104,7 @@ export class PedidosService {
     const pedido = await this.prisma.pedido.findUnique({
       where: { id },
       select: {
-        id: true, identificadorNegocio: true, confirmacaoPagamento: true,
+        id: true, numeroPublico: true, identificadorNegocio: true, confirmacaoPagamento: true,
         cliente: { select: { nome: true } }, entregador: { select: { id: true, nome: true } },
         modalidade: true, statusAtual: true,
         valorItens: true, freteAplicado: true, total: true,
@@ -129,7 +130,7 @@ export class PedidosService {
     });
     if (!pedido) throw new NotFoundException('Pedido não encontrado.');
     return {
-      id: pedido.id, identificadorNegocio: pedido.identificadorNegocio,
+      id: pedido.id, numeroPublico: pedido.numeroPublico, identificadorNegocio: pedido.identificadorNegocio,
       confirmacaoPagamento: pedido.confirmacaoPagamento,
       cliente: pedido.cliente, entregador: pedido.entregador,
       modalidade: pedido.modalidade, statusAtual: pedido.statusAtual,

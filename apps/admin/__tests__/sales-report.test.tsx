@@ -9,8 +9,8 @@ jest.mock('@/lib/client/admin-api', () => ({
 
 const result = {
   inicio: '2026-10-01', fim: '2026-10-31', totalVendido: '120.50', quantidadePedidos: 2,
-  pedidos: [{ id: '1', identificadorNegocio: 'PED-1', data: '2026-10-02T12:30:00.000Z', cliente: 'Ana', modalidade: 'ENTREGA' as const, statusAtual: 'ENTREGUE' as const, total: '100.00' },
-    { id: '2', identificadorNegocio: 'PED-2', data: '2026-10-03T13:30:00.000Z', cliente: 'Bia', modalidade: 'RETIRADA' as const, statusAtual: 'RETIRADO' as const, total: '20.50' }],
+  pedidos: [{ id: '1', numeroPublico: 35, identificadorNegocio: 'PED-1', data: '2026-10-02T12:30:00.000Z', cliente: 'Ana', modalidade: 'ENTREGA' as const, statusAtual: 'ENTREGUE' as const, total: '100.00' },
+    { id: '2', numeroPublico: 36, identificadorNegocio: 'PED-2', data: '2026-10-03T13:30:00.000Z', cliente: 'Bia', modalidade: 'RETIRADA' as const, statusAtual: 'RETIRADO' as const, total: '20.50' }],
 };
 
 beforeEach(() => jest.clearAllMocks());
@@ -22,8 +22,8 @@ test('aplica período, apresenta totais e pedidos entregues e retirados', async 
   fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-10-31' } });
   fireEvent.click(screen.getByRole('button', { name: 'Aplicar período' }));
 
-  expect(await screen.findByText('PED-1')).toBeInTheDocument();
-  expect(screen.getByText('PED-2')).toBeInTheDocument();
+  expect(await screen.findByText('#35')).toBeInTheDocument();
+  expect(screen.getByText('#36')).toBeInTheDocument();
   expect(screen.getByText('Quantidade de pedidos')).toBeInTheDocument();
   expect(screen.getByText(/120,50/)).toBeInTheDocument();
   const filters = screen.getByRole('button', { name: 'Aplicar período' }).closest('form');
@@ -90,8 +90,8 @@ test('pinta o feedback por dois frames antes de imprimir e preserva o relatório
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Data inicial')).toHaveValue('2026-10-01');
   expect(screen.getByLabelText('Data final')).toHaveValue('2026-10-31');
-  expect(screen.getByText('PED-1')).toBeInTheDocument();
-  expect(screen.getByText('PED-2')).toBeInTheDocument();
+  expect(screen.getByText('#35')).toBeInTheDocument();
+  expect(screen.getByText('#36')).toBeInTheDocument();
   expect(adminApi).toHaveBeenCalledTimes(1);
   requestAnimationFrame.mockRestore();
   print.mockRestore();
@@ -118,7 +118,7 @@ test('falha da impressão mostra erro e libera as exportações', async () => {
   expect(screen.getByRole('button', { name: 'Exportar PDF' })).toBeEnabled();
   expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled();
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  expect(screen.getByText('PED-1')).toBeInTheDocument();
+  expect(screen.getByText('#35')).toBeInTheDocument();
   requestAnimationFrame.mockRestore();
   print.mockRestore();
 });
@@ -128,7 +128,7 @@ test('exporta CSV com os seis campos da tabela, na ordem recebida, sem nova cons
     ...result,
     pedidos: [{
       ...result.pedidos[0],
-      identificadorNegocio: '=HYPERLINK("https://example.test")',
+      numeroPublico: 35,
       cliente: 'Érica, "Bia"\nLoja',
     }, result.pedidos[1]],
   };
@@ -180,7 +180,7 @@ test('exporta CSV com os seis campos da tabela, na ordem recebida, sem nova cons
   expect(blob.type).toBe('text/csv;charset=utf-8');
   expect(csv.split('\r\n')).toHaveLength(3);
   expect(csv.split('\r\n')[0]).toBe('"Pedido","Data e hora","Cliente","Modalidade","Status","Valor total"');
-  expect(csv).toContain('"\'=HYPERLINK(""https://example.test"")"');
+  expect(csv).toContain('"#35"');
   expect(csv).toContain('"2026-10-02T12:30:00.000Z"');
   expect(csv).toContain('"Érica, ""Bia""\nLoja"');
   expect(csv).toContain('"Delivery","Entregue","100.00"');
