@@ -211,7 +211,12 @@ class FakeOrderApi extends CustomerOrderApi {
     }
     return const OrderResult(
       OrderStatus.success,
-      value: {'id': id, 'identificadorNegocio': 'PED-1', 'total': '10.00'},
+      value: {
+        'id': id,
+        'numeroPublico': 35,
+        'identificadorNegocio': 'PED-1',
+        'total': '10.00',
+      },
     );
   }
 }
@@ -1021,7 +1026,7 @@ void main() {
         await choose(tester, 'Confirmar pedido');
         expect(orderApi.reviews, 1);
         expect(orderApi.confirmations, 1);
-        expect(find.text('Pedido PED-1'), findsNWidgets(2));
+        expect(find.text('Pedido #35'), findsNWidgets(2));
         await tester.pageBack();
         await tester.pumpAndSettle();
         expect(find.byType(OrderReviewPage), findsOneWidget);

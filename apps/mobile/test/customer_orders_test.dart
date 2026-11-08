@@ -42,7 +42,10 @@ void main() {
         isNull,
       );
       expect(CustomerOrder.parse({..._order(), 'numeroPublico': 0}), isNull);
-      expect(CustomerOrder.parse({..._order()}..remove('numeroPublico')), isNull);
+      expect(
+        CustomerOrder.parse({..._order()}..remove('numeroPublico')),
+        isNull,
+      );
     },
   );
 

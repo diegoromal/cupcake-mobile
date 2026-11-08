@@ -823,7 +823,10 @@ void main() {
     ]);
     api.confirmResults.addAll([
       const OrderResult(OrderStatus.conflict),
-      const OrderResult(OrderStatus.success, value: {'id': userId, 'numeroPublico': 35}),
+      const OrderResult(
+        OrderStatus.success,
+        value: {'id': userId, 'numeroPublico': 35},
+      ),
     ]);
     await open(tester, sessionValue, api);
     await tester.tap(find.text('Confirmar pedido'));
