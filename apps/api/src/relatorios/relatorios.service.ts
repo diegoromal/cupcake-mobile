@@ -24,6 +24,7 @@ export class RelatoriosService {
       orderBy: [{ data: 'asc' }, { id: 'asc' }],
       select: {
         id: true,
+        numeroPublico: true,
         identificadorNegocio: true,
         data: true,
         modalidade: true,
@@ -43,8 +44,9 @@ export class RelatoriosService {
       fim,
       totalVendido: totalVendido.toFixed(2),
       quantidadePedidos: pedidos.length,
-      pedidos: pedidos.map(({ id, identificadorNegocio, data, modalidade, statusAtual, total, cliente }) => ({
+      pedidos: pedidos.map(({ id, numeroPublico, identificadorNegocio, data, modalidade, statusAtual, total, cliente }) => ({
         id,
+        numeroPublico,
         identificadorNegocio,
         data,
         cliente: cliente.nome,

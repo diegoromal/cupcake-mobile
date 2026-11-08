@@ -4,6 +4,7 @@ import { AdminApiError, adminApi } from '@/lib/client/admin-api';
 
 type ReportOrder = {
   id: string;
+  numeroPublico: number;
   identificadorNegocio: string;
   data: string;
   cliente: string;
@@ -34,7 +35,7 @@ function csvCell(value: string) {
 }
 function reportCsv(orders: ReportOrder[]) {
   const rows = [csvHeaders, ...orders.map(order => [
-    order.identificadorNegocio,
+    `#${order.numeroPublico}`,
     order.data,
     order.cliente,
     modalityLabel[order.modalidade],
@@ -55,7 +56,7 @@ function isSalesReport(value: unknown): value is SalesReportResult {
     typeof report.totalVendido === 'string' && /^\d+(?:\.\d{2})$/.test(report.totalVendido) &&
     Number.isInteger(report.quantidadePedidos) && Array.isArray(report.pedidos) &&
     report.pedidos.every(order => typeof order.id === 'string' &&
-      typeof order.identificadorNegocio === 'string' && typeof order.data === 'string' &&
+      Number.isInteger(order.numeroPublico) && typeof order.identificadorNegocio === 'string' && typeof order.data === 'string' &&
       !Number.isNaN(Date.parse(order.data)) && typeof order.cliente === 'string' &&
       (order.modalidade === 'ENTREGA' || order.modalidade === 'RETIRADA') &&
       (order.statusAtual === 'ENTREGUE' || order.statusAtual === 'RETIRADO') &&
@@ -160,7 +161,7 @@ export default function SalesReport() {
         <div className="card table-wrap"><table>
           <thead><tr><th scope="col">Pedido</th><th scope="col">Data e hora</th><th scope="col">Cliente</th><th scope="col">Modalidade</th><th scope="col">Status</th><th scope="col">Valor total</th></tr></thead>
           <tbody>{report.pedidos.map(order => <tr key={order.id}>
-            <td><strong>{order.identificadorNegocio}</strong></td>
+            <td><strong>#{order.numeroPublico}</strong></td>
             <td><time dateTime={order.data}>{dateTime.format(new Date(order.data))}</time></td>
             <td>{order.cliente}</td>
             <td>{modalityLabel[order.modalidade]}</td>

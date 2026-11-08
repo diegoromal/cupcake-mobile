@@ -10,7 +10,7 @@ jest.mock('@/lib/client/admin-api', () => ({
 const mockApi = adminApi as jest.Mock;
 
 const order = {
-  id: 'order-1', identificadorNegocio: 'PED-123', confirmacaoPagamento: '2026-10-20T12:00:00.000Z',
+  id: 'order-1', numeroPublico: 35, identificadorNegocio: 'PED-123', confirmacaoPagamento: '2026-10-20T12:00:00.000Z',
   cliente: { nome: 'Ana Silva' }, modalidade: 'RETIRADA', statusAtual: 'PRONTO_PARA_RETIRADA', total: '42.50',
 } as const;
 
@@ -20,7 +20,7 @@ test('carrega pedidos com estado de leitura e valores do pedido', async () => {
   mockApi.mockResolvedValue([order]);
   render(<OrderList />);
   expect(screen.getByRole('status')).toHaveTextContent('Carregando pedidos');
-  expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(await screen.findByText('#35')).toBeInTheDocument();
   expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
     'Pedido', 'Data / Hora', 'Cliente', 'Modalidade', 'Status', 'Total', 'Ação',
   ]);
@@ -45,28 +45,28 @@ test('apresenta erro e permite nova tentativa', async () => {
   render(<OrderList />);
   expect(await screen.findByRole('alert')).toHaveTextContent('API indisponível.');
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
-  expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(await screen.findByText('#35')).toBeInTheDocument();
 });
 
 test('filtra por status válido, conta registros visíveis, limpa e abre o pedido correto', async () => {
-  const second = { ...order, id: 'order-2', identificadorNegocio: 'PED-456',
+  const second = { ...order, id: 'order-2', numeroPublico: 36, identificadorNegocio: 'PED-456',
     statusAtual: 'PAGO' as const, cliente: { nome: 'Bia' } };
   mockApi.mockResolvedValue([order, second]);
   render(<OrderList />);
-  expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(await screen.findByText('#35')).toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('2 pedidos listados');
-  expect(screen.getByRole('link', { name: 'Ver detalhes do pedido PED-123' }))
+  expect(screen.getByRole('link', { name: 'Ver detalhes do pedido #35' }))
     .toHaveAttribute('href', '/pedidos/order-1');
   fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'PAGO' } });
-  expect(screen.getByText('PED-456')).toBeInTheDocument();
-  expect(screen.queryByText('PED-123')).not.toBeInTheDocument();
+  expect(screen.getByText('#36')).toBeInTheDocument();
+  expect(screen.queryByText('#35')).not.toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('1 pedido listado');
   fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'CANCELADO' } });
   expect(screen.getByText('Nenhum pedido com este status.')).toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('0 pedidos listados');
   fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
-  expect(screen.getByText('PED-123')).toBeInTheDocument();
-  expect(screen.getByText('PED-456')).toBeInTheDocument();
+  expect(screen.getByText('#35')).toBeInTheDocument();
+  expect(screen.getByText('#36')).toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('2 pedidos listados');
   expect(screen.getAllByRole('link', { name: /Ver detalhes do pedido/ }).map((link) =>
     link.getAttribute('href'))).toEqual(['/pedidos/order-1', '/pedidos/order-2']);
@@ -82,22 +82,22 @@ test('mantém todas as colunas críticas na tabela de pedidos (D105-F01)', async
   };
   mockApi.mockResolvedValue([longOrder]);
   const { container } = render(<OrderList />);
-  expect(await screen.findByText(longOrder.identificadorNegocio)).toBeInTheDocument();
+  expect(await screen.findByText('#35')).toBeInTheDocument();
   const table = container.querySelector('table.order-table');
   expect(table).not.toBeNull();
   expect(container.querySelector('.order-table-wrap')).not.toBeNull();
-  expect(container.querySelector('td.order-id strong')).toHaveTextContent(longOrder.identificadorNegocio);
+  expect(container.querySelector('td.order-id strong')).toHaveTextContent('#35');
   expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
     'Pedido', 'Data / Hora', 'Cliente', 'Modalidade', 'Status', 'Total', 'Ação',
   ]);
-  expect(screen.getByRole('link', { name: `Ver detalhes do pedido ${longOrder.identificadorNegocio}` }))
+  expect(screen.getByRole('link', { name: 'Ver detalhes do pedido #35' }))
     .toHaveAttribute('href', '/pedidos/order-1');
 });
 
 test('sinaliza rolagem horizontal somente quando a tabela excede a largura disponível', async () => {
   mockApi.mockResolvedValue([order]);
   const { container } = render(<OrderList />);
-  expect(await screen.findByText('PED-123')).toBeInTheDocument();
+  expect(await screen.findByText('#35')).toBeInTheDocument();
   expect(screen.queryByText('↔ Role para ver toda a tabela')).not.toBeInTheDocument();
   const wrap = container.querySelector('.order-table-wrap') as HTMLElement;
   Object.defineProperty(wrap, 'scrollWidth', { configurable: true, value: 900 });
@@ -110,11 +110,11 @@ test('não mostra pedidos quando o acesso administrativo é negado', async () =>
   mockApi.mockRejectedValue(new AdminApiError(403, 'Acesso negado.'));
   render(<OrderList />);
   expect(await screen.findByRole('alert')).toHaveTextContent('Acesso negado.');
-  expect(screen.queryByText('PED-123')).not.toBeInTheDocument();
+  expect(screen.queryByText('#35')).not.toBeInTheDocument();
 });
 
 const detail = {
-  id: 'order-1', identificadorNegocio: 'PED-123', confirmacaoPagamento: '2026-10-20T12:00:00.000Z',
+  id: 'order-1', numeroPublico: 35, identificadorNegocio: 'PED-123', confirmacaoPagamento: '2026-10-20T12:00:00.000Z',
   cliente: { nome: 'Ana Silva' }, entregador: null, modalidade: 'ENTREGA', statusAtual: 'PAGO',
   valorItens: '70.00', freteAplicado: '8.50', total: '78.50', formaPagamento: 'PIX',
   enderecoEntregaSnapshot: { rua: 'Rua A', numero: '7', bairro: 'Centro', cidade: 'Curitiba',
@@ -128,11 +128,11 @@ test('detalhe apresenta campos persistidos, personalização, endereço e valore
   mockApi.mockResolvedValue(detail);
   render(<OrderDetail id="order-1" />);
   expect(screen.getByRole('status')).toHaveTextContent('Carregando pedido');
-  expect(await screen.findByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
-  const summary = within(screen.getByRole('region', { name: 'Pedido PED-123' }));
-  expect(summary.getByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Pedido #35' })).toBeInTheDocument();
+  const summary = within(screen.getByRole('region', { name: 'Pedido #35' }));
+  expect(summary.getByRole('heading', { name: 'Pedido #35' })).toBeInTheDocument();
   expect(summary.getByText('Pago')).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'Pedido PED-123' })).toHaveTextContent('Delivery');
+  expect(screen.getByRole('region', { name: 'Pedido #35' })).toHaveTextContent('Delivery');
   expect(summary.getByText(`Pagamento confirmado: ${formatDate(detail.confirmacaoPagamento)}`))
     .toBeInTheDocument();
   expect(screen.getByText('2 × Cupcake')).toBeInTheDocument();
@@ -149,7 +149,7 @@ test('detalhe apresenta campos persistidos, personalização, endereço e valore
 test('representa a sequência Delivery com Pago atual, Em preparo próximo e ação correspondente', async () => {
   mockApi.mockResolvedValue(detail);
   render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
 
   const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
   expect(steps.getAllByRole('listitem')).toHaveLength(5);
@@ -167,7 +167,7 @@ test('representa a sequência Delivery com Pago atual, Em preparo próximo e aç
 test('permite percorrer o stepper informativo com as setas sem transformar etapas em controles', async () => {
   mockApi.mockResolvedValue(detail);
   render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
 
   const region = screen.getByRole('region', { name: /Etapas do pedido.*setas esquerda e direita/i });
   const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
@@ -198,7 +198,7 @@ test('usa a sequência de Retirada e não apresenta etapas de Delivery', async (
   mockApi.mockResolvedValue({ ...detail, modalidade: 'RETIRADA', statusAtual: 'EM_PREPARO',
     enderecoEntregaSnapshot: null });
   render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
 
   const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
   expect(steps.getByRole('listitem', { name: 'Etapa atual: Em preparo' })).toHaveAttribute('aria-current', 'step');
@@ -217,7 +217,7 @@ test.each([
 ] as const)('%s apresenta somente a progressão compatível e não oferece ação indevida', async (_label, changes, nextLabel) => {
   mockApi.mockResolvedValue({ ...detail, ...changes });
   render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
 
   const steps = within(screen.getByRole('list', { name: 'Etapas do pedido' }));
   expect(steps.getByRole('listitem', { name: `Etapa atual: ${statusLabel[changes.statusAtual]}` }))
@@ -244,7 +244,7 @@ test('confirma início de produção, cancela sem PATCH e impede envio duplicado
   render(<OrderDetail id="order-1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Iniciar produção' }));
   expect(screen.getByRole('heading', { name: 'Confirmar início da produção' })).toHaveFocus();
-  expect(screen.getByText(/PED-123 passará de Pago para Em preparo/)).toBeInTheDocument();
+  expect(screen.getByText(/#35 passará de Pago para Em preparo/)).toBeInTheDocument();
   expect(mockApi).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole('button', { name: 'Voltar sem alterar' }));
   expect(screen.queryByRole('heading', { name: 'Confirmar início da produção' })).not.toBeInTheDocument();
@@ -324,12 +324,12 @@ test('retirada avança apenas pelas duas ações válidas e atualiza o pedido ap
 test('não oferece retirada em Delivery nem ação administrativa para pedido entregue', async () => {
   mockApi.mockResolvedValueOnce({ ...detail, statusAtual: 'EM_PREPARO' }).mockResolvedValueOnce([]);
   const delivery = render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
   expect(screen.queryByRole('button', { name: /retirada/i })).not.toBeInTheDocument();
   delivery.unmount();
   mockApi.mockResolvedValueOnce({ ...detail, statusAtual: 'ENTREGUE' });
   render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
 });
 
@@ -396,7 +396,7 @@ test('erro na retirada recarrega o pedido e informa falha sem assumir transiçã
 test('retirada omite endereço e detalhe distingue 404, acesso negado e erro recuperável', async () => {
   mockApi.mockResolvedValueOnce({ ...detail, modalidade: 'RETIRADA', enderecoEntregaSnapshot: null });
   const view = render(<OrderDetail id="order-1" />);
-  await screen.findByRole('heading', { name: 'Pedido PED-123' });
+  await screen.findByRole('heading', { name: 'Pedido #35' });
   expect(screen.queryByText('Endereço de entrega')).not.toBeInTheDocument();
   view.unmount();
 
@@ -415,5 +415,5 @@ test('retirada omite endereço e detalhe distingue 404, acesso negado e erro rec
   render(<OrderDetail id="order-4" />);
   expect(await screen.findByRole('alert')).toHaveTextContent('Falha ao carregar pedido.');
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
-  expect(await screen.findByRole('heading', { name: 'Pedido PED-123' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Pedido #35' })).toBeInTheDocument();
 });

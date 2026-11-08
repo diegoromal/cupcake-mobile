@@ -141,7 +141,7 @@ export default function OrderDetail({ id }: { id: string }) {
     <div className="page-intro">
       <section className="card order-detail-summary" aria-labelledby="order-detail-identification-heading">
         <div className="order-detail-summary-primary">
-          <h1 id="order-detail-identification-heading">Pedido {order.identificadorNegocio}</h1>
+          <h1 id="order-detail-identification-heading">Pedido #{order.numeroPublico}</h1>
           <p><span className="badge badge-muted">{statusLabel[order.statusAtual]}</span>
             {' · '}{order.modalidade === 'ENTREGA' ? 'Delivery' : 'Retirada'}</p>
         </div>
@@ -212,7 +212,7 @@ export default function OrderDetail({ id }: { id: string }) {
       <h2 id="confirm-order-heading" ref={confirmationHeading} tabIndex={-1}>
         {actions[confirming].confirmation}
       </h2>
-      <p id="confirm-order-description">O pedido {order.identificadorNegocio} passará de
+      <p id="confirm-order-description">O pedido #{order.numeroPublico} passará de
         {' '}{statusLabel[order.statusAtual]} para {statusLabel[actions[confirming].target]}.
         {confirming === 'saiu-para-entrega' && ` Entregador: ${entregadores.find((item) =>
           item.id === entregadorUsuarioId)?.nome ?? ''}.`}</p>

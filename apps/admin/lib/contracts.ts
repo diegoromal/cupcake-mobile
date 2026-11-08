@@ -7,6 +7,7 @@ export type Estoque = { produtoId: string; quantidadeFisica: number; quantidadeR
 export type MovimentacaoEstoque = { id: string; produtoId: string; pedidoId: string | null; quantidade: number; motivoOrigem: string; data: string };
 export type PedidoAdministrativo = {
   id: string;
+  numeroPublico: number;
   identificadorNegocio: string;
   confirmacaoPagamento: string | null;
   cliente: { nome: string };
@@ -18,7 +19,7 @@ export type StatusPedido = 'PENDENTE_PAGAMENTO' | 'PAGO' | 'EM_PREPARO' |
   'SAIU_PARA_ENTREGA' | 'ENTREGUE' | 'PRONTO_PARA_RETIRADA' | 'RETIRADO' | 'EXPIRADO' | 'CANCELADO';
 export type StatusFila = Exclude<StatusPedido, 'PENDENTE_PAGAMENTO' | 'EXPIRADO'>;
 export type PedidoDetalheAdministrativo = {
-  id: string; identificadorNegocio: string; confirmacaoPagamento: string | null;
+  id: string; numeroPublico: number; identificadorNegocio: string; confirmacaoPagamento: string | null;
   cliente: { nome: string }; entregador: { id: string; nome: string } | null;
   modalidade: 'ENTREGA' | 'RETIRADA'; statusAtual: StatusPedido;
   valorItens: string; freteAplicado: string; total: string; formaPagamento: 'PIX' | 'CARTAO' | null;
