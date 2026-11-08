@@ -5,6 +5,7 @@ import { EvolutionApiService } from './evolution-api.service';
 
 export interface EventoStatusPedido {
   pedidoId: string;
+  numeroPublico: number;
   identificadorNegocio: string;
   telefone: string;
   status: StatusPedido;
@@ -49,7 +50,7 @@ export class NotificacoesService implements OnModuleDestroy {
     let resultado: ResultadoNotificacao = ResultadoNotificacao.FALHA;
     try {
       destino = normalizarTelefoneBrasileiro(destino);
-      await this.evolutionApi.enviarTexto(destino, criarTexto(evento.identificadorNegocio));
+      await this.evolutionApi.enviarTexto(destino, criarTexto(`#${evento.numeroPublico}`));
       resultado = ResultadoNotificacao.SUCESSO;
     } catch {
       this.logger.warn(`Falha no envio WhatsApp do pedido ${evento.pedidoId} (${evento.status}).`);

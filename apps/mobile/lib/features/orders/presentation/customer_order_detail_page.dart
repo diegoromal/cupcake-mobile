@@ -29,12 +29,11 @@ class CustomerOrderDetailPage extends StatelessWidget {
       padding: const EdgeInsets.all(AppTokens.spacing16),
       children: [
         Text(
-          'Pedido ${order?.businessNumber ?? orderNumber}',
+          'Pedido ${order == null ? orderNumber : '#${order!.publicNumber}'}',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: AppTokens.spacing16),
         if (order case final value?) ...[
-          _row(context, 'Identificador', value.id),
           _row(context, 'Status', _statusLabel(value.status)),
           _row(context, 'Data', _dateLabel(value.date)),
           _row(
@@ -44,7 +43,6 @@ class CustomerOrderDetailPage extends StatelessWidget {
           ),
           _row(context, 'Total', 'R\$ ${value.total.replaceAll('.', ',')}'),
         ] else ...[
-          _row(context, 'Identificador', orderId!),
           _row(context, 'Status', 'Pagamento aprovado'),
           _row(context, 'Total', 'R\$ ${paymentTotal!.replaceAll('.', ',')}'),
         ],

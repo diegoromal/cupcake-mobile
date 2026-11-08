@@ -628,14 +628,11 @@ class _CompactOrderNumber extends StatelessWidget {
   final String value;
   final TextStyle? style;
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: 'Identificador completo: $value',
-    child: Text(
-      'Pedido ${value.length > 16 ? '${value.substring(0, 8)}…${value.substring(value.length - 4)}' : value}',
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: style,
-    ),
+  Widget build(BuildContext context) => Text(
+    'Pedido $value',
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: style,
   );
 }
 

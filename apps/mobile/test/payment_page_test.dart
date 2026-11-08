@@ -85,7 +85,7 @@ Map<String, dynamic> _payment(String result, {String method = 'PIX'}) => {
 };
 
 Map<String, dynamic> _receipt({bool delivery = false}) => {
-  'numeroPublico': 42,
+  'numeroPublico': 35,
   'modalidade': delivery ? 'ENTREGA' : 'RETIRADA',
   'enderecoEntregaSnapshot': delivery
       ? {
@@ -127,18 +127,20 @@ void main() {
         home: PaymentPage(
           session: session,
           orderId: orderId,
-          orderNumber: 'PED-identificador-interno',
+          orderNumber: '#35',
           total: '20.00',
           receipt: _receipt(),
           paymentApi: api,
         ),
       ),
     );
+    expect(find.text('Pedido #35'), findsNWidgets(2));
+    expect(find.textContaining('PED-'), findsNothing);
     await tester.tap(find.text('Pix'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Pagar agora'));
     await tester.pumpAndSettle();
-    expect(find.text('Pedido #42'), findsOneWidget);
+    expect(find.text('Pedido #35'), findsOneWidget);
     expect(find.text('Recebimento: Retirada'), findsOneWidget);
     expect(find.text('2 × Cupcake'), findsOneWidget);
     expect(find.textContaining('Cobertura'), findsOneWidget);
@@ -148,9 +150,17 @@ void main() {
     expect(find.text('Itens: R\$ 20,00'), findsOneWidget);
     expect(find.text('Frete: R\$ 0,00'), findsOneWidget);
     expect(find.text('Total: R\$ 20,00'), findsOneWidget);
-    expect(find.textContaining('PED-identificador-interno'), findsNothing);
+    expect(find.textContaining('PED-'), findsNothing);
     expect(find.text('Ver meu pedido'), findsOneWidget);
     expect(find.text('Voltar ao cardápio'), findsOneWidget);
+    await tester.ensureVisible(find.text('Ver meu pedido'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver meu pedido'));
+    await tester.pumpAndSettle();
+    expect(find.text('Detalhe do pedido'), findsOneWidget);
+    expect(find.text('Pedido #35'), findsOneWidget);
+    expect(find.text(orderId), findsNothing);
+    expect(find.text('Identificador'), findsNothing);
     session.dispose();
   });
 
@@ -162,7 +172,7 @@ void main() {
         theme: AppTheme.light,
         home: PaymentResultPage(
           outcome: PaymentOutcome.approved,
-          orderNumber: 'PED-interno',
+          orderNumber: '#35',
           orderId: orderId,
           total: '23.00',
           method: 'Cartão',
@@ -170,7 +180,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Pedido #42'), findsOneWidget);
+    expect(find.text('Pedido #35'), findsOneWidget);
     expect(find.text('Recebimento: Delivery'), findsOneWidget);
     expect(find.text('Entregar em: Rua A, 7'), findsOneWidget);
     expect(find.text('Centro · Curitiba · 80000000'), findsOneWidget);
@@ -189,7 +199,7 @@ void main() {
         theme: AppTheme.light,
         home: const PaymentResultPage(
           outcome: PaymentOutcome.approved,
-          orderNumber: 'PED-123',
+          orderNumber: '#35',
           orderId: orderId,
           total: '29.50',
           method: 'Pix',
@@ -215,7 +225,9 @@ void main() {
     await tester.tap(find.text('Ver meu pedido'));
     await tester.pumpAndSettle();
     expect(find.text('Detalhe do pedido'), findsOneWidget);
-    expect(find.text(orderId), findsOneWidget);
+    expect(find.text('Pedido #35'), findsOneWidget);
+    expect(find.text(orderId), findsNothing);
+    expect(find.text('Identificador'), findsNothing);
   });
 
   testWidgets('resumo e opções usam a superfície branca do Design System', (

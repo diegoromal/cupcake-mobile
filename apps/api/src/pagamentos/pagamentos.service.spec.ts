@@ -88,7 +88,7 @@ describe('espera e consulta Pix', () => {
         pagamento: { ...cartao, resultado: 'APROVADO',
           dataTransacao: new Date('2026-10-23T12:00:00Z') },
         evento: {
-          pedidoId, identificadorNegocio: 'PED-123', telefone: '11999999999', status: StatusPedido.PAGO,
+          pedidoId, numeroPublico: 35, identificadorNegocio: 'PED-123', telefone: '11999999999', status: StatusPedido.PAGO,
         },
       });
 
@@ -100,7 +100,7 @@ describe('espera e consulta Pix', () => {
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     expect(simulador.simular).toHaveBeenCalledWith(id);
     expect(agendarStatusPedido).toHaveBeenCalledWith({
-      pedidoId, identificadorNegocio: 'PED-123', telefone: '11999999999', status: StatusPedido.PAGO,
+      pedidoId, numeroPublico: 35, identificadorNegocio: 'PED-123', telefone: '11999999999', status: StatusPedido.PAGO,
     });
   });
 
@@ -146,7 +146,7 @@ describe('ordem de locks na conclusão do pagamento (R-04)', () => {
       const sql = strings.join('?');
       if (sql.includes('FROM "Pedido" p')) {
         return [{ id: pedidoId, statusAtual: 'PENDENTE_PAGAMENTO', data: agora,
-          identificadorNegocio: 'PED-1', telefone: '11999999999' }];
+          numeroPublico: 35, identificadorNegocio: 'PED-1', telefone: '11999999999' }];
       }
       if (sql.includes('SELECT id FROM "Pedido"')) return [{ id: pedidoId }];
       if (sql.includes('FROM "Produto"')) { ordem.push('Produto'); return [{ id: produtoId }]; }
@@ -204,6 +204,9 @@ describe('ordem de locks na conclusão do pagamento (R-04)', () => {
         pagamento: { resultado: 'APROVADO' },
       });
       expect(agendarStatusPedido).toHaveBeenCalledTimes(1);
+      expect(agendarStatusPedido).toHaveBeenCalledWith(expect.objectContaining({
+        pedidoId, numeroPublico: 35, identificadorNegocio: 'PED-1', status: StatusPedido.PAGO,
+      }));
     }
 
     expect(ordem).toEqual(['Produto', 'Estoque', 'Movimentacao', 'Historico', 'LimpezaCarrinho']);

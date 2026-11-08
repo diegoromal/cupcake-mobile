@@ -54,6 +54,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
   bool _loading = false;
   bool _confirming = false;
   String? _orderId;
+  int? _orderPublicNumber;
   bool _resolvingPreviousIntent = false;
   bool _previousIntentResolved = false;
   int _generation = 0;
@@ -444,12 +445,13 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
       if (rejected) _attemptId = _newUuid();
       if (result.status == OrderStatus.success) {
         _orderId = result.value!['id'] as String;
+        _orderPublicNumber = result.value!['numeroPublico'] as int;
       }
     });
     if (result.status == OrderStatus.success && !_resolvingPreviousIntent) {
       final order = result.value!;
       if (order['id'] is String &&
-          order['identificadorNegocio'] is String &&
+          order['numeroPublico'] is int &&
           order['total'] is String) {
         unawaited(
           Navigator.of(context).push<void>(
@@ -457,7 +459,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
               builder: (_) => PaymentPage(
                 session: widget.session,
                 orderId: order['id'] as String,
-                orderNumber: order['identificadorNegocio'] as String,
+                orderNumber: '#${order['numeroPublico']}',
                 total: order['total'] as String,
                 receipt: order,
               ),
@@ -498,7 +500,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
             child: Text(
               _previousIntentResolved
                   ? _orderId != null
-                        ? 'Pedido anterior confirmado. Número: $_orderId'
+                        ? 'Pedido anterior confirmado. Número: #$_orderPublicNumber'
                         : 'A confirmação anterior foi rejeitada. Confira sua escolha e solicite uma nova revisão.'
                   : 'Sua escolha atual foi preservada. Resolva a confirmação anterior de ${pending?.mode == 'ENTREGA' ? 'Delivery' : 'Retirada'} antes de iniciar um novo pedido.',
             ),
@@ -843,7 +845,7 @@ class _OrderReviewPageState extends State<OrderReviewPage> {
           const SizedBox(height: 16),
           Semantics(
             liveRegion: true,
-            child: Text('Pedido confirmado. Número: $_orderId'),
+            child: Text('Pedido confirmado. Número: #$_orderPublicNumber'),
           ),
         ],
       ],

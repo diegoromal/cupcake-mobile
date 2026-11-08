@@ -31,6 +31,7 @@ enum CustomerOrdersStatus {
 class CustomerOrder {
   const CustomerOrder({
     required this.id,
+    required this.publicNumber,
     required this.businessNumber,
     required this.date,
     required this.fulfillment,
@@ -39,6 +40,7 @@ class CustomerOrder {
   });
 
   final String id;
+  final int publicNumber;
   final String businessNumber;
   final DateTime date;
   final String fulfillment;
@@ -47,9 +49,11 @@ class CustomerOrder {
 
   static CustomerOrder? parse(Object? value) {
     if (value is! Map<String, dynamic> ||
-        value.length != 6 ||
+        value.length != 7 ||
         value['id'] is! String ||
         !_uuidPattern.hasMatch(value['id'] as String) ||
+        value['numeroPublico'] is! int ||
+        (value['numeroPublico'] as int) < 1 ||
         value['identificadorNegocio'] is! String ||
         (value['identificadorNegocio'] as String).isEmpty ||
         value['data'] is! String ||
@@ -64,6 +68,7 @@ class CustomerOrder {
     }
     return CustomerOrder(
       id: value['id'] as String,
+      publicNumber: value['numeroPublico'] as int,
       businessNumber: value['identificadorNegocio'] as String,
       date: DateTime.parse(value['data'] as String),
       fulfillment: value['modalidade'] as String,

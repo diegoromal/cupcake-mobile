@@ -239,15 +239,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Tooltip(
-                      message:
-                          'Identificador completo: ${order.businessNumber}',
-                      child: Text(
-                        'Pedido ${_compactId(order.businessNumber)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                    Text(
+                      'Pedido #${order.publicNumber}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: AppTokens.spacing8),
                     Align(
@@ -446,10 +442,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     ),
   );
 }
-
-String _compactId(String value) => value.length > 16
-    ? '${value.substring(0, 3)}…${value.substring(value.length - 4)}'
-    : value;
 
 class _OrderStatusBadge extends StatelessWidget {
   const _OrderStatusBadge({required this.label});
