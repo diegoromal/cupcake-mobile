@@ -115,9 +115,9 @@ export class PagamentosService {
     const transicao = await this.prisma.$transaction(async (db) => {
       const [pedido] = await db.$queryRaw<Array<{
         id: string; statusAtual: StatusPedido; data: Date;
-        identificadorNegocio: string; telefone: string;
+        numeroPublico: number; identificadorNegocio: string; telefone: string;
       }>>`
-        SELECT p.id, p."statusAtual", p.data, p."identificadorNegocio", u.telefone
+        SELECT p.id, p."statusAtual", p.data, p."numeroPublico", p."identificadorNegocio", u.telefone
         FROM "Pedido" p JOIN "Usuario" u ON u.id = p."clienteUsuarioId"
         WHERE p.id = ${pagamento.pedidoId}::uuid AND p."clienteUsuarioId" = ${usuarioId}::uuid
         FOR UPDATE OF p`;
@@ -222,6 +222,7 @@ export class PagamentosService {
         pagamento: await db.pagamento.findUniqueOrThrow({ where: { id: pagamento.id } }),
         evento: {
           pedidoId: pedido.id,
+          numeroPublico: pedido.numeroPublico,
           identificadorNegocio: pedido.identificadorNegocio,
           telefone: pedido.telefone,
           status: StatusPedido.PAGO,

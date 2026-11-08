@@ -62,19 +62,19 @@ describe('PedidosService', () => {
     it('retorna somente os campos da lista, filtra pelo cliente e ordena do mais recente', async () => {
       const data = new Date('2026-10-25T12:00:00.000Z');
       const findMany = jest.fn().mockResolvedValue([{
-        id: '11111111-1111-4111-8111-111111111111', identificadorNegocio: 'PED-123',
+        id: '11111111-1111-4111-8111-111111111111', numeroPublico: 35, identificadorNegocio: 'PED-123',
         data, modalidade: 'RETIRADA', total: dinheiro('20.50'), statusAtual: 'PAGO',
       }]);
       const clienteService = new PedidosService({ pedido: { findMany } } as never, criarNotificacoesFalsas());
 
       await expect(clienteService.listarParaCliente(usuarioId)).resolves.toEqual([{
-        id: '11111111-1111-4111-8111-111111111111', identificadorNegocio: 'PED-123',
+        id: '11111111-1111-4111-8111-111111111111', numeroPublico: 35, identificadorNegocio: 'PED-123',
         data, modalidade: 'RETIRADA', total: '20.50', statusAtual: 'PAGO',
       }]);
       expect(findMany).toHaveBeenCalledWith({
         where: { clienteUsuarioId: usuarioId },
         select: {
-          id: true, identificadorNegocio: true, data: true,
+          id: true, numeroPublico: true, identificadorNegocio: true, data: true,
           modalidade: true, total: true, statusAtual: true,
         },
         orderBy: [{ data: 'desc' }, { id: 'desc' }],
@@ -89,7 +89,7 @@ describe('PedidosService', () => {
       const queryRaw = jest.fn()
         .mockResolvedValueOnce([{
           statusAtual: 'PAGO', modalidade: 'ENTREGA',
-          identificadorNegocio: 'PED-123', telefone: '11999999999',
+          numeroPublico: 35, identificadorNegocio: 'PED-123', telefone: '11999999999',
         }])
         .mockResolvedValueOnce([{ agora }]);
       const updateMany = jest.fn().mockResolvedValue({ count: 1 });
@@ -126,7 +126,7 @@ describe('PedidosService', () => {
         responsavelUsuarioId: enderecoId,
       } });
       expect(agendarStatusPedido).toHaveBeenCalledWith({
-        pedidoId: usuarioId, identificadorNegocio: 'PED-123',
+        pedidoId: usuarioId, numeroPublico: 35, identificadorNegocio: 'PED-123',
         telefone: '11999999999', status: 'EM_PREPARO',
       });
     });
@@ -153,7 +153,7 @@ describe('PedidosService', () => {
     it('atribui entregador, avança o pedido e registra o administrador na mesma transação', async () => {
       const queryRaw = jest.fn().mockResolvedValueOnce([{
         statusAtual: 'EM_PREPARO', modalidade: 'ENTREGA',
-        identificadorNegocio: 'PED-123', telefone: '11999999999',
+        numeroPublico: 35, identificadorNegocio: 'PED-123', telefone: '11999999999',
       }])
         .mockResolvedValueOnce([{ id: entregadorId }]).mockResolvedValueOnce([{ agora }]);
       const updateMany = jest.fn().mockResolvedValue({ count: 1 });
@@ -185,7 +185,7 @@ describe('PedidosService', () => {
         responsavelUsuarioId: enderecoId,
       } });
       expect(agendarStatusPedido).toHaveBeenCalledWith({
-        pedidoId: usuarioId, identificadorNegocio: 'PED-123',
+        pedidoId: usuarioId, numeroPublico: 35, identificadorNegocio: 'PED-123',
         telefone: '11999999999', status: 'SAIU_PARA_ENTREGA',
       });
     });
@@ -392,7 +392,10 @@ describe('PedidosService', () => {
       ['confirmarRetirada', 'PRONTO_PARA_RETIRADA', 'RETIRADO'],
     ] as const)('%s grava status e responsável no histórico', async (operation, atual, proximo) => {
       const agora = new Date('2026-10-24T12:00:00.000Z');
-      const queryRaw = jest.fn().mockResolvedValueOnce([{ statusAtual: atual, modalidade: 'RETIRADA' }])
+      const queryRaw = jest.fn().mockResolvedValueOnce([{
+        statusAtual: atual, modalidade: 'RETIRADA', numeroPublico: 35,
+        identificadorNegocio: 'PED-123', telefone: '11999999999',
+      }])
         .mockResolvedValueOnce([{ agora }]);
       const updateMany = jest.fn().mockResolvedValue({ count: 1 });
       const create = jest.fn().mockResolvedValue({});
@@ -413,7 +416,9 @@ describe('PedidosService', () => {
       expect(create).toHaveBeenCalledWith({ data: {
         pedidoId: usuarioId, statusRegistrado: proximo, dataHora: agora, responsavelUsuarioId: enderecoId,
       } });
-      expect(agendarStatusPedido).toHaveBeenCalledWith(expect.objectContaining({ status: proximo }));
+      expect(agendarStatusPedido).toHaveBeenCalledWith(expect.objectContaining({
+        pedidoId: usuarioId, numeroPublico: 35, identificadorNegocio: 'PED-123', status: proximo,
+      }));
     });
 
     it.each([

@@ -16,6 +16,7 @@ const _id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
 Map<String, dynamic> _order({String status = 'PAGO'}) => {
   'id': _id,
+  'numeroPublico': 35,
   'identificadorNegocio': 'PED-42',
   'data': '2026-10-26T12:30:00.000Z',
   'modalidade': 'ENTREGA',
@@ -28,6 +29,7 @@ void main() {
     'modelo valida os campos do resumo retornado pelo endpoint existente',
     () {
       final order = CustomerOrder.parse(_order());
+      expect(order?.publicNumber, 35);
       expect(order?.businessNumber, 'PED-42');
       expect(order?.total, '42.50');
       expect(order?.status, 'PAGO');
@@ -39,6 +41,8 @@ void main() {
         CustomerOrder.parse({..._order(), 'statusAtual': 'DESCONHECIDO'}),
         isNull,
       );
+      expect(CustomerOrder.parse({..._order(), 'numeroPublico': 0}), isNull);
+      expect(CustomerOrder.parse({..._order()}..remove('numeroPublico')), isNull);
     },
   );
 
@@ -56,7 +60,8 @@ void main() {
       expect(api.calls, 1);
       final card = tester.widget<Card>(find.byType(Card, skipOffstage: false));
       expect(card.color, AppTokens.surface);
-      expect(find.text('Pedido PED-42', skipOffstage: false), findsOneWidget);
+      expect(find.text('Pedido #35', skipOffstage: false), findsOneWidget);
+      expect(find.textContaining('PED-42', skipOffstage: false), findsNothing);
       expect(find.text('R\$ 42,50', skipOffstage: false), findsOneWidget);
       expect(find.text('Pago', skipOffstage: false), findsOneWidget);
 
@@ -143,7 +148,7 @@ void main() {
     session.dispose();
   });
 
-  testWidgets('Ver pedido abre detalhe usando o identificador selecionado', (
+  testWidgets('Ver pedido abre detalhe com número público e sem UUID', (
     tester,
   ) async {
     final session = await _signedInSession();
@@ -159,8 +164,10 @@ void main() {
     viewOrderButton.onPressed!();
     await tester.pumpAndSettle();
     expect(find.text('Detalhe do pedido', skipOffstage: false), findsOneWidget);
-    expect(find.text(_id, skipOffstage: false), findsOneWidget);
-    expect(find.text('Pedido PED-42', skipOffstage: false), findsWidgets);
+    expect(find.text(_id, skipOffstage: false), findsNothing);
+    expect(find.text('Pedido #35', skipOffstage: false), findsWidgets);
+    expect(find.text('Identificador', skipOffstage: false), findsNothing);
+    expect(find.textContaining('PED-42', skipOffstage: false), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     session.dispose();
   });

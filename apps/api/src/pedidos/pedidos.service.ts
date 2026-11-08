@@ -23,6 +23,7 @@ export class PedidosService {
       where: { clienteUsuarioId },
       select: {
         id: true,
+        numeroPublico: true,
         identificadorNegocio: true,
         data: true,
         modalidade: true,
@@ -163,8 +164,8 @@ export class PedidosService {
     const evento = await this.prisma.$transaction(async (db): Promise<EventoStatusPedido> => {
       const [pedido] = await db.$queryRaw<Array<{
         statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
-        identificadorNegocio: string; telefone: string;
-      }>>`SELECT p."statusAtual", p.modalidade, p."identificadorNegocio", u.telefone
+        numeroPublico: number; identificadorNegocio: string; telefone: string;
+      }>>`SELECT p."statusAtual", p.modalidade, p."numeroPublico", p."identificadorNegocio", u.telefone
         FROM "Pedido" p JOIN "Usuario" u ON u.id = p."clienteUsuarioId"
         WHERE p.id = ${id}::uuid FOR UPDATE OF p`;
       if (!pedido) throw new NotFoundException('Pedido não encontrado.');
@@ -193,7 +194,7 @@ export class PedidosService {
         responsavelUsuarioId,
       } });
       return {
-        pedidoId: id, identificadorNegocio: pedido.identificadorNegocio,
+        pedidoId: id, numeroPublico: pedido.numeroPublico, identificadorNegocio: pedido.identificadorNegocio,
         telefone: pedido.telefone, status: StatusPedido.SAIU_PARA_ENTREGA,
       };
     });
@@ -205,8 +206,8 @@ export class PedidosService {
     const transicao = await this.prisma.$transaction(async (db) => {
       const [pedido] = await db.$queryRaw<Array<{
         statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
-        identificadorNegocio: string; telefone: string;
-      }>>`SELECT p."statusAtual", p.modalidade, p."identificadorNegocio", u.telefone
+        numeroPublico: number; identificadorNegocio: string; telefone: string;
+      }>>`SELECT p."statusAtual", p.modalidade, p."numeroPublico", p."identificadorNegocio", u.telefone
           FROM "Pedido" p JOIN "Usuario" u ON u.id = p."clienteUsuarioId"
           WHERE p.id = ${id}::uuid AND p."entregadorUsuarioId" = ${entregadorUsuarioId}::uuid
           FOR UPDATE OF p`;
@@ -240,7 +241,7 @@ export class PedidosService {
       return {
         resultado: { statusAtual: StatusPedido.ENTREGUE, dataHora: agora },
         evento: {
-          pedidoId: id, identificadorNegocio: pedido.identificadorNegocio,
+          pedidoId: id, numeroPublico: pedido.numeroPublico, identificadorNegocio: pedido.identificadorNegocio,
           telefone: pedido.telefone, status: StatusPedido.ENTREGUE,
         } satisfies EventoStatusPedido,
       };
@@ -371,8 +372,8 @@ export class PedidosService {
     const evento = await this.prisma.$transaction(async (db): Promise<EventoStatusPedido> => {
       const [pedido] = await db.$queryRaw<Array<{
         statusAtual: StatusPedido; modalidade: ModalidadeRecebimento;
-        identificadorNegocio: string; telefone: string;
-      }>>`SELECT p."statusAtual", p.modalidade, p."identificadorNegocio", u.telefone
+        numeroPublico: number; identificadorNegocio: string; telefone: string;
+      }>>`SELECT p."statusAtual", p.modalidade, p."numeroPublico", p."identificadorNegocio", u.telefone
           FROM "Pedido" p JOIN "Usuario" u ON u.id = p."clienteUsuarioId"
           WHERE p.id = ${id}::uuid FOR UPDATE OF p`;
       if (!pedido) throw new NotFoundException('Pedido não encontrado.');
@@ -400,7 +401,7 @@ export class PedidosService {
         responsavelUsuarioId,
       } });
       return {
-        pedidoId: id, identificadorNegocio: pedido.identificadorNegocio,
+        pedidoId: id, numeroPublico: pedido.numeroPublico, identificadorNegocio: pedido.identificadorNegocio,
         telefone: pedido.telefone, status: proximo,
       };
     });
