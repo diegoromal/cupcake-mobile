@@ -101,6 +101,7 @@ class FakeOrderApi extends CustomerOrderApi {
           OrderStatus.success,
           value: {
             'id': userId,
+            'numeroPublico': 35,
             'identificadorNegocio': 'PED-$attemptId',
             'total': '20.00',
           },
@@ -666,6 +667,11 @@ void main() {
             find.textContaining('Pedido anterior confirmado'),
             findsOneWidget,
           );
+          expect(
+            find.text('Pedido anterior confirmado. Número: #35'),
+            findsOneWidget,
+          );
+          expect(find.textContaining(userId), findsNothing);
           await tester.pumpWidget(const SizedBox());
           await open(tester, sessionValue, api, mode: currentMode);
           expect(api.reviewModes, [previousMode, currentMode]);
@@ -718,15 +724,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(api.attemptIds, [api.attemptIds.first, api.attemptIds.first]);
         expect(api.reservations, 1);
-        final orderNumber = 'PED-${api.attemptIds.first}';
-        final visibleOrderNumber = orderNumber.length > 16
-            ? '${orderNumber.substring(0, 8)}…${orderNumber.substring(orderNumber.length - 4)}'
-            : orderNumber;
-        expect(find.text('Pedido $visibleOrderNumber'), findsNWidgets(2));
-        expect(
-          find.byTooltip('Identificador completo: $orderNumber'),
-          findsNWidgets(2),
-        );
+        expect(find.text('Pedido #35'), findsNWidgets(2));
+        expect(find.textContaining(userId), findsNothing);
+        expect(find.textContaining('PED-'), findsNothing);
         expect(sessionValue.pendingOrderConfirmation, isNull);
       },
     );
@@ -742,6 +742,7 @@ void main() {
         OrderStatus.success,
         value: {
           'id': userId,
+          'numeroPublico': 35,
           'identificadorNegocio': 'PED-1',
           'total': '20.00',
         },
@@ -752,7 +753,8 @@ void main() {
     expect(api.confirmTokens, isEmpty);
     await tester.tap(find.text('Confirmar pedido'));
     await tester.pumpAndSettle();
-    expect(find.text('Pedido PED-1'), findsNWidgets(2));
+    expect(find.text('Pedido #35'), findsNWidgets(2));
+    expect(find.textContaining(userId), findsNothing);
     expect(api.confirmTokens, hasLength(1));
     expect(api.attemptIds.single, matches(RegExp(r'^[a-f0-9-]{36}$')));
   });
@@ -800,6 +802,7 @@ void main() {
           OrderStatus.success,
           value: {
             'id': userId,
+            'numeroPublico': 35,
             'identificadorNegocio': 'PED-1',
             'total': '23.00',
           },
@@ -807,7 +810,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(api.confirmTokens, hasLength(1));
-      expect(find.text('Pedido PED-1'), findsNWidgets(2));
+      expect(find.text('Pedido #35'), findsNWidgets(2));
     },
   );
 
@@ -820,7 +823,10 @@ void main() {
     ]);
     api.confirmResults.addAll([
       const OrderResult(OrderStatus.conflict),
-      const OrderResult(OrderStatus.success, value: {'id': userId}),
+      const OrderResult(
+        OrderStatus.success,
+        value: {'id': userId, 'numeroPublico': 35},
+      ),
     ]);
     await open(tester, sessionValue, api);
     await tester.tap(find.text('Confirmar pedido'));

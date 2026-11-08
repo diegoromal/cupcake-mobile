@@ -188,6 +188,7 @@ class _OrderApi extends CustomerOrderApi {
       OrderStatus.success,
       value: {
         'id': _orderId,
+        'numeroPublico': 35,
         'identificadorNegocio': 'PED-99',
         'total': '12.50',
       },
