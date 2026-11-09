@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/authenticated-user';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { PerfilUsuario } from '../generated/prisma/enums';
 import { CepService } from './cep.service';
 import { CoberturaFreteService } from './cobertura-frete.service';
 import { CreateEnderecoDto } from './dto/create-endereco.dto';
+import { UpdateEnderecoDto } from './dto/update-endereco.dto';
 import { EnderecosService } from './enderecos.service';
 import { GeocodificacaoService } from './geocodificacao.service';
 
@@ -30,6 +31,17 @@ export class EnderecosController {
   @Get()
   listar(@Req() request: AuthenticatedRequest) {
     return this.enderecos.listar(this.userId(request));
+  }
+
+  @Patch(':id')
+  atualizar(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: UpdateEnderecoDto) {
+    return this.enderecos.atualizar(this.userId(request), id, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  excluir(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.enderecos.excluir(this.userId(request), id);
   }
 
   @Get('cep/:cep')

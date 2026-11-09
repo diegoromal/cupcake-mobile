@@ -158,9 +158,18 @@ model Endereco {
   referencia  String?
   latitude    Decimal? @db.Decimal(9, 6)
   longitude   Decimal? @db.Decimal(9, 6)
+  statusLocalizacao StatusLocalizacaoEndereco @default(PENDENTE)
   usuario     Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
 
   @@index([usuarioId])
+}
+
+enum StatusLocalizacaoEndereco {
+  PENDENTE
+  LOCALIZADO
+  NAO_LOCALIZADO
+  TEMPORARIO
+  AMBIGUO
 }
 
 model ConfiguracaoLojaEntrega {

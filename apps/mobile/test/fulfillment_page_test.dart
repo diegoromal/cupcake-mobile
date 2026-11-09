@@ -649,6 +649,31 @@ void main() {
     expect(api.calls, [id]);
   });
 
+  testWidgets('409 localização alterada recarrega endereços antes do retry', (
+    tester,
+  ) async {
+    final userSession = await session(FakeAuth());
+    addTearDown(userSession.dispose);
+    final api = FakeAddressApi()
+      ..addresses = [address(id, located: false)]
+      ..geocodeResponses.add(AddressStatus.stale);
+    await tester.pumpWidget(app(userSession, api));
+    await choose(tester, 'Delivery');
+    await choose(tester, 'Rua das Flores, 123');
+    expect(
+      find.textContaining('Endereço alterado durante a localização.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Localização ambígua.'), findsNothing);
+    expect(api.calls, isEmpty);
+    final listsBeforeRetry = api.listCalls;
+    await choose(tester, 'Tentar novamente');
+    expect(api.listCalls, listsBeforeRetry + 1);
+    expect(api.geocodeCalls, [id, id]);
+    expect(api.calls, [id]);
+    expect(find.text('Entrega disponível. Frete: R\$ 12,34'), findsOneWidget);
+  });
+
   for (final failure in [
     AddressStatus.configurationUnavailable,
     AddressStatus.networkError,

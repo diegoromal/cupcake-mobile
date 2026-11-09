@@ -46,15 +46,23 @@ class FakeAddressApi extends CustomerAddressApi {
   AddressStatus? createStatus;
   AddressStatus? geoStatus;
   AddressStatus? listStatus;
+  AddressStatus? updateStatus;
+  AddressStatus? deleteStatus;
+  Map<String, Object?>? updatedBody;
+  int updateCalls = 0, deleteCalls = 0;
+  int listCalls = 0;
   Completer<AddressResult<CustomerAddress>>? createGate;
   Completer<AddressResult<CepData>>? lookupGate;
   CepData lookupData = const CepData('Rua A', 'Centro', 'Curitiba', 'PR');
   int createCalls = 0, geoCalls = 0;
   @override
-  Future<AddressResult<List<CustomerAddress>>> list(String token) async =>
-      listStatus == null
-      ? AddressResult(AddressStatus.success, value: addresses)
-      : AddressResult(listStatus!);
+  Future<AddressResult<List<CustomerAddress>>> list(String token) async {
+    listCalls++;
+    return listStatus == null
+        ? AddressResult(AddressStatus.success, value: addresses)
+        : AddressResult(listStatus!);
+  }
+
   @override
   Future<AddressResult<CepData>> lookupCep(String token, String cep) async {
     lookedUpCep = cep;
@@ -78,21 +86,82 @@ class FakeAddressApi extends CustomerAddressApi {
   }
 
   @override
+  Future<AddressResult<CustomerAddress>> update(
+    String token,
+    String id,
+    Map<String, Object?> body,
+  ) async {
+    updateCalls++;
+    updatedBody = body;
+    if (updateStatus != null) return AddressResult(updateStatus!);
+    final previous = addresses.single;
+    final searchChanged =
+        body['rua'] != previous.street ||
+        body['numero'] != previous.number ||
+        body['bairro'] != previous.neighborhood ||
+        body['cidade'] != previous.city ||
+        (body['cep'] as String).replaceAll('-', '') != previous.cep;
+    addresses = [
+      CustomerAddress(
+        id: address.id,
+        street: body['rua'] as String,
+        number: body['numero'] as String,
+        neighborhood: body['bairro'] as String,
+        city: body['cidade'] as String,
+        cep: (body['cep'] as String).replaceAll('-', ''),
+        complement: body['complemento'] as String?,
+        reference: body['referencia'] as String?,
+        located: previous.located && !searchChanged,
+      ),
+    ];
+    return AddressResult(AddressStatus.success, value: addresses.single);
+  }
+
+  @override
+  Future<AddressResult<void>> delete(String token, String id) async {
+    deleteCalls++;
+    if (deleteStatus != null) return AddressResult(deleteStatus!);
+    addresses = [];
+    return const AddressResult(AddressStatus.success);
+  }
+
+  @override
   Future<AddressResult<void>> geocode(String token, String id) async {
     geoCalls++;
     if (geoStatus != null && geoStatus != AddressStatus.success) {
+      final previous = addresses.single;
+      final state = switch (geoStatus!) {
+        AddressStatus.notLocated => AddressLocationStatus.notLocated,
+        AddressStatus.ambiguous => AddressLocationStatus.ambiguous,
+        _ => AddressLocationStatus.temporary,
+      };
+      addresses = [
+        CustomerAddress(
+          id: previous.id,
+          street: previous.street,
+          number: previous.number,
+          neighborhood: previous.neighborhood,
+          city: previous.city,
+          cep: previous.cep,
+          complement: previous.complement,
+          reference: previous.reference,
+          located: false,
+          locationStatus: state,
+        ),
+      ];
       return AddressResult(geoStatus!);
     }
+    final previous = addresses.single;
     addresses = [
-      const CustomerAddress(
-        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-        street: 'Rua A',
-        number: '12',
-        neighborhood: 'Centro',
-        city: 'Curitiba',
-        cep: '80000000',
-        complement: null,
-        reference: null,
+      CustomerAddress(
+        id: previous.id,
+        street: previous.street,
+        number: previous.number,
+        neighborhood: previous.neighborhood,
+        city: previous.city,
+        cep: previous.cep,
+        complement: previous.complement,
+        reference: previous.reference,
         located: true,
       ),
     ];
@@ -202,6 +271,7 @@ void main() {
       await tester.tap(find.text('Salvar endereço'));
       await tester.pumpAndSettle();
       expect(api.createCalls, 1);
+      expect(api.geoCalls, 1);
       if (listFails) {
         expect(
           find.textContaining(
@@ -209,10 +279,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(
-          find.text('Endereço salvo. Localização pendente.'),
-          findsNothing,
-        );
+        expect(find.text('Endereço salvo. Localização pronta.'), findsNothing);
         expect(find.text('Nenhum endereço cadastrado.'), findsOneWidget);
         api.listStatus = null;
         await tester.tap(find.text('Atualizar lista'));
@@ -220,7 +287,7 @@ void main() {
         expect(find.text('Rua A, 12'), findsOneWidget);
       } else {
         expect(
-          find.text('Endereço salvo. Localização pendente.'),
+          find.text('Endereço salvo. Localização pronta.'),
           findsOneWidget,
         );
         expect(find.text('Rua A, 12'), findsOneWidget);
@@ -309,7 +376,7 @@ void main() {
       await showPage(tester, api);
       await tester.tap(find.text('Localizar endereço'));
       await tester.pump();
-      expect(find.text('Localização pendente'), findsOneWidget);
+      expect(find.text('Falha temporária de localização'), findsOneWidget);
       expect(
         find.text('Serviço indisponível. Tente novamente mais tarde.'),
         findsOneWidget,
@@ -321,6 +388,208 @@ void main() {
       expect(find.text('Localização pronta'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'editar preenche dados, salva a busca e relocaliza sem trocar o ID',
+    (tester) async {
+      final api = FakeAddressApi()..addresses = [address];
+      await showPage(tester, api);
+      await tester.tap(find.text('Editar'));
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextFormField>(find.widgetWithText(TextFormField, 'Rua *'))
+            .controller!
+            .text,
+        'Rua A',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Rua *'),
+        'Rua B',
+      );
+      await tester.ensureVisible(find.text('Salvar alterações'));
+      await tester.tap(find.text('Salvar alterações'));
+      await tester.pumpAndSettle();
+      expect(api.updateCalls, 1);
+      expect(api.updatedBody?['rua'], 'Rua B');
+      expect(api.geoCalls, 1);
+      expect(api.addresses.single.id, address.id);
+      expect(find.text('Rua B, 12'), findsOneWidget);
+      expect(find.text('Localização pronta'), findsOneWidget);
+    },
+  );
+
+  testWidgets('erro ao localizar após criar mantém endereço e permite retry', (
+    tester,
+  ) async {
+    final api = FakeAddressApi()..geoStatus = AddressStatus.notLocated;
+    await showPage(tester, api);
+    await fillAddress(tester);
+    await tester.tap(find.text('Salvar endereço'));
+    await tester.pumpAndSettle();
+    expect(api.createCalls, 1);
+    expect(api.geoCalls, 1);
+    expect(
+      api.addresses.single.locationStatus,
+      AddressLocationStatus.notLocated,
+    );
+    expect(
+      find.textContaining('Endereço salvo. Endereço não localizado.'),
+      findsOneWidget,
+    );
+    api.geoStatus = null;
+    await tester.tap(find.text('Localizar endereço'));
+    await tester.pumpAndSettle();
+    expect(api.geoCalls, 2);
+    expect(find.text('Localização pronta'), findsOneWidget);
+  });
+
+  testWidgets(
+    'editar só complemento preserva localização e não chama provider',
+    (tester) async {
+      final api = FakeAddressApi()
+        ..addresses = [
+          const CustomerAddress(
+            id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            street: 'Rua A',
+            number: '12',
+            neighborhood: 'Centro',
+            city: 'Curitiba',
+            cep: '80000000',
+            complement: null,
+            reference: null,
+            located: true,
+          ),
+        ];
+      await showPage(tester, api);
+      await tester.tap(find.text('Editar'));
+      await tester.pump();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Complemento'),
+        'A',
+      );
+      await tester.ensureVisible(find.text('Salvar alterações'));
+      await tester.tap(find.text('Salvar alterações'));
+      await tester.pumpAndSettle();
+      expect(api.updateCalls, 1);
+      expect(api.geoCalls, 0);
+      expect(api.addresses.single.located, true);
+    },
+  );
+
+  testWidgets('cancelar edição preserva endereço e não envia PATCH', (
+    tester,
+  ) async {
+    final api = FakeAddressApi()..addresses = [address];
+    await showPage(tester, api);
+    await tester.tap(find.text('Editar'));
+    await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Rua *'),
+      'Rua B',
+    );
+    await tester.ensureVisible(find.text('Cancelar edição'));
+    await tester.tap(find.text('Cancelar edição'));
+    await tester.pumpAndSettle();
+    expect(api.updateCalls, 0);
+    expect(api.addresses.single.street, 'Rua A');
+    expect(find.text('Cadastrar endereço'), findsOneWidget);
+  });
+
+  testWidgets('falha de geocodificação após editar mantém PATCH salvo', (
+    tester,
+  ) async {
+    final api = FakeAddressApi()
+      ..addresses = [address]
+      ..geoStatus = AddressStatus.ambiguous;
+    await showPage(tester, api);
+    await tester.tap(find.text('Editar'));
+    await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Rua *'),
+      'Rua B',
+    );
+    await tester.ensureVisible(find.text('Salvar alterações'));
+    await tester.tap(find.text('Salvar alterações'));
+    await tester.pumpAndSettle();
+    expect(api.updateCalls, 1);
+    expect(api.geoCalls, 1);
+    expect(api.addresses.single.street, 'Rua B');
+    expect(
+      api.addresses.single.locationStatus,
+      AddressLocationStatus.ambiguous,
+    );
+    expect(
+      find.textContaining('Endereço salvo. Localização ambígua.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('409 stale recarrega lista e não informa localização ambígua', (
+    tester,
+  ) async {
+    final api = FakeAddressApi()
+      ..addresses = [address]
+      ..geoStatus = AddressStatus.stale;
+    await showPage(tester, api);
+    expect(api.listCalls, 1);
+    await tester.tap(find.text('Localizar endereço'));
+    await tester.pumpAndSettle();
+    expect(api.listCalls, 2);
+    expect(
+      find.textContaining('Endereço alterado durante a localização.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Localização ambígua.'), findsNothing);
+  });
+
+  testWidgets('exclusão exige confirmação e cancelar preserva endereço', (
+    tester,
+  ) async {
+    final api = FakeAddressApi()..addresses = [address];
+    await showPage(tester, api);
+    await tester.tap(find.text('Excluir endereço'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(api.deleteCalls, 0);
+    expect(find.text('Rua A, 12'), findsOneWidget);
+    await tester.tap(find.text('Excluir endereço'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+    expect(api.deleteCalls, 1);
+    expect(find.text('Nenhum endereço cadastrado.'), findsOneWidget);
+  });
+
+  for (final pair in [
+    (AddressLocationStatus.pending, 'Localização pendente'),
+    (AddressLocationStatus.notLocated, 'Endereço não localizado'),
+    (AddressLocationStatus.temporary, 'Falha temporária de localização'),
+    (AddressLocationStatus.ambiguous, 'Localização ambígua'),
+    (AddressLocationStatus.located, 'Localização pronta'),
+  ]) {
+    testWidgets('mostra estado persistido ${pair.$1}', (tester) async {
+      final original = address;
+      final api = FakeAddressApi()
+        ..addresses = [
+          CustomerAddress(
+            id: original.id,
+            street: original.street,
+            number: original.number,
+            neighborhood: original.neighborhood,
+            city: original.city,
+            cep: original.cep,
+            complement: null,
+            reference: null,
+            located: pair.$1 == AddressLocationStatus.located,
+            locationStatus: pair.$1,
+          ),
+        ];
+      await showPage(tester, api);
+      expect(find.text(pair.$2), findsOneWidget);
+    });
+  }
 
   testWidgets(
     'valida, consulta CEP, salva e geocodifica sem enviar duas vezes',
@@ -361,10 +630,6 @@ void main() {
       api.createGate!.complete(
         const AddressResult(AddressStatus.success, value: address),
       );
-      await tester.pumpAndSettle();
-      expect(find.text('Localização pendente'), findsOneWidget);
-      await tester.ensureVisible(find.text('Localizar endereço'));
-      await tester.tap(find.text('Localizar endereço'));
       await tester.pumpAndSettle();
       expect(api.geoCalls, 1);
       expect(find.text('Localização pronta'), findsOneWidget);

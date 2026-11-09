@@ -329,6 +329,8 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
       'Localização ambígua. Confira os dados em Meus endereços e tente novamente.',
     AddressStatus.invalid =>
       'Dados do endereço inválidos. Confira em Meus endereços.',
+    AddressStatus.stale =>
+      'Endereço alterado durante a localização. Atualize os endereços e tente novamente.',
     AddressStatus.unauthorized || AddressStatus.forbidden => _message(status),
     _ => 'Falha temporária ao localizar o endereço. Tente novamente.',
   };
@@ -415,6 +417,8 @@ class _FulfillmentPageState extends State<FulfillmentPage> {
                   _geocodeStatus == AddressStatus.unauthorized ||
                       _geocodeStatus == AddressStatus.forbidden
                   ? null
+                  : _geocodeStatus == AddressStatus.stale
+                  ? () => unawaited(_loadAddresses())
                   : () => unawaited(_checkCoverage()),
             )
           else if (_coverageStatus != AddressStatus.success)
