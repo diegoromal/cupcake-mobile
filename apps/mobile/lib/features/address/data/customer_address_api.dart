@@ -10,6 +10,8 @@ enum AddressStatus {
   notLocated,
   notFound,
   ambiguous,
+  stale,
+  conflict,
   unauthorized,
   forbidden,
   unavailable,
@@ -21,6 +23,14 @@ enum AddressStatus {
 }
 
 enum CoverageSituation { attended, outsideCoverage, locationUnavailable }
+
+enum AddressLocationStatus {
+  pending,
+  located,
+  notLocated,
+  temporary,
+  ambiguous,
+}
 
 class CoverageFreight {
   const CoverageFreight(
@@ -99,10 +109,16 @@ class CustomerAddress {
     required this.complement,
     required this.reference,
     required this.located,
-  });
+    AddressLocationStatus? locationStatus,
+  }) : locationStatus =
+           locationStatus ??
+           (located
+               ? AddressLocationStatus.located
+               : AddressLocationStatus.pending);
   final String id, street, number, neighborhood, city, cep;
   final String? complement, reference;
   final bool located;
+  final AddressLocationStatus locationStatus;
   static CustomerAddress? parse(Object? data) {
     if (data is! Map<String, dynamic>) return null;
     final id = data['id'],
@@ -112,7 +128,16 @@ class CustomerAddress {
         city = data['cidade'],
         cep = data['cep'];
     final lat = data['latitude'], lon = data['longitude'];
+    final locationStatus = switch (data['statusLocalizacao']) {
+      'PENDENTE' => AddressLocationStatus.pending,
+      'LOCALIZADO' => AddressLocationStatus.located,
+      'NAO_LOCALIZADO' => AddressLocationStatus.notLocated,
+      'TEMPORARIO' => AddressLocationStatus.temporary,
+      'AMBIGUO' => AddressLocationStatus.ambiguous,
+      _ => null,
+    };
     if (id is! String ||
+        locationStatus == null ||
         street is! String ||
         number is! String ||
         neighborhood is! String ||
@@ -123,7 +148,8 @@ class CustomerAddress {
         (data['referencia'] != null && data['referencia'] is! String) ||
         (lat != null && lat is! String) ||
         (lon != null && lon is! String) ||
-        (lat == null) != (lon == null)) {
+        (lat == null) != (lon == null) ||
+        (lat != null) != (locationStatus == AddressLocationStatus.located)) {
       return null;
     }
     return CustomerAddress(
@@ -136,6 +162,7 @@ class CustomerAddress {
       complement: data['complemento'] as String?,
       reference: data['referencia'] as String?,
       located: lat != null,
+      locationStatus: locationStatus,
     );
   }
 }
@@ -214,6 +241,38 @@ class CustomerAddressApi {
         : AddressResult(AddressStatus.success, value: address);
   }
 
+  Future<AddressResult<CustomerAddress>> update(
+    String token,
+    String id,
+    Map<String, Object?> body,
+  ) async {
+    final response = await _call(
+      _config.addressUri(id),
+      token,
+      'PATCH',
+      body: body,
+      conflictStatus: AddressStatus.conflict,
+    );
+    if (response.status != AddressStatus.success) {
+      return AddressResult(response.status);
+    }
+    final address = CustomerAddress.parse(response.value);
+    return address == null
+        ? const AddressResult(AddressStatus.indeterminate)
+        : AddressResult(AddressStatus.success, value: address);
+  }
+
+  Future<AddressResult<void>> delete(String token, String id) async {
+    final response = await _call(
+      _config.addressUri(id),
+      token,
+      'DELETE',
+      successCode: 204,
+      conflictStatus: AddressStatus.conflict,
+    );
+    return AddressResult(response.status);
+  }
+
   Future<AddressResult<CepData>> lookupCep(String token, String cep) async {
     final response = await _call(_config.cepUri(cep), token, 'GET');
     if (response.status != AddressStatus.success) {
@@ -232,6 +291,7 @@ class CustomerAddressApi {
       'POST',
       unprocessableStatus: AddressStatus.notLocated,
       serverUnavailableStatus: AddressStatus.configurationUnavailable,
+      geocodingConflictCodes: true,
     );
     if (response.status != AddressStatus.success) {
       return AddressResult(response.status);
@@ -276,14 +336,19 @@ class CustomerAddressApi {
     AddressStatus invalidResponseStatus = AddressStatus.unavailable,
     AddressStatus serverUnavailableStatus = AddressStatus.unavailable,
     AddressStatus unprocessableStatus = AddressStatus.invalid,
+    AddressStatus conflictStatus = AddressStatus.ambiguous,
+    bool geocodingConflictCodes = false,
   }) async {
     if (uri == null) return const AddressResult(AddressStatus.notConfigured);
     final client = _clientFactory();
     int? code;
     try {
-      final request =
-          await (method == 'POST' ? client.postUrl(uri) : client.getUrl(uri))
-              .timeout(timeout);
+      final request = await (switch (method) {
+        'POST' => client.postUrl(uri),
+        'PATCH' => client.patchUrl(uri),
+        'DELETE' => client.deleteUrl(uri),
+        _ => client.getUrl(uri),
+      }).timeout(timeout);
       request.followRedirects = false;
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       if (body != null) {
@@ -297,18 +362,33 @@ class CustomerAddressApi {
       if (code == 400) return const AddressResult(AddressStatus.invalid);
       if (code == 422) return AddressResult(unprocessableStatus);
       if (code == 404) return const AddressResult(AddressStatus.notFound);
-      if (code == 409) return const AddressResult(AddressStatus.ambiguous);
+      if (code == 409) {
+        if (!geocodingConflictCodes) return AddressResult(conflictStatus);
+        final payload = jsonDecode(
+          await utf8.decoder.bind(response.timeout(timeout)).join(),
+        );
+        return switch (payload) {
+          {'code': 'LOCALIZACAO_ALTERADA'} => const AddressResult(
+            AddressStatus.stale,
+          ),
+          {'code': 'LOCALIZACAO_AMBIGUA'} => const AddressResult(
+            AddressStatus.ambiguous,
+          ),
+          _ => const AddressResult(AddressStatus.invalidResponse),
+        };
+      }
       if (code == 503) return AddressResult(serverUnavailableStatus);
       if (code != successCode) {
         return AddressResult(invalidResponseStatus);
       }
+      if (code == 204) return const AddressResult(AddressStatus.success);
       final text = await utf8.decoder.bind(response.timeout(timeout)).join();
       return AddressResult(AddressStatus.success, value: jsonDecode(text));
     } on FormatException {
       return AddressResult(invalidResponseStatus);
     } on Object {
       return AddressResult(
-        method == 'POST' && (code == null || code == successCode)
+        method != 'GET' && (code == null || code == successCode)
             ? AddressStatus.indeterminate
             : networkStatus,
       );

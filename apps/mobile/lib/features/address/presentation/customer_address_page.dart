@@ -25,6 +25,7 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
       _complement = TextEditingController(),
       _reference = TextEditingController();
   List<CustomerAddress> _addresses = [];
+  String? _editingId;
   bool _loading = true, _busy = false, _cepBusy = false;
   String? _message;
   int _generation = 0;
@@ -170,7 +171,12 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
           ? null
           : _reference.text.trim(),
     };
-    final result = await _request((token) => _api.create(token, body));
+    final editingId = _editingId;
+    final result = await _request(
+      (token) => editingId == null
+          ? _api.create(token, body)
+          : _api.update(token, editingId, body),
+    );
     if (!mounted) return;
     if (result.status != AddressStatus.success) {
       setState(() {
@@ -178,19 +184,16 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
         _message = _failure(result.status);
       });
     } else {
-      for (final c in [
-        _cep,
-        _street,
-        _number,
-        _neighborhood,
-        _city,
-        _complement,
-        _reference,
-      ]) {
-        c.clear();
-      }
+      final saved = result.value!;
+      final geo = saved.located
+          ? null
+          : await _request((token) => _api.geocode(token, saved.id));
+      if (!mounted) return;
+      _cancelEdit();
       await _load(
-        successMessage: 'Endereço salvo. Localização pendente.',
+        successMessage: geo == null || geo.status == AddressStatus.success
+            ? 'Endereço salvo. Localização pronta.'
+            : 'Endereço salvo. ${_failure(geo.status)}',
         failureMessage:
             'Endereço salvo, mas a lista não foi atualizada. Use Atualizar lista para tentar novamente.',
       );
@@ -206,19 +209,87 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
     });
     final result = await _request((token) => _api.geocode(token, address.id));
     if (!mounted) return;
-    if (result.status != AddressStatus.success) {
-      setState(() {
-        _busy = false;
-        _message = _failure(result.status);
-      });
-    } else {
+    await _load(
+      successMessage: result.status == AddressStatus.success
+          ? 'Localização pronta.'
+          : _failure(result.status),
+      failureMessage: result.status == AddressStatus.success
+          ? 'Localização salva, mas a lista não foi atualizada. Use Atualizar lista para tentar novamente.'
+          : 'Localização não confirmada; a lista não foi atualizada.',
+    );
+    if (mounted) setState(() => _busy = false);
+  }
+
+  void _startEdit(CustomerAddress address) {
+    if (_busy) return;
+    setState(() {
+      _editingId = address.id;
+      _cep.text = address.cep;
+      _street.text = address.street;
+      _number.text = address.number;
+      _neighborhood.text = address.neighborhood;
+      _city.text = address.city;
+      _complement.text = address.complement ?? '';
+      _reference.text = address.reference ?? '';
+      _message = null;
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editingId = null;
+      for (final controller in [
+        _cep,
+        _street,
+        _number,
+        _neighborhood,
+        _city,
+        _complement,
+        _reference,
+      ]) {
+        controller.clear();
+      }
+    });
+  }
+
+  Future<void> _delete(CustomerAddress address) async {
+    if (_busy) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir endereço?'),
+        content: Text(
+          '${address.street}, ${address.number} será removido da sua lista.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    final result = await _request((token) => _api.delete(token, address.id));
+    if (!mounted) return;
+    if (result.status == AddressStatus.success) {
+      if (_editingId == address.id) _cancelEdit();
       await _load(
-        successMessage: 'Localização pronta.',
-        failureMessage:
-            'Localização salva, mas a lista não foi atualizada. Use Atualizar lista para tentar novamente.',
+        successMessage: 'Endereço excluído.',
+        failureMessage: 'Endereço excluído, mas a lista não foi atualizada.',
       );
-      if (mounted) setState(() => _busy = false);
+    } else {
+      setState(() => _message = _failure(result.status));
     }
+    if (mounted) setState(() => _busy = false);
   }
 
   String _failure(AddressStatus status) => switch (status) {
@@ -228,6 +299,10 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
     AddressStatus.notFound => 'Endereço não encontrado.',
     AddressStatus.ambiguous =>
       'Localização ambígua. Confira os dados e tente novamente.',
+    AddressStatus.stale =>
+      'Endereço alterado durante a localização. Lista atualizada; confira e tente novamente.',
+    AddressStatus.conflict =>
+      'Endereço em uso ou alterado. Atualize a lista e tente novamente.',
     AddressStatus.unauthorized => 'Sessão expirada. Entre novamente.',
     AddressStatus.forbidden => 'Sua conta não tem acesso a esta operação.',
     AddressStatus.indeterminate =>
@@ -297,11 +372,18 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
                               Text(
                                 '${address.neighborhood} · ${address.city} · ${address.cep}',
                               ),
-                              Text(
-                                address.located
-                                    ? 'Localização pronta'
-                                    : 'Localização pendente',
-                              ),
+                              Text(switch (address.locationStatus) {
+                                AddressLocationStatus.pending =>
+                                  'Localização pendente',
+                                AddressLocationStatus.located =>
+                                  'Localização pronta',
+                                AddressLocationStatus.notLocated =>
+                                  'Endereço não localizado',
+                                AddressLocationStatus.temporary =>
+                                  'Falha temporária de localização',
+                                AddressLocationStatus.ambiguous =>
+                                  'Localização ambígua',
+                              }),
                               if (!address.located)
                                 TextButton(
                                   style: TextButton.styleFrom(
@@ -312,6 +394,23 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
                                       : () => _geocode(address),
                                   child: const Text('Localizar endereço'),
                                 ),
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  TextButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _startEdit(address),
+                                    child: const Text('Editar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _delete(address),
+                                    child: const Text('Excluir endereço'),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -326,7 +425,9 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
                   ],
                   const SizedBox(height: 16),
                   Text(
-                    'Cadastrar endereço',
+                    _editingId == null
+                        ? 'Cadastrar endereço'
+                        : 'Editar endereço',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   Form(
@@ -381,8 +482,19 @@ class _CustomerAddressPageState extends State<CustomerAddressPage> {
                             minimumSize: const Size(48, 48),
                           ),
                           onPressed: _busy || _cepBusy ? null : _save,
-                          child: Text(_busy ? 'Salvando…' : 'Salvar endereço'),
+                          child: Text(
+                            _busy
+                                ? 'Salvando…'
+                                : _editingId == null
+                                ? 'Salvar endereço'
+                                : 'Salvar alterações',
+                          ),
                         ),
+                        if (_editingId != null)
+                          TextButton(
+                            onPressed: _busy ? null : _cancelEdit,
+                            child: const Text('Cancelar edição'),
+                          ),
                       ],
                     ),
                   ),

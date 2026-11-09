@@ -77,6 +77,11 @@ class ApiConfig {
   }
 
   Uri? get addressesUri => _validBaseUri?.resolve('/enderecos');
+  Uri? addressUri(String id) {
+    if (!_itemIdPattern.hasMatch(id)) return null;
+    return _validBaseUri?.resolve('/enderecos/$id');
+  }
+
   Uri? cepUri(String cep) => _validBaseUri?.resolve('/enderecos/cep/$cep');
   Uri? geocodingUri(String id) {
     if (!_itemIdPattern.hasMatch(id)) return null;

@@ -17,6 +17,7 @@ Map<String, Object?> address({Object? latitude, Object? longitude}) => {
   'referencia': null,
   'latitude': latitude,
   'longitude': longitude,
+  'statusLocalizacao': latitude == null ? 'PENDENTE' : 'LOCALIZADO',
 };
 
 Future<HttpServer> server(Future<void> Function(HttpRequest) handle) async {
@@ -60,6 +61,14 @@ void main() {
             request.response.write(
               jsonEncode({'latitude': '-25.000000', 'longitude': '-49.000000'}),
             );
+          case 'PATCH /enderecos/$id':
+            expect(
+              jsonDecode(await utf8.decoder.bind(request).join()),
+              containsPair('complemento', 'A'),
+            );
+            request.response.write(jsonEncode(address()));
+          case 'DELETE /enderecos/$id':
+            request.response.statusCode = 204;
         }
         await request.response.close();
       });
@@ -76,11 +85,18 @@ void main() {
         AddressStatus.success,
       );
       expect((await api.geocode('token', id)).status, AddressStatus.success);
+      expect(
+        (await api.update('token', id, {'complemento': 'A'})).status,
+        AddressStatus.success,
+      );
+      expect((await api.delete('token', id)).status, AddressStatus.success);
       expect(seen, [
         'GET /enderecos/cep/80000000',
         'GET /enderecos',
         'POST /enderecos',
         'POST /enderecos/$id/geocodificacao',
+        'PATCH /enderecos/$id',
+        'DELETE /enderecos/$id',
       ]);
     },
   );
@@ -150,4 +166,77 @@ void main() {
       AddressStatus.indeterminate,
     );
   });
+
+  test(
+    'geocodificação distingue códigos estáveis de 409 e não muda PATCH',
+    () async {
+      var code = 'LOCALIZACAO_AMBIGUA';
+      final local = await server((request) async {
+        request.response.statusCode = 409;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(
+          jsonEncode({
+            'statusCode': 409,
+            'code': code,
+            'message': 'Conflito de localização.',
+          }),
+        );
+        await request.response.close();
+      });
+      addTearDown(local.close);
+      final api = CustomerAddressApi(
+        config: ApiConfig(
+          baseUrl: 'http://${local.address.address}:${local.port}',
+        ),
+      );
+      expect((await api.geocode('token', id)).status, AddressStatus.ambiguous);
+      code = 'LOCALIZACAO_ALTERADA';
+      expect((await api.geocode('token', id)).status, AddressStatus.stale);
+      code = 'DESCONHECIDO';
+      expect(
+        (await api.geocode('token', id)).status,
+        AddressStatus.invalidResponse,
+      );
+      expect(
+        (await api.update('token', id, {'complemento': 'A'})).status,
+        AddressStatus.conflict,
+      );
+    },
+  );
+
+  test(
+    'estado persistido distingue pendente, localizado e falhas sem inferir cobertura',
+    () {
+      for (final pair in [
+        ('PENDENTE', AddressLocationStatus.pending),
+        ('NAO_LOCALIZADO', AddressLocationStatus.notLocated),
+        ('TEMPORARIO', AddressLocationStatus.temporary),
+        ('AMBIGUO', AddressLocationStatus.ambiguous),
+      ]) {
+        final parsed = CustomerAddress.parse({
+          ...address(),
+          'statusLocalizacao': pair.$1,
+        });
+        expect(parsed?.locationStatus, pair.$2);
+        expect(parsed?.located, false);
+      }
+      expect(
+        CustomerAddress.parse(
+          address(latitude: '-25.000000', longitude: '-49.000000'),
+        )?.locationStatus,
+        AddressLocationStatus.located,
+      );
+      expect(
+        CustomerAddress.parse({
+          ...address(),
+          'statusLocalizacao': 'LOCALIZADO',
+        }),
+        isNull,
+      );
+      expect(
+        CustomerAddress.parse({...address()}..remove('statusLocalizacao')),
+        isNull,
+      );
+    },
+  );
 }
