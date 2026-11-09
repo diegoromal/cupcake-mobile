@@ -137,9 +137,16 @@ describe('D39–D41 HTTP', () => {
     fetchMock.mockResolvedValueOnce(new Response('[]', { status: 200 }));
     await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(422);
     expect(rows[0].latitude).toBeNull();
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{ lat: '-25.1234567', lon: '-49.1234567' }, { lat: '-25', lon: '-49' }]), { status: 200 }));
-    await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(409);
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{ lat: '-25.1234567', lon: '-49.1234567' }]), { status: 200 }));
+    const addressDetails = { road: 'Rua A', house_number: '12', suburb: 'Centro', city: 'Curitiba', postcode: '80000-000' };
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([
+      { lat: '-25.1234567', lon: '-49.1234567', address: addressDetails },
+      { lat: '-25', lon: '-49', address: addressDetails },
+    ]), { status: 200 }));
+    const ambiguous = await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(409);
+    expect(ambiguous.body.code).toBe('LOCALIZACAO_AMBIGUA');
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([
+      { lat: '-25.1234567', lon: '-49.1234567', address: addressDetails },
+    ]), { status: 200 }));
     const timeout = jest.spyOn(AbortSignal, 'timeout');
     const result = await http.post(`/enderecos/${addressId}/geocodificacao`).set('Authorization', bearer).expect(200);
     expect(result.body).toEqual({ latitude: '-25.123457', longitude: '-49.123457' });
@@ -151,9 +158,9 @@ describe('D39–D41 HTTP', () => {
     expect(requestUrl.searchParams.get('postalcode')).toBe('80000000');
     expect(requestUrl.searchParams.get('country')).toBe('Brazil');
     expect(requestUrl.searchParams.get('countrycodes')).toBe('br');
-    expect(requestUrl.searchParams.get('limit')).toBe('2');
+    expect(requestUrl.searchParams.get('limit')).toBe('5');
     expect(requestUrl.searchParams.get('format')).toBe('json');
-    expect(requestUrl.searchParams.get('addressdetails')).toBe('0');
+    expect(requestUrl.searchParams.get('addressdetails')).toBe('1');
     expect(requestUrl.searchParams.get('extratags')).toBe('0');
     expect(requestUrl.searchParams.get('namedetails')).toBe('0');
     expect(timeout).toHaveBeenCalledWith(2200);
